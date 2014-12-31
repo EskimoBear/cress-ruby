@@ -1,4 +1,4 @@
-cress
+cress-ruby
 =======
 
 An eson parser for ruby.

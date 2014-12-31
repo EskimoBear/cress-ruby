@@ -1,3 +1,4 @@
 source 'https://rubygems.org'
 
-gem 'oj'
+gem 'vert'
+gem 'oj', '~>2.10.2'

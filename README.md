@@ -3,11 +3,21 @@ cress-ruby
 
 An eson reader for ruby.
 
-To read an eson file call the read method.
+To evaluate the eson file call the `read` method.
 
 ```ruby
 Cress.read('HighJump.eson')
 ```
+
+A `read` will evaluate all the singles in the eson file.
+
+To use eson as a JSON preprocessor call the `process` method.
+
+```ruby
+Cress.process('EsonMarkup.eson')
+```
+
+The process method will output a .json file in the same directorywithout the single calls.
 
 Cress can also be used from the commandline.
 

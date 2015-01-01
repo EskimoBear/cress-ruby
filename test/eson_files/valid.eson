@@ -1,0 +1,1 @@
+{"&plus":[1,{"&minus":[1,2]}],"&extend":"paper","&import":["evn.core.components","evn.core.events.responsive"],"def-comp":{"name":"screen.welcome","namespace":"bertie","params":["&headline-text","&sub-head-text"],"style":{}}}

@@ -16,7 +16,7 @@ module Eson
   #defined in the JSON grammar.
   #
   #doc = '{', declaration, {declaration}, '}', EOF;
-  #declaration = record | weak-single, NEWLINE;
+  #declaration = record | weak-single, ',';
   #record = '{', JSON_name, :, JSON_value | single, '}';
   #single = '{' , weak-single, '}';
   #weak-single = "&", symbol, :, JSON_array | JSON_null | single;

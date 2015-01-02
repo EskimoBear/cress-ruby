@@ -15,13 +15,26 @@ module Eson
   #symbols that begin with 'JSON_' reference those terminal symbols
   #defined in the JSON grammar.
   #
-  #doc = '{', declaration, {declaration}, '}', EOF;
-  #declaration = record | weak-single, ',';
-  #record = '{', JSON_name, :, JSON_value | single, '}';
+  #document = '{', {declaration}, '}', EOF;
+  #declaration = eson_pair, ',';
+  #eson_pair = prefix , JSON_string, :, eson_value;
+  #prefix = ["&", "$"];
+  #eson_value = JSON_value | single;
+  #(*a single is a type of JSON object allowing
+  # evaluation and substitution*)
   #single = '{' , weak-single, '}';
+  #(*a weak-single is a type of eson_pair allowing
+  # evaluation without direct substitution*)
   #weak-single = "&", symbol, :, JSON_array | JSON_null | single;
-  #symbol = special-form;
+  #symbol = special-form; (*a subset of JSON_string*)
   #special-form = "ref" | "def" | "doc";
+  #(*a record is a type of eson_pair which defines a compound data type*)
+  #record = JSON_string, :, document;
+  #(*an attribute is an eson_pair that evaluates to a JSON_pair*)
+  #attribute = JSON_string :, single;
+  #(*an identifier is an eson_pair that binds an eson_value to the
+  #  JSON_string prefixed with a $*)
+  #identifier = "$", JSON_string, :, eson_value;
 
   module Parser
 

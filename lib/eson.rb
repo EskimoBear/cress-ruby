@@ -20,8 +20,8 @@ module Eson
   #record = '{', JSON_name, :, JSON_value | single, '}';
   #single = '{' , weak-single, '}';
   #weak-single = "&", symbol, :, JSON_array | JSON_null | single;
-  #symbol = [special-forms];
-  #special-forms = "ref" | "def" | "doc";
+  #symbol = special-form;
+  #special-form = "ref" | "def" | "doc";
 
   module Parser
 

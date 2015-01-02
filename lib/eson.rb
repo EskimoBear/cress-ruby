@@ -16,13 +16,13 @@ module Eson
   #defined in the JSON grammar.
   #
   #doc = '{', declaration, {declaration}, '}', EOF;
-  #declaration = line, NEWLINE;
-  #line = weak-single | record;
-  #special-forms = "ref" | "def" | "doc";
-  #symbol = [special-forms];
-  #weak-single = "&", symbol, :, JSON_array | JSON_null | weak-single;
+  #declaration = record | weak-single, NEWLINE;
+  #record = '{', JSON_name, :, JSON_value | single, '}';
   #single = '{' , weak-single, '}';
-  #record = JSON_pair;  
+  #weak-single = "&", symbol, :, JSON_array | JSON_null | single;
+  #symbol = [special-forms];
+  #special-forms = "ref" | "def" | "doc";
+
   module Parser
 
     extend self

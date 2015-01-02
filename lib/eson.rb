@@ -16,8 +16,8 @@ module Eson
   #symbols that begin with 'JSON_' reference those terminal symbols
   #defined in the JSON grammar.
   #
-  #doc = '{',statement, {statement}, '}', EOF;
-  #statement = line, NEWLINE;
+  #doc = '{', declaration, {declaration}, '}', EOF;
+  #declaration = line, NEWLINE;
   #line = weak-single | record;
   #special-forms = "ref" | "def" | "doc";
   #symbol = [special-forms];

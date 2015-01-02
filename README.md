@@ -31,10 +31,10 @@ eson HighJump.eson
 ```
 
 ##Extending the reader
-Eson reader supports eson extensibilty by allowing users to define new special forms to sit alongside those built-in to eson. To create a DSL atop eson a user simply defines a domain specific set of specific forms and their respective handlers.
+Eson reader supports eson extensibilty by allowing users to define new special forms to sit alongside those built-in to eson. To create a DSL atop eson a user defines a domain specific set of special forms and their respective handlers.
 
 ```ruby
-golf-reader = Eson.extend(GolfDslSingles, "golf")
+golf-reader = Eson.extend(GolfDsl, "golf")
 ```
 
-In the snippet above the `extend` method returns a reader for a new eson based DSL called `golf`. A reader has all the abilities of the eson reader with the added bonus of being able to parse golf specific functions defined in the GolfDslSingles module.
+In the snippet above the `extend` method returns a reader for a new eson based DSL called `golf`. `golf-reader` has all the abilities of the eson reader and can also parse the special forms defined in the GolfDsl module.

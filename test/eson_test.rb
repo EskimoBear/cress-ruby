@@ -5,7 +5,7 @@ require_relative '../lib/eson.rb'
 describe Eson do
 
   before do
-    @valid_eson = File.open('eson_files/valid.eson').read 
+    @valid_eson = File.open(File.expand_path('../../test/eson_files/valid.eson', __FILE__)).read 
   end
 
   describe "given valid eson" do

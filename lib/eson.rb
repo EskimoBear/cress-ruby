@@ -8,8 +8,7 @@ module Eson
   
   def read(eson_string)
     validate_json(eson_string)
-    json_tokens = Oj.load(eson_string)
-    Eson::Parser.generate_ast(json_tokens)
+    Eson::Parser.generate_ast(eson_string)
   end
 
   #The following EBNF rules describe the eson grammar. All terminal
@@ -28,7 +27,17 @@ module Eson
 
     extend self
   
-    def generate_ast(json_tokens)
+    def generate_ast(doc)
+      declarations = get_declarations(doc)
+    end
+
+    #Returns an array of declarations. 
+    #@param doc [String] the eson document
+    #@return [Array] Each declaration is an array pair of the
+    #                form [JSON_name, JSON_value].
+    def get_declarations(doc)
+      hash = Oj.load(doc)
+      hash.each_with_object([]) {|i, array| array << i}
     end
   end
 end

@@ -1,11 +1,14 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require_relative '../lib/eson.rb'
+require_relative './test_helpers.rb'
 
 describe Eson do
 
+  include TestHelpers
+  
   before do
-    @valid_eson = File.open(File.expand_path('../../test/eson_files/valid.eson', __FILE__)).read 
+    @valid_eson = get_valid_eson
   end
 
   describe "given valid eson" do

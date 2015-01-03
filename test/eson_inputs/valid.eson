@@ -1,0 +1,22 @@
+{
+  "$let": [
+    "grammar"
+  ],
+  "single-assignment-store": [
+    {
+      "$let": [
+        "red",
+        "blue"
+      ],
+      "doc": "creating the unbound variable identifiers $red and $blue within the program scope. This can only be used once per program"
+    },
+    {
+      "nine": 9,
+      "doc": "Creating the variable identifier $nine and binding it to a value 9 in the program's value store. The value store is implemented as a record. This allows the parser to de-reference occurences of $nine in string values as 9."
+    },
+    {
+      "ten": "$red",
+      "doc": "Binds an identifier $ten to the variable $red. The variable can be bounded or unbounded"
+    }
+  ]
+}

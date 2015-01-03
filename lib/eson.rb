@@ -15,27 +15,44 @@ module Eson
   #symbols that begin with 'JSON_' reference those terminal symbols
   #defined in the JSON grammar.
   #
-  #document = '{', {declaration}, '}', EOF;
+  #program = '{', {declaration}, '}' | single | document, EOF;
+  #
   #declaration = eson_pair, ',';
-  #eson_pair = prefix , JSON_string, :, eson_value;
-  #prefix = ["&", "$"];
-  #eson_value = JSON_value | single;
+  #eson_pair = call | let | attribute | eson_pair_json;
+  #
+  #(*a call is a declaration performing procedure application without
+  #  direct substitution*)
+  #call = procedure, :, JSON_array | JSON_null | single;
+  #procedure = "&", special-form; 
+  #special-form = "let" | "ref" | "doc";
+  #
   #(*a single is a type of JSON object allowing
-  # evaluation and substitution*)
-  #single = '{' , weak-single, '}';
-  #(*a weak-single is a type of eson_pair allowing
-  # evaluation without direct substitution*)
-  #weak-single = "&", symbol, :, JSON_array | JSON_null | single;
-  #symbol = special-form; (*a subset of JSON_string*)
-  #special-form = "ref" | "def" | "doc";
-  #(*a record is a type of eson_pair which defines a compound data type*)
-  #record = JSON_string, :, document;
-  #(*an attribute is an eson_pair that evaluates to a JSON_pair*)
-  #attribute = JSON_string :, single;
-  #(*an identifier is an eson_pair that binds an eson_value to the
-  #  JSON_string prefixed with a $*)
-  #identifier = "$", JSON_string, :, eson_value;
-
+  # procedure application and substitution*)
+  #single = '{' , call, '}';
+  #
+  #(*the let call performs variable creation *)
+  #let = "&", "let", :, '[', {JSON_string, ','}, ']';
+  #
+  #(*an attribute is a declaration that evaluates to a JSON_pair performing
+  # simultaneous variable and value creation*)
+  #attribute = JSON_string, :, eson_value;
+  #eson_value = single | identifier, [JSON_string] | JSON_value;
+  #
+  #(*an identifier is a JSON string that can be dereferenced to a value held 
+  #  in the value store*)
+  #identifier = "$", JSON_string;
+  #
+  #(*eson_pair_json describes the eson_pair in terms of it's JSON counterpart*)
+  #eson_pair_json = eson_string, :, eson_value;
+  #eson_string = prefix, JSON_string | procedure | identifier, [JSON_string] ;
+  #prefix = ["&", "$"];
+  #
+  #(*a document is the equivalent to the program's internal value store*)
+  #document = '{', {attribute}, '}' | JSON_object, EOF;
+  #
+  #JSON_object = '{', {statement}, '}';
+  #statement = JSON_pair, ',';
+  #JSON_pair = JSON_value, :, JSON_string;
   module Parser
 
     extend self

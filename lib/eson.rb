@@ -13,41 +13,47 @@ module Eson
 
   #Specification - Convert an eson program into a sequence of tokens.
   #
-  #The following is a list of terminal symbols/tokens derived from eson's EBNF grammar rules:
-  #---EBNF
-  #program_start = "{";
-  #program_end = "}";
-  #end_of_file = EOF;
-  #array_start = "[";
-  #array_end = "]";
-  #comma = ",";
-  #colon = ":";
-  #proc_prefix = "&";
-  #variable_prefix = "$";
-  #string = {char};
-  #char = JSON_char;
-  #whitespace = " ";
-  #number = JSON_number;
-  #true = JSON_true;
-  #false = JSON_false;
-  #null = JSON_null;
-  #let = "let";
-  #ref = "ref";
-  #doc = "doc";
-  #---EBNF
+  # Eson token set, ET is a set of the eson terminal symbols defined below
+  # ---EBNF
+  # program_start = "{";
+  # program_end = "}";
+  # end_of_file = EOF;
+  # array_start = "[";
+  # array_end = "]";
+  # comma = ",";
+  # colon = ":";
+  # proc_prefix = "&";
+  # variable_prefix = "$";
+  # string = {char};
+  # char = JSON_char;
+  # whitespace = " ";
+  # number = JSON_number;
+  # true = JSON_true;
+  # false = JSON_false;
+  # null = JSON_null;
+  # let = "let";
+  # ref = "ref";
+  # doc = "doc";
+  # ---EBNF
+  # Eson token, et is a member of ET
+  # Input program, P - assume a non empty and valid JSON string
+  # Token sequence, T
   #
-  #Assume a valid JSON string as input
-  #Initialize an array of the eson terminal symbols ET 
-  #Initialize an empty array T and append program_start unto T
-  #Convert the eson program to a sequence of JSON pairs, 2-tuple arrays of keys and values, H
-  #Replace each pair with a 3-tuple with the colon token as the middle element
-  #Inspect each key and value in the pair and split into tokens present in ET
-  #  Label each token with it's terminal symbol
-  #  Replace the key or value with an array of these tokens
-  #Append the first 3-tuple to T and then append a comma token
-  #Repeat until the last 3-tuple is reached and then append the last 3-tuple to T
-  #Append program_end token to T 
-  #Flatten T and output
+  # Init : length(P) > 0
+  #        length(T) = 0
+  # Next : length(P') = length(P) - value_length(et)
+  #        length(T') = length(T) + 1
+  #
+  # Append program_start token onto T
+  # Convert P to a sequence of JSON pairs, 2-tuple arrays of keys and values
+  # Replace each pair with a 3-tuple including the colon token as the middle element
+  # Inspect each key and value in the pair and split into tokens present in ET
+  #   Label each token with it's terminal symbol
+  #   Replace the key or value with an array of these tokens
+  # Append the first 3-tuple to T and then append a comma token
+  # Repeat until the last 3-tuple is reached and then append the last 3-tuple to T
+  # Append program_end token to T 
+  # Flatten T and output
   module Tokenizer
 
   end

@@ -76,7 +76,7 @@ module Eson
   #end_of_file = EOF;
   #
   #declaration = pair, {comma, pair};
-  #pair = call | let_call | attribute;
+  #pair = call | attribute;
   #comma = ",";
   #
   #(*a call is a declaration performing procedure application without
@@ -105,14 +105,9 @@ module Eson
   #whitespace = " ";
   #variable_prefix = "$";
   #
-  #(*the let call performs variable creation *)
-  #let_call = proc_prefix, let, colon, array_start, let_input,
-  #           {comma, let_input}, array_end;
-  #let_input = string | variable;
-  #
   #(*an attribute performs simultaneous variable and
   # value creation*)
-  #attribute = string, colon , value;
+  #attribute = string, colon, value;
   #
   #(*a single is a program allowing
   # procedure application and substitution*)

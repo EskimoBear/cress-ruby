@@ -1,3 +1,4 @@
+# coding: utf-8
 require 'vert'
 require 'oj'
 
@@ -41,15 +42,17 @@ module Eson
     # ref = "ref";
     # doc = "doc";
     # ---EBNF
-    # Eson token, et is a sequence of characters in p which is also a member of ET
+    # Eson token, et is a sequence of characters existing in ET
+    # label(et) maps the character sequence to the name of the matching
+    #   eson terminal symbol
     # Input program, p, a valid JSON string 
     # Input sequence, P, a sequence of characters in p
     # Token sequence, T
     #
-    # Init : character_length(P) > 0
-    #        token_length(T) = 0
-    # Next : et = P - 'P
-    #        T' = T + label(et)   
+    # Init : length(P) > 0
+    #        length(T) = 0
+    # Next : et = P - 'P ∧ T' = T + label(et)
+    #
     # Convert p to JSON_P a sequence of JSON symbols - [object_start, object_end,
     # comma, colon, JSON_key, JSON_value]
     # For each symbol in JSON_P

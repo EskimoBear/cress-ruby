@@ -16,8 +16,8 @@ module Eson
     extend self
     
     #Converts an eson program into a sequence of eson tokens
-    #@param eson_program [String] the eson program string provided to Eson#read
-    #@return [Array<Array>] Returns a sequence of the token sequence and the input sequence
+    #@param eson_program [String] string provided to Eson#read
+    #@return [Array<Array>] A pair of token sequence and the input sequence
     #@eskimobear.specification
     # Eson token set, ET is a set of the eson terminal symbols defined below
     # ---EBNF
@@ -48,19 +48,17 @@ module Eson
     #
     # Init : length(P) > 0
     #        length(T) = 0
-    # Next : length(P') = length(P) - value_length(et)
+    # Next : length(P') = length(P) - character_length(et)
     #        length(T') = length(T) + 1
     #
-    # Append program_start token onto T
-    # Convert P to a sequence of JSON pairs, 2-tuple arrays of keys and values
-    # Replace each pair with a 3-tuple including the colon token as the middle element
-    # Inspect each key and value in the pair and split into tokens present in ET
-    #   Label each token with it's terminal symbol
-    #   Replace the key or value with an array of these tokens
-    # Append the first 3-tuple to T and then append a comma token
-    # Repeat until the last 3-tuple is reached and then append the last 3-tuple to T
-    # Append program_end token to T 
-    # Flatten T and output
+    # Convert p to JSON_P a sequence of JSON symbols - [object_start, object_end,
+    # comma, colon, JSON_key, JSON_value]
+    # For each symbol in JSON_P
+    #   remove the first n chars from P, where n = symbol length
+    #   inspect each symbol
+    #    split into sequence of et's
+    #    label each et with it's terminal symbol
+    #    append et to T
     def tokenize_program(eson_program)
     end
   end

@@ -1,9 +1,15 @@
 module TestHelpers
+
+  extend self
   
   def get_valid_eson
     load_test_inputs('valid')
   end
 
+  def get_tokenizer_eson
+    load_test_inputs('tokenizer')
+  end
+  
   private
 
   def load_test_inputs(name)

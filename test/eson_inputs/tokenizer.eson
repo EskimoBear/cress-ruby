@@ -1,0 +1,8 @@
+{
+  "$let": [
+    "var",
+    "var1"
+  ],
+  "$ref": "#/attribute",
+  "attribute": "Creating the variable identifier attribute."
+}

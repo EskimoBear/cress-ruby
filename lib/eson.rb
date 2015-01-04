@@ -41,16 +41,15 @@ module Eson
     # ref = "ref";
     # doc = "doc";
     # ---EBNF
-    # Eson token, et is a member of ET
+    # Eson token, et is a sequence of characters in p which is also a member of ET
     # Input program, p, a valid JSON string 
     # Input sequence, P, a sequence of characters in p
     # Token sequence, T
     #
-    # Init : length(P) > 0
-    #        length(T) = 0
-    # Next : length(P') = length(P) - character_length(et)
-    #        length(T') = length(T) + 1
-    #
+    # Init : character_length(P) > 0
+    #        token_length(T) = 0
+    # Next : et = P - 'P
+    #        T' = T + label(et)   
     # Convert p to JSON_P a sequence of JSON symbols - [object_start, object_end,
     # comma, colon, JSON_key, JSON_value]
     # For each symbol in JSON_P

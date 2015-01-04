@@ -36,6 +36,7 @@ module Eson
   #doc = "doc";
   #---EBNF
   #
+  #Assume a valid JSON string as input
   #Initialize an array of the eson terminal symbols ET 
   #Initialize an empty array T and append program_start unto T
   #Convert the eson program to a sequence of JSON pairs, 2-tuple arrays of keys and values, H

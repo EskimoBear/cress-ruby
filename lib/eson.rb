@@ -137,13 +137,5 @@ module Eson
       declarations = get_declarations(program)
     end
 
-    #Returns an array of declarations. 
-    #@param doc [String] the eson document
-    #@return [Array] Each declaration is an array pair of the
-    #                form [JSON_name, JSON_value].
-    def get_declarations(doc)
-      hash = Oj.load(doc)
-      hash.each_with_object([]) {|i, array| array << i}
-    end
   end
 end

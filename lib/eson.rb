@@ -62,7 +62,104 @@ module Eson
     #    label each et with it's terminal symbol
     #    append et to T
     def tokenize_program(eson_program)
+      program_sequence = string_to_char_sequence(eson_program)
+      token_sequence = Array.new
+      json_p = to_json_symbols(eson_program)
+      tokenize_json_symbols(json_p)
     end
+    
+    def to_json_symbols(eson_program)
+      json_hash = Oj.load(eson_program)
+      json_symbol = Struct.new "JSONsymbol", :value, :name
+      seq = Array.new << json_symbol.new("{","object_start")
+      seq << members_to_json_symbols(json_hash, json_symbol)
+      seq << json_symbol.new("}","object_end")
+      seq.flatten
+    end
+
+    def members_to_json_symbols(json_pairs, json_symbol)
+      seq = Array.new << pair_to_json_symbols(json_pairs.first, json_symbol)
+      rest = json_pairs.drop(1)
+      comma = json_symbol.new(",", "comma")
+      rest.each_with_object(seq) do |i, seq|
+        seq << comma
+        seq << pair_to_json_symbols(i, json_symbol)
+      end
+    end
+
+    def pair_to_json_symbols(json_pair, json_symbol)
+      colon = json_symbol.new(":", "colon")
+      Array.new << json_symbol.new(json_pair.first, "JSON_key") << colon << json_symbol.new(json_pair[1], "JSON_value")
+    end
+
+    def symbol_length(json_symbol)
+      json_symbol.value.length
+    end
+    
+    def string_to_char_sequence(string)
+      seq = Array.new
+      string.each_char {|c| seq << c}
+      seq
+    end
+
+    def tokenize_json_symbols(sequence)
+      seq = Array.new
+      token = Struct.new "Token", :value, :name
+      sequence.map do |i|
+        case i.name
+        when "object_start"
+          seq << token.new("{","program_start")
+        when "object_end"
+          seq << token.new("}","program_end")
+        when "colon"
+        when "comma"
+        when "JSON_key"
+          tokenize_json_key(i.value, seq)
+        when "JSON_value"
+          tokenize_json_value(i.value, seq)
+        end
+      end
+      puts seq
+    end
+
+    def tokenize_json_key(json_key, seq)
+      token = Struct.new "Token", :value, :name
+      eson_prefix = get_eson_prefix(json_key)
+      case eson_prefix
+      when "$"
+        seq << token.new(eson_prefix, "variable_prefix")
+        seq << token.new(get_prefixed_string(json_key), "string")
+      when "&"
+        seq << token.new(eson_prefix, "proc_prefix")
+        seq << token.new(get_prefixed_string(json_key), "string")
+      when ""
+        seq << token.new(json_key, "string")
+      end
+    end
+    
+    def get_eson_prefix(string)
+      string.match(/\A\$|&/).to_s
+    end
+
+    def get_prefixed_string(string)
+       string.match(/\A\$|&/).post_match     
+    end
+
+    def tokenize_json_value(json_value, seq)
+      token = Struct.new "Token", :value, :name
+      if json_value.is_a? TrueClass
+        seq << token.new(json_value, "true")
+      elsif json_value.is_a? FalseClass
+        seq << token.new(json_value, "false")
+      elsif json_value.is_a? Numeric
+        seq << token.new(json_value, "number")
+      elsif json_value.nil?
+        seq << token.new(json_value, "null")
+      elsif json_value.is_a? String
+        seq << token.new(json_value, "string")
+      end
+    end
+    
   end
 
   #Specification - Parse tokens into a abstract syntax tree
@@ -101,7 +198,8 @@ module Eson
   #
   #(*a variable is a string that can be dereferenced to a value held 
   #  in the value store*)
-  #variable = variable_prefix, {char}, whitespace; 
+  #variable = variable_prefix, word, whitespace;
+  #word = string;
   #whitespace = " ";
   #variable_prefix = "$";
   #

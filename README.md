@@ -10,9 +10,7 @@ To evaluate an eson file call the `read` method.
 Eson.read('HighJump.eson')
 ```
 
-A `read` will evaluate all the singles in the eson file.
-
-To use eson reader as a JSON preprocessor call the `process` method.
+A `read` will evaluate all singles and calls in the eson file.
 
 ##JSON preprocessing
 When eson is being used as a JSON preprocessor call the `process` method to output the evalutated file.
@@ -24,7 +22,7 @@ Eson.process('EsonMarkup.eson')
 The `process` method will output a .json file in the same directory without the single calls.
 
 ##Command-line usage
-eson can also be used from the commandline.
+eson can also be used from the command-line.
 
 ```shell
 eson HighJump.eson

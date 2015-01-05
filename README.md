@@ -1,7 +1,7 @@
 eson-ruby
 =======
 
-[eson](https://github.com/EskimoBear/eson) reader in ruby.
+[eson](https://github.com/EskimoBear/eson) reader implemented in ruby.
 
 ##Reading 
 To evaluate an eson file call the `read` method.

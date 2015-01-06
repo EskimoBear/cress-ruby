@@ -68,7 +68,6 @@ module Eson
       token_sequence = Array.new
       json_hash = Oj.load(eson_program)
       json_symbol_sequence = get_json_symbol_sequence(json_hash)
-      puts tokenize_json_symbols(json_symbol_sequence)
     end
 
     def string_to_char_sequence(string)

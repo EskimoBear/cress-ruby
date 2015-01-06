@@ -1,8 +1,12 @@
 {
-  "$let": [
+  "&let": [
     "var",
     "var1"
   ],
-  "$ref": "#/attribute",
-  "attribute": "Creating the variable identifier attribute."
+  "&ref": "#/attribute",
+  "attribute": 87,
+  "variable": "The value 87 is held in $attribute(refers to attribute)",
+  "procedure application": {
+    "&ref": "#/attribute"
+  }
 }

@@ -4,7 +4,7 @@ eson-ruby
 [eson](https://github.com/EskimoBear/eson) compiler implemented in ruby.
 
 ##Compiling 
-To compile an eson file call the `complile` method with the file path of the eson program.
+To compile an eson file call the `compile` method with the file path of the eson program.
 
 ```ruby
 Eson.compile('program.eson')
@@ -13,10 +13,10 @@ Eson.compile('program.eson')
 A `compile` will evaluate all singles and calls in the eson file and output a .json file in the same directory. 
 
 ##Code generation
-Eson can generate JSON documents and Ruby source code. The default code generator is JSON but the Ruby code generator can be invoked by passing `:ruby` as the second argument.
+Eson will generate JSON documents by default but the compiler can also generate Ruby source code. The Ruby code generator can be invoked by passing `:ruby` as the second argument.
 
 ```ruby
-Eson.read('program.eson', :ruby)
+Eson.compile('program.eson', :ruby)
 ```
 
 ##Command-line usage

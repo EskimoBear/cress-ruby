@@ -1,31 +1,33 @@
 eson-ruby
 =======
 
-[eson](https://github.com/EskimoBear/eson) reader implemented in ruby.
+[eson](https://github.com/EskimoBear/eson) compiler implemented in ruby.
 
 ##Reading 
-To evaluate an eson file call the `read` method.
+To compile an eson file call the `read` method.
 
 ```ruby
-Eson.read('HighJump.eson')
+Eson.read('program.eson')
 ```
 
-A `read` will evaluate all singles and calls in the eson file.
+A `read` will evaluate all singles and calls in the eson file and output a .json file in the same directory. 
 
-##JSON preprocessing
-When eson is being used as a JSON preprocessor call the `process` method to output the evalutated file.
+##Code generation
+Eson can generate JSON documents and Ruby source code. The default code generator is JSON but the Ruby code generator can be invoked by passing `:ruby` as the second argument.
 
 ```ruby
-Eson.process('EsonMarkup.eson')
+Eson.read('program.eson', :ruby)
 ```
-
-The `process` method will output a .json file in the same directory without the single calls.
 
 ##Command-line usage
 eson can also be used from the command-line.
 
 ```shell
-eson HighJump.eson
+# Calls read with the JSON code generator
+eson program.eson
+
+#Calls read with the Ruby code generator
+eson --ruby program.eson
 ```
 
 ##Extending the reader

@@ -2,7 +2,7 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'oj'
 require_relative './test_helpers.rb'
-require_relative '../lib/eson.rb'
+require_relative '../lib/eson/tokenizer.rb'
 
 describe Eson::Tokenizer do
 

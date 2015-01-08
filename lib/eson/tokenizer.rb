@@ -57,8 +57,9 @@ module Eson
     #    label each et with it's terminal symbol
     #    append et to T
     def tokenize_program(eson_program)
-      program_char_seq = get_program_char_sequence(eson_program)
+      eson_program.freeze
       program_json_hash = Oj.load(eson_program)
+      program_char_seq = get_program_char_sequence(program_json_hash)
       json_symbol_seq = get_json_symbol_sequence(program_json_hash)
       token_seq = tokenize_json_symbols(json_symbol_seq, program_char_seq)
       [token_seq, program_char_seq]
@@ -66,17 +67,13 @@ module Eson
 
     private
 
-    def get_program_char_sequence(string)
+    def get_program_char_sequence(hash)
       seq = Array.new
-      string.each_char {|c| seq << c}
-      seq = seq.reject{|i| i.match(/"/)}
-      seq
+      clean_string = Oj.dump(hash)
+      clean_string.each_char {|c| seq << c}
+      seq.reject{|i| i.match(/"/)}
     end
 
-    def strip_quotes(sequence)
-      sequence.reject{|i| i.match(/"/)}
-    end
-    
     def get_json_symbol_sequence(hash)
       Array.new.push(JsonSymbol.new(:"{", :object_start))
         .push(members_to_json_symbols(hash))
@@ -211,8 +208,6 @@ module Eson
       elsif json_value.is_a? Numeric
         seq.push(Token.new(json_value, :number))
         char_seq.slice!(0, json_value.to_s.size)
-      elsif json_value.is_a? Array
-        tokenize_json_array(json_value, seq, char_seq)
       elsif json_value.is_a? FalseClass
         seq.push(Token.new(json_value, :false))
         char_seq.slice!(0, json_value.to_s.size)
@@ -225,24 +220,7 @@ module Eson
         tokenize_json_hash(json_value, seq, char_seq)
       end
     end
-
-    def tokenize_json_array(json_array, seq, char_seq)
-      seq.push(Token.new(:"[", :array_start))
-      char_seq.slice!(0, 1)
-      unless json_array.empty?
-        tokenize_json_value(json_array.first, seq, char_seq)
-        unless json_array.drop(1).empty?
-          json_array.drop(1).each do |i|
-            seq.push(Token.new(:",", :comma))
-            char_seq.slice!(0, 1)
-            tokenize_json_value(i, seq, char_seq)
-          end
-        end
-      end
-      seq.push(Token.new(:"]", :array_end))
-      char_seq.slice!(0, 1)
-    end
-
+    
     def tokenize_json_string(json_string, seq, char_seq)
       if json_string.empty?
         seq

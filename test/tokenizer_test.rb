@@ -9,8 +9,7 @@ describe Eson::Tokenizer do
   describe "with valid JSON string input" do
     before do
       @program = TestHelpers.get_tokenizer_eson
-      @program_input = Oj.dump(Oj.load(@program))
-      @final_token_sequence, @final_input_sequence = Eson::Tokenizer.tokenize_program(@program_input)
+      @final_token_sequence, @final_input_sequence = Eson::Tokenizer.tokenize_program(@program)
     end
 
     describe "final state" do

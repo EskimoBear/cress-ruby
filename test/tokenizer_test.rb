@@ -15,7 +15,6 @@ describe Eson::Tokenizer do
 
     describe "final state" do
       it "has empty input sequence" do
-        skip
         @final_input_sequence.empty?.must_equal true 
       end
       it "has filled token sequence" do
@@ -25,19 +24,6 @@ describe Eson::Tokenizer do
         token_seq_length = @final_token_sequence.length 
         valid_token_seq_length = @final_token_sequence.select{|i| i.class == Struct::Token}.length
         (token_seq_length == valid_token_seq_length).must_equal true
-      end
-      it "sequences has same char length" do
-        skip
-        token_seq_char_length = @final_token_sequence.inject(0)do |sum, i|
-          if i.name == :array || :number
-            puts "#{i.name} - '#{i.value}' - #{i.value.to_s.size}"
-            i.value.to_s.size + sum
-          else
-            puts "#{i.name} - '#{i.value}'- #{i.value.size}"
-            i.value.size + sum
-          end
-        end
-        @program_input.length.must_equal token_seq_char_length
       end
     end
   end

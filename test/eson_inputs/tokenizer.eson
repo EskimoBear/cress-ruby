@@ -1,9 +1,9 @@
 {
   "&let": [
-    "var",
-    "var1"
+    "var", "var1", {"&doc": null}
   ],
   "&ref": "#/attribute",
+  "bool": true,
   "attribute": 87,
   "variable": "The value 87 is held in $attribute(refers to attribute)",
   "procedure application": {

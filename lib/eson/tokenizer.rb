@@ -1,4 +1,3 @@
-# coding: utf-8
 require 'oj'
 
 module Eson
@@ -18,6 +17,8 @@ module Eson
     # ---EBNF
     # program_start = "{";
     # program_end = "}";
+    # array_start = "[";
+    # array_end = "]";
     # end_of_file = EOF;
     # comma = ",";
     # colon = ":";
@@ -34,6 +35,7 @@ module Eson
     # let = "let";
     # ref = "ref";
     # doc = "doc";
+    # unknown_special_form = {JSON_char};
     # ---EBNF
     # Eson token, et is a sequence of characters existing in ET
     # label(et) maps the character sequence to the name of the matching
@@ -44,7 +46,7 @@ module Eson
     #
     # Init : length(P) > 0
     #        length(T) = 0
-    # Next : et = P - 'P ∧ T' = T + label(et)
+    # Next : et = P - 'P AND T' = T + label(et)
     #
     # Convert p to JSON_P a sequence of JSON symbols - [object_start, object_end,
     # comma, colon, JSON_key, JSON_value]
@@ -58,8 +60,7 @@ module Eson
       program_char_seq = get_program_char_sequence(eson_program)
       program_json_hash = Oj.load(eson_program)
       json_symbol_seq = get_json_symbol_sequence(program_json_hash)
-      token_seq = tokenize_json_symbols(json_symbol_seq)
-      #puts token_seq
+      token_seq = tokenize_json_symbols(json_symbol_seq, program_char_seq)
       [token_seq, program_char_seq]
     end
 
@@ -68,13 +69,18 @@ module Eson
     def get_program_char_sequence(string)
       seq = Array.new
       string.each_char {|c| seq << c}
+      seq = seq.reject{|i| i.match(/"/)}
       seq
+    end
+
+    def strip_quotes(sequence)
+      sequence.reject{|i| i.match(/"/)}
     end
     
     def get_json_symbol_sequence(hash)
-      Array.new.push(JsonSymbol.new(:"{",:object_start))
+      Array.new.push(JsonSymbol.new(:"{", :object_start))
         .push(members_to_json_symbols(hash))
-        .push(JsonSymbol.new(:"}",:object_end))
+        .push(JsonSymbol.new(:"}", :object_end))
         .flatten
     end
 
@@ -88,46 +94,83 @@ module Eson
     end
 
     def pair_to_json_symbols(json_pair)
-      value = if json_pair[1].is_a? Hash
-                get_json_symbol_sequence(json_pair[1])
-              else
-                JsonSymbol.new(json_pair[1], :JSON_value)
-              end
+      json_value = json_pair[1]
+      value = value_to_json_symbols(json_value)
       Array.new.push(JsonSymbol.new(json_pair.first, :JSON_key))
         .push(JsonSymbol.new(:":", :colon))
         .push(value)
         .flatten
     end
 
+    def value_to_json_symbols(json_value)
+      if json_value.is_a? Hash
+        get_json_symbol_sequence(json_value)
+      elsif json_value.is_a? Array
+        array_to_json_symbols(json_value)
+      else
+        JsonSymbol.new(json_value, :JSON_value)
+      end
+    end
+
+    def array_to_json_symbols(json_array)
+      seq = Array.new.push(JsonSymbol.new(:"[", :array_start))
+      unless json_array.empty?
+        seq.push(value_to_json_symbols(json_array.first))
+        unless json_array.drop(1).empty?
+          json_array.drop(1).each do |i|
+            seq.push(JsonSymbol.new(:",", :comma))
+            seq.push(value_to_json_symbols(i))
+          end
+        end
+      end
+      seq.push(JsonSymbol.new(:"]", :array_end))                     
+    end
+    
     def symbol_length(json_symbol)
       json_symbol.value.size
     end
     
-    def tokenize_json_symbols(symbol_seq)
+    def tokenize_json_symbols(symbol_seq, char_seq)
       symbol_seq.each_with_object(Array.new) do |symbol, seq|
         case symbol.name
         when :object_start
           seq.push(Token.new(:"{", :program_start))
+          pop_chars(symbol, char_seq) 
         when :object_end
           seq.push(Token.new(:"}", :program_end))
+          pop_chars(symbol, char_seq)
+        when :array_start
+          seq.push(Token.new(:"[", :array_start))
+          pop_chars(symbol, char_seq)
+        when :array_end
+          seq.push(Token.new(:"]", :array_end))
+          pop_chars(symbol, char_seq)
         when :colon
           seq.push(Token.new(:":", :colon))
+          pop_chars(symbol, char_seq) 
         when :comma
           seq.push(Token.new(:",", :comma))
+          pop_chars(symbol, char_seq) 
         when :JSON_key
-          tokenize_json_key(symbol.value, seq)
+          tokenize_json_key(symbol.value, seq, char_seq)
         when :JSON_value
-          tokenize_json_value(symbol.value, seq)
+          tokenize_json_value(symbol.value, seq, char_seq)
         end
       end
     end
 
-    def tokenize_json_key(json_key, seq)
+    def pop_chars(symbol, char_seq)
+      char_seq.slice!(0, symbol_length(symbol))
+    end
+
+    def tokenize_json_key(json_key, seq, char_seq)
       if begins_with_proc_prefix?(json_key)
         seq.push(Token.new(:"&", :proc_prefix))
-        tokenize_words_and_special_forms(get_prefixed_string(json_key), seq)
+        char_seq.slice!(0, 1)
+        tokenize_special_forms(get_prefixed_string(json_key), seq, char_seq)
       else
         seq.push(Token.new(json_key.freeze, :key_word))
+        char_seq.slice!(0, json_key.length)
       end
     end
 
@@ -139,36 +182,83 @@ module Eson
       string[1..-1]     
     end
 
-    def tokenize_json_value(json_value, seq)
+    def tokenize_special_forms(json_string, seq, char_seq)
+      special_form = match_special_form(json_string)
+      case special_form.intern
+      when :doc
+        seq.push(Token.new(json_string, :doc))
+        char_seq.slice!(0, 3)
+      when :let
+        seq.push(Token.new(json_string, :let))
+        char_seq.slice!(0, 3)
+      when :ref
+        seq.push(Token.new(json_string, :ref))
+        char_seq.slice!(0, 3)
+      when :""
+          seq.push(Token.new(json_string, :unknown_special_form))
+          char_seq.slice!(0, json_string.length)
+      end      
+    end
+
+    def match_special_form(string)
+      string.match(/\A(let|ref|doc)/).to_s.freeze
+    end
+
+    def tokenize_json_value(json_value, seq, char_seq)
       if json_value.is_a? TrueClass
         seq.push(Token.new(json_value, :true))
+        char_seq.slice!(0, json_value.to_s.size)
       elsif json_value.is_a? Numeric
         seq.push(Token.new(json_value, :number))
+        char_seq.slice!(0, json_value.to_s.size)
       elsif json_value.is_a? Array
-        seq.push(Token.new(json_value, :array))
+        tokenize_json_array(json_value, seq, char_seq)
       elsif json_value.is_a? FalseClass
         seq.push(Token.new(json_value, :false))
+        char_seq.slice!(0, json_value.to_s.size)
       elsif json_value.nil?
         seq.push(Token.new(json_value, :null))
+        char_seq.slice!(0, :null.to_s.size)
       elsif json_value.is_a? String
-        tokenize_json_string(json_value.freeze, seq)
+        tokenize_json_string(json_value.freeze, seq, char_seq)
+      elsif json_value.is_a? Hash
+        tokenize_json_hash(json_value, seq, char_seq)
       end
     end
 
-    def tokenize_json_string(json_string, seq)
+    def tokenize_json_array(json_array, seq, char_seq)
+      seq.push(Token.new(:"[", :array_start))
+      char_seq.slice!(0, 1)
+      unless json_array.empty?
+        tokenize_json_value(json_array.first, seq, char_seq)
+        unless json_array.drop(1).empty?
+          json_array.drop(1).each do |i|
+            seq.push(Token.new(:",", :comma))
+            char_seq.slice!(0, 1)
+            tokenize_json_value(i, seq, char_seq)
+          end
+        end
+      end
+      seq.push(Token.new(:"]", :array_end))
+      char_seq.slice!(0, 1)
+    end
+
+    def tokenize_json_string(json_string, seq, char_seq)
       if json_string.empty?
         seq
       elsif match_leading_whitespace_or_variable_prefix?(json_string)
-        tokenize_prefix(json_string, seq)
-        tokenize_json_string(get_prefixed_string(json_string), seq)
+        tokenize_prefix(json_string, seq, char_seq)
+        tokenize_json_string(get_prefixed_string(json_string), seq, char_seq)
       elsif match_other_chars?(json_string)
         other_chars, rest = get_other_chars_and_string(json_string)
         seq.push(Token.new(other_chars, :other_chars))
-        tokenize_json_string(rest, seq)
+        char_seq.slice!(0, other_chars.length)
+        tokenize_json_string(rest, seq, char_seq)
       else
         next_word, rest = get_next_word_and_string(json_string)
-        tokenize_words_and_special_forms(next_word, seq)
-        tokenize_json_string(rest, seq)
+        seq.push(Token.new(next_word, :word))
+        char_seq.slice!(0, next_word.length)
+        tokenize_json_string(rest, seq, char_seq)
       end
     end
 
@@ -176,12 +266,14 @@ module Eson
       string.match(/\A(\$|\s)/).to_s == "" ? false : true   
     end
 
-    def tokenize_prefix(json_string, seq)
+    def tokenize_prefix(json_string, seq, char_seq)
       case next_char(json_string).intern
       when :"$"
-        seq.push(Token.new(:"$", :variable_prefix))
+          seq.push(Token.new(:"$", :variable_prefix))
+          char_seq.slice!(0, 1)
       when :" "
-        seq.push(Token.new(:" ", :whitespace))
+          seq.push(Token.new(:" ", :whitespace))
+          char_seq.slice!(0, 1)
       end
     end
 
@@ -203,24 +295,6 @@ module Eson
       next_word = string.match(/[a-zA-Z\-_.\d]*/)
       rest_start_index = next_word.end(0)
       [next_word.to_s.freeze, string[rest_start_index..-1].freeze]
-    end
-    
-    def tokenize_words_and_special_forms(json_string, seq)
-      special_form = match_special_form(json_string)
-      case special_form.intern
-      when :doc
-        seq.push(Token.new(json_string, :doc))
-      when :let
-        seq.push(Token.new(json_string, :let))
-      when :ref
-        seq.push(Token.new(json_string, :ref)) 
-      when :""
-        seq.push(Token.new(json_string, :word))
-      end      
-    end
-
-    def match_special_form(string)
-      string.match(/\A(let|ref|doc)/).to_s.freeze
     end
   end
   

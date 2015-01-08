@@ -29,12 +29,13 @@ module Eson
   #  direct substitution*)
   #call = procedure, colon, array | null | single;
   #
-  #procedure = proc_prefix, special-form; 
+  #procedure = proc_prefix, special_form; 
   #proc_prefix = "&";
-  #special-form = let | ref | doc;
+  #special_form = let | ref | doc | unknown_special_form;
   #let = "let";
   #ref = "ref";
   #doc = "doc";
+  #unknown_special_form = {char};
   #colon = ":";
   #
   #value = variable_identifier | string | single | document | number |

@@ -29,8 +29,3 @@ describe Eson::Tokenizer do
 
 end
 
-class TokenizerTest < MiniTest::Unit::TestCase
-
-  include TestHelpers
-
-end

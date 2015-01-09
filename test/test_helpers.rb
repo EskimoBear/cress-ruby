@@ -1,3 +1,4 @@
+require_relative '../lib/eson'
 module TestHelpers
 
   extend self
@@ -8,6 +9,10 @@ module TestHelpers
 
   def get_tokenizer_eson
     load_test_inputs('tokenizer')
+  end
+
+  def get_token_sequence
+    Eson::Tokenizer.tokenize_program(get_tokenizer_eson).first
   end
   
   private

@@ -3,12 +3,12 @@ require 'minitest/pride'
 require_relative '../lib/eson.rb'
 require_relative './test_helpers.rb'
 
-class TestEsonParser <  MiniTest::Unit::TestCase
+class TestEsonParser <  MiniTest::Test
 
   include TestHelpers
   
   def setup
-    @valid_eson = get_valid_eson
+    @tokens = get_token_sequence
   end
 
   def test_asm_generated

@@ -12,7 +12,7 @@ module Eson
     #@eskimobear.specification
     #The following EBNF rules describe the eson grammar. 
     #---EBNF
-    #program = program_start, declaration, program_end, [end_of_file];
+    #program = program_start, [declaration], program_end, [end_of_file];
     #
     #declaration = pair, declaration_list;
     #declaration_list = {comma, pair};

@@ -4,13 +4,14 @@ require_relative 'eson/parser'
 
 #The following EBNF rules describe the eson grammar. 
 #---EBNF
-#program = program_start, declaration, program_end, [end_of_file];
+#program = program_start, [declaration], program_end, [end_of_file];
 #
 #program_start = "{";
 #program_end = "}";
 #end_of_file = EOF;
 #
-#declaration = pair, {comma, pair};
+#declaration = pair, declaration_list;
+#declaration_list = {comma, pair};
 #
 #pair = call | attribute;
 #comma = ",";

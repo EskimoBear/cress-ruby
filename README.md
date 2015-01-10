@@ -1,7 +1,7 @@
 eson-ruby
 =======
 
-[eson](https://github.com/EskimoBear/eson) compiler implemented in ruby.
+[eson](https://github.com/EskimoBear/eson) compiler implemented in Ruby.
 
 ##Compiling 
 To compile an eson file call the `compile` method with the file path of the eson program.

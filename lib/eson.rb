@@ -43,6 +43,9 @@ require_relative 'eson/parser'
 #other_chars = {char}; (*characters excluding those found
 #   in variable_prefix, word and whitespace*)
 #
+#array = array_start, value, array_list, array_end;
+#array_list = {comma, value}
+#
 #(*an attribute performs simultaneous variable and
 # value creation*)
 #attribute = key_word, colon, value;

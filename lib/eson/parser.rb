@@ -14,7 +14,8 @@ module Eson
     #---EBNF
     #program = program_start, declaration, program_end, [end_of_file];
     #
-    #declaration = pair, {comma, pair};
+    #declaration = pair, declaration_list;
+    #declaration_list = {comma, pair};
     #pair = call | attribute;
     #
     #(*a call is a declaration performing procedure application without
@@ -34,6 +35,9 @@ module Eson
     #
     #string = [whitespace | variable_prefix], [word | other_chars],
     #         {[whitespace | variable_prefix], [word | other_chars]};
+    #
+    #array = array_start, value, array_list, array_end;
+    #array_list = {comma, value}
     #
     #(*an attribute performs simultaneous variable and
     # value creation*)

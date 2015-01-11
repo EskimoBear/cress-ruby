@@ -27,7 +27,8 @@ module Eson
     #special_form = let | ref | doc | unknown_special_form;
     #
     #value = variable_identifier | string | single | document | number |
-    #        array | true | false | null;
+    #        array | boolean | null;
+    #boolean = true | false;
     #
     #(*a variable_identifier is a string that can be dereferenced to a value held 
     #  in the value store*)

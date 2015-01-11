@@ -31,6 +31,7 @@ require_relative 'eson/parser'
 #
 #value = variable_identifier | string | single | document | number |
 #        array | true | false | null;
+#boolean = true | false;
 #
 #(*a variable_identifier is a string that can be dereferenced to a value held 
 #  in the value store*)

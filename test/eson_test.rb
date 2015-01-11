@@ -12,8 +12,8 @@ describe Eson do
   end
 
   describe "given empty program" do
-    it ".read" do
-      Eson.read(@empty_program).must_be_nil
+    it ".compile" do
+      Eson.compile(@empty_program).must_be_nil
     end
   end
 end

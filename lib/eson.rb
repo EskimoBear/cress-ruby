@@ -66,7 +66,7 @@ module Eson
   include Vert
   extend self
 
-  def read(eson_program)
+  def compile(eson_program)
     if validation_pass(eson_program) == :empty_program
       return nil
     end

@@ -6,8 +6,8 @@ module Eson
 
     extend self
 
-    JsonSymbol = Struct.new "JsonSymbol", :value, :name
-    Token = Struct.new "Token", :value, :name
+    JsonSymbol = Struct.new "JsonSymbol", :lexeme, :type
+    Token = Struct.new "Token", :lexeme, :type
     
     #Converts an eson program into a sequence of eson tokens
     #@param eson_program [String] string provided to Eson#read
@@ -130,12 +130,12 @@ module Eson
     end
     
     def symbol_length(json_symbol)
-      json_symbol.value.size
+      json_symbol.lexeme.size
     end
     
     def tokenize_json_symbols(symbol_seq, char_seq)
       symbol_seq.each_with_object(Array.new) do |symbol, seq|
-        case symbol.name
+        case symbol.type
         when :object_start
           seq.push(Token.new(:"{", :program_start))
           pop_chars(symbol, char_seq) 
@@ -155,9 +155,9 @@ module Eson
           seq.push(Token.new(:",", :comma))
           pop_chars(symbol, char_seq) 
         when :JSON_key
-          tokenize_json_key(symbol.value, seq, char_seq)
+          tokenize_json_key(symbol.lexeme, seq, char_seq)
         when :JSON_value
-          tokenize_json_value(symbol.value, seq, char_seq)
+          tokenize_json_value(symbol.lexeme, seq, char_seq)
         end
       end
     end

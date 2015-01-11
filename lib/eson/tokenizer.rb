@@ -82,12 +82,18 @@ module Eson
     end
 
     def members_to_json_symbols(json_pairs)
-      seq = Array.new << pair_to_json_symbols(json_pairs.first)
-      rest = json_pairs.drop(1)
-      rest.each_with_object(seq) do |i, seq|
-        seq.push(JsonSymbol.new(:",", :comma))
-          .push(pair_to_json_symbols(i))
+      seq = Array.new
+      unless json_pairs.empty?
+        seq.push pair_to_json_symbols(json_pairs.first)
+        rest = json_pairs.drop(1)
+        unless rest.empty?
+          rest.each_with_object(seq) do |i, seq|
+            seq.push(JsonSymbol.new(:",", :comma))
+              .push(pair_to_json_symbols(i))
+          end
+        end
       end
+      seq
     end
 
     def pair_to_json_symbols(json_pair)

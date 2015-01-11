@@ -1,6 +1,10 @@
 {
   "&let": [
-    "var", "var1", {"&doc": null}
+    "var",
+    "var1",
+    {
+      "&doc": null
+    }
   ],
   "&ref": "#/attribute",
   "bool": true,

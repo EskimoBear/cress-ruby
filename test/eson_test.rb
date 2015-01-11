@@ -8,12 +8,12 @@ describe Eson do
   include TestHelpers
   
   before do
-    @valid_eson = get_valid_eson
+    @empty_program = get_empty_program
   end
 
-  describe "given valid eson" do
+  describe "given empty program" do
     it ".read" do
-      Eson.read(@valid_eson).must_be_nil
+      Eson.read(@empty_program).must_be_nil
     end
   end
 end

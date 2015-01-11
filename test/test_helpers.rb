@@ -7,12 +7,16 @@ module TestHelpers
     load_test_inputs('valid')
   end
 
-  def get_tokenizer_eson
-    load_test_inputs('tokenizer')
+  def get_tokenizer_sample_program
+    load_test_inputs('tokenizer_sample')
+  end
+
+  def get_empty_program
+    "{}"
   end
 
   def get_token_sequence
-    Eson::Tokenizer.tokenize_program(get_tokenizer_eson).first
+    Eson::Tokenizer.tokenize_program(get_tokenizer_sample_program).first
   end
   
   private

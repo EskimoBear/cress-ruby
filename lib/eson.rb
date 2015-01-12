@@ -59,9 +59,6 @@ require_relative 'eson/parser'
 #single = program_start, call, program_end;
 #
 #prefix = proc_prefix | variable_prefix;
-#
-#(*a document is a program that contains only attributes*)
-#document = program_start, {attribute, [comma, attribute]}, program_end, end_of_file;
 #---EBNF
 module Eson
 

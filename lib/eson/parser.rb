@@ -20,13 +20,14 @@ module Eson
     #
     #(*a call is a declaration performing procedure application without
     #  direct substitution*)
-    #call = procedure, colon, array | null | single;
+    #call = procedure, colon, call_value;
+    #call_value = array | null | single;
     #
     #procedure = proc_prefix, special_form; 
     #
     #special_form = let | ref | doc | unknown_special_form;
     #
-    #value = variable_identifier | string | single | document | number |
+    #value = variable_identifier | string | single | number |
     #        array | boolean | null;
     #boolean = true | false;
     #

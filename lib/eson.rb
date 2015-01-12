@@ -18,7 +18,8 @@ require_relative 'eson/parser'
 #
 #(*a call is a declaration performing procedure application without
 #  direct substitution*)
-#call = procedure, colon, array | null | single;
+#call = procedure, colon, call_value;
+#call_value = array | null | single;
 #
 #procedure = proc_prefix, special_form; 
 #proc_prefix = "&";
@@ -29,7 +30,7 @@ require_relative 'eson/parser'
 #unknown_special_form = {char};
 #colon = ":";
 #
-#value = variable_identifier | string | single | document | number |
+#value = variable_identifier | string | single | number |
 #        array | true | false | null;
 #boolean = true | false;
 #

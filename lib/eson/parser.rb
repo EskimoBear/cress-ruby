@@ -61,13 +61,8 @@ module Eson
       token_sequence.first
     end
 
-    def unparsed_sequence(token_sequence)
+    def rest_of_tokens(token_sequence)
       token_sequence.drop(1)
-    end
-
-    def valid_start?(token, rule)
-      rule_regex.first_regex
-      token.lexeme.to_s.match(rule_regex).nil? ? false : true
     end
 
   end

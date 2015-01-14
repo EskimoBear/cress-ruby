@@ -1,17 +1,33 @@
 module Eson
 
   module Language
+    
     extend self
 
     Terminal = Struct.new(:name, :controls)
-    Rule = Struct.new(:name, :sequence, :start_regex, :follow_regex)
     NonTerminal = Struct.new(:name, :controls)
+    
+    Rule = Struct.new(:name, :sequence, :start_regex, :follow_regex) do  
+      def valid_start?(string)
+        regex_match?(self.start_regex, string)
+      end
+      
+      def valid_follow?(string)
+        regex_match?(self.follow_regex, string)
+      end
+
+      def regex_match?(regex, string)
+        (string =~ regex).nil? ? false : true
+      end
+    end
     
     #Return the initial formal language of the compiler
     #@return L0 the initial eson language
     #@eson.specification
     # Prop : L0 is a struct of eson production rules
-    #      : production rule, a Rule struct of name and sequence
+    #      : production rule, a Rule struct of name, sequence and
+    #        regex patterns for legal tokens that can start or 
+    #        follow the rule.
     #      : name, symbol of Rule, Terminal or NonTerminal
     #      : sequence, the EBNF control for concatenation
     #          it is an array of NonTerminals and Terminals

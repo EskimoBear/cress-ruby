@@ -54,6 +54,7 @@ module Eson
     #  If next is not in p_first
     #  Throw a syntax error
     def generate_ast(token_sequence)
+      language = Eson::Language.initial
     end
 
     def lookahead(token_sequence)
@@ -62,6 +63,11 @@ module Eson
 
     def unparsed_sequence(token_sequence)
       token_sequence.drop(1)
+    end
+
+    def valid_start?(token, rule)
+      rule_regex.first_regex
+      token.lexeme.to_s.match(rule_regex).nil? ? false : true
     end
 
   end

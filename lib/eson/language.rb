@@ -4,8 +4,9 @@ module Eson
     extend self
 
     Terminal = Struct.new(:name, :controls)
-    Rule = Struct.new(:name, :sequence)
+    Rule = Struct.new(:name, :sequence, :start_regex, :follow_regex)
     NonTerminal = Struct.new(:name, :controls)
+    
     #Return the initial formal language of the compiler
     #@return L0 the initial eson language
     #@eson.specification
@@ -21,7 +22,7 @@ module Eson
     #          :option and/or :repetition. The sequence control is
     #          implicit in the ordering of Rule's sequence member.
     #
-    #The following EBNF rules describe the eson grammar, L0:
+    # The following EBNF rules describe the eson grammar, L0:
     # variable_prefix := "$";
     # word := {JSON_char}; (*letters, numbers, '-', '_', '.'*)
     # variable_identifier := variable_prefix, word;
@@ -73,7 +74,7 @@ module Eson
     # program := program_start, [declaration_list], program_end;
     def initial
       rules = {variable_identifier: variable_identifier_rule,
-               word_forms_rules: word_forms_rule,
+               word_forms: word_forms_rule,
                string: string_rule,
                boolean: boolean_rule,
                value: value_rule,
@@ -90,7 +91,9 @@ module Eson
                declaration_more: declaration_more_rule,
                declaration_list: declaration_list_rule,
                program: program_rule}
-      initial_language = Struct.new "L0", *rules.keys
+      initial_language = Struct.new "L0", *rules.keys do
+        include Operations
+      end
       initial_language.new *rules.values
     end
     
@@ -235,6 +238,12 @@ module Eson
                [Terminal[:program_start],
                 NonTerminal[:declaration_list, :option],
                 Terminal[:program_end]])
+    end
+
+    module Operations
+      def get_top_rule
+        self.members.last
+      end
     end
   end
 end

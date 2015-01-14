@@ -5,7 +5,7 @@ module Eson
 
     Terminal = Struct.new(:name, :controls)
     Rule = Struct.new(:name, :sequence)
-    NonTerminal = Struct.new(:name, :rule, :controls)
+    NonTerminal = Struct.new(:name, :controls)
     #Return the initial formal language of the compiler
     #@return L0 the initial eson language
     #@eson.specification
@@ -73,7 +73,7 @@ module Eson
     # program := program_start, [declaration_list], program_end;
     def initial
       rules = {variable_identifier: variable_identifier_rule,
-               word_form_rules: word_form_rule,
+               word_forms_rules: word_forms_rule,
                string: string_rule,
                boolean: boolean_rule,
                value: value_rule,
@@ -90,7 +90,7 @@ module Eson
                declaration_more: declaration_more_rule,
                declaration_list: declaration_list_rule,
                program: program_rule}
-      initial_language = Struct.new *rules.keys
+      initial_language = Struct.new "L0", *rules.keys
       initial_language.new *rules.values
     end
     
@@ -115,7 +115,7 @@ module Eson
     # string := {word_forms};
     def string_rule
       Rule.new(:string,
-               [NonTerminal[:word_forms, word_forms_rule, :repetition]])
+               [NonTerminal[:word_forms, :repetition]])
     end
 
     # boolean := true | false;  
@@ -129,34 +129,34 @@ module Eson
     #          null | array | single;
     def value_rule
       Rule.new(:value_rule,
-               [NonTerminal[:variable_identifier, variable_identifier_rule, :choice],
-                NonTerminal[:string, string_rule, :choice],
+               [NonTerminal[:variable_identifier, :choice],
+                NonTerminal[:string, :choice],
                 Terminal[:number, :choice],
-                NonTerminal[:boolean, boolean_rule, :choice],
+                NonTerminal[:boolean, :choice],
                 Terminal[:null, :choice],
-                NonTerminal[:array, array_rule, :choice],
-                NonTerminal[:single, single_rule, :choice]])
+                NonTerminal[:array, :choice],
+                NonTerminal[:single, :choice]])
     end
     
     # element_more := {comma, value}
     def element_more_rule
       Rule.new(:element_more,
                [Terminal[:comma, :repetition],
-                NonTerminal[:value, value_ray, :repetition]])
+                NonTerminal[:value, :repetition]])
     end
     
     # element_list := value, element_more
     def element_list_rule
       Rule.new(:element_list,
-               [NonTerminal[:value, value_rule],
-                NonTerminal[:element_more, element_more]])
+               [NonTerminal[:value],
+                NonTerminal[:element_more]])
     end
     
     # array := array_start, [element_list], array_end;
     def array_rule
       Rule.new(:array,
                [Terminal[:array_start],
-                NonTerminal[:element_list, element_list_rule, option],
+                NonTerminal[:element_list, :option],
                 Terminal[:array_end]])
     end
     
@@ -173,30 +173,30 @@ module Eson
     def procedure_rule
       Rule.new(:procedure,
                [Terminal[:proc_prefix],
-                NonTerminal[:special_form, special_form_rule]])
+                NonTerminal[:special_form]])
     end
 
     # call_value := array | null | single;
-    def call_value
+    def call_value_rule
       Rule.new(:call_value,
                [Terminal[:null, :choice],
-                NonTerminal[:array, array_rule, :choice],
-                NonTerminal[:single, single_rule, :choice]])
+                NonTerminal[:array, :choice],
+                NonTerminal[:single, :choice]])
     end
     
     # call := procedure, colon, call_value;
     def call_rule
       Rule.new(:call,
-               [NonTerminal[:procedure, procedure_rule],
+               [NonTerminal[:procedure],
                 Terminal[:colon],
-                NonTerminal[:call_value, call_value_rule]])
+                NonTerminal[:call_value]])
     end
 
     # single := program_start, call, program_end;
     def single_rule
       Rule.new(:single,
                [Terminal[:program_start],
-                NonTerminal[:call, call_rule],
+                NonTerminal[:call],
                 Terminal[:program_end]])
     end
     
@@ -205,35 +205,35 @@ module Eson
       Rule.new(:attribute,
                [Terminal[:key_word],
                 Terminal[:colon],
-                NonTerminal[:value, value_rule]])
+                NonTerminal[:value]])
     end
     
     # pair := call | attribute;
     def pair_rule
       Rule.new(:pair,
-               [NonTerminal[:call, call_rule, :choice],
-                NonTerminal[:attribute, attribute_rule, :choice]])
+               [NonTerminal[:call, :choice],
+                NonTerminal[:attribute, :choice]])
     end
     
     # declaration_more := {comma, pair};
     def declaration_more_rule
       Rule.new(:declaration_more,
                [Terminal[:comma, :repetition],
-                NonTerminal[:pair, pair_rule, :repetition]])
+                NonTerminal[:pair, :repetition]])
     end
 
     # declaration_list := pair, declaration_more;
     def declaration_list_rule
       Rule.new(:declaration_list,
-               [NonTerminal[:pair, pair_rule],
-                NonTerminal[:declaration_more, declaration_more_rule]])
+               [NonTerminal[:pair],
+                NonTerminal[:declaration_more]])
     end
     
     # program := program_start, [declaration_list], program_end;
     def program_rule
       Rule.new(:program,
                [Terminal[:program_start],
-                NonTerminal[:declaration_list, declaration_list_rule, option],
+                NonTerminal[:declaration_list, :option],
                 Terminal[:program_end]])
     end
   end

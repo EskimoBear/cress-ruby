@@ -42,7 +42,7 @@ module Eson
       program_char_seq = get_program_char_sequence(program_json_hash)
       json_symbol_seq = get_json_symbol_sequence(program_json_hash)
       token_seq = tokenize_json_symbols(json_symbol_seq, program_char_seq)
-      [token_seq, program_char_seq]
+      return token_seq, program_char_seq, LANG
     end
 
     private

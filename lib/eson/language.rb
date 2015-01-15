@@ -211,8 +211,8 @@ module Eson
       initial_language.new *rules
     end
 
-    def rule_names(rule_array)
-      rule_array.each_with_object([]) do |i, a|
+    def rule_names(rule_seq)
+      rule_seq.each_with_object([]) do |i, a|
         a.push(i.name)
       end
     end
@@ -425,17 +425,40 @@ module Eson
                [],
                all_chars_rxp)
     end
-    
+
     #@return e1 the second language of the compiler
     #@eskimobear.specification
-    #
-    # Removals
-    # ========
-    # unknown_special_form
+    #  Prop : E1 is a struct of eson production rules of E0 with
+    #         'unknown_special_form' removed  
     def e1
+      e0.remove_rules([:unknown_special_form], "E1")
     end
 
     module LanguageOperations
+
+      def to_s
+        self.members.join(", ")
+      end
+      
+      def remove_rules(rule_names, lang_name="Edefault")
+        rules_hash = self.to_h
+        rule_names.each {|i| rules_hash.delete(i)}
+        build_language(rules_hash.values, lang_name)
+      end
+
+      def build_language(rule_seq, lang_name)
+        result_lang = Struct.new lang_name, *rule_names(rule_seq) do
+          include LanguageOperations
+        end
+        result_lang.new *rule_seq
+      end
+
+      def rule_names(rule_seq)
+        rule_seq.each_with_object([]) do |i, a|
+          a.push(i.name)
+        end
+      end
+      
       def get_top_rule
         self.members.last
       end
@@ -496,5 +519,6 @@ module Eson
     end
 
     alias_method :tokenizer_lang, :e0
+    alias_method :verified_special_forms_lang , :e1
   end
 end

@@ -2,7 +2,7 @@ require_relative 'language.rb'
 
 module Eson
   
-  module Pass
+  module CompilePass
 
     extend self
 
@@ -18,7 +18,7 @@ module Eson
       error_token = token_sequence.find { |i| i.type == input_lang.unknown_special_form.name}
       raise SpecialFormError,
             build_exception_message(error_token.lexeme) unless error_token.nil?
-      return token_sequence, input_lang
+      return token_sequence, Eson::Language.verified_special_forms_lang
     end
 
     def build_exception_message(lexeme)

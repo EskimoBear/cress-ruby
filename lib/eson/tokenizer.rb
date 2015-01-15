@@ -1,4 +1,5 @@
 require 'oj'
+require_relative 'language'
 
 module Eson
 
@@ -8,35 +9,14 @@ module Eson
 
     JsonSymbol = Struct.new "JsonSymbol", :lexeme, :type
     Token = Struct.new "Token", :lexeme, :type
+
+    LANG = Language.tokenizer_lang
     
     #Converts an eson program into a sequence of eson tokens
     #@param eson_program [String] string provided to Eson#read
     #@return [Array<Array>] A pair of token sequence and the input char sequence
     #@eskimobear.specification
     # Eson token set, ET is a set of the eson terminal symbols defined below
-    # ---EBNF
-    # program_start = "{";
-    # program_end = "}";
-    # array_start = "[";
-    # array_end = "]";
-    # end_of_file = EOF;
-    # comma = ",";
-    # colon = ":";
-    # proc_prefix = "&";
-    # variable_prefix = "$";
-    # key_word = {JSON_char};
-    # word = {JSON_char}; 
-    # other_chars = {JSON_char};
-    # whitespace = " ";
-    # number = JSON_number;
-    # true = JSON_true;
-    # false = JSON_false;
-    # null = JSON_null;
-    # let = "let";
-    # ref = "ref";
-    # doc = "doc";
-    # unknown_special_form = {JSON_char};
-    # ---EBNF
     # Eson token, et is a sequence of characters existing in ET
     # label(et) maps the character sequence to the name of the matching
     #   eson terminal symbol
@@ -69,8 +49,8 @@ module Eson
 
     def get_program_char_sequence(hash)
       seq = Array.new
-      clean_string = Oj.dump(hash)
-      clean_string.each_char {|c| seq << c}
+      compact_string = Oj.dump(hash)
+      compact_string.each_char {|c| seq << c}
       seq.reject{|i| i.match(/"/)}
     end
 
@@ -204,7 +184,8 @@ module Eson
     end
 
     def match_special_form(string)
-      string.match(/\A(let|ref|doc)/).to_s.freeze
+      rxp = LANG.make_alternation([:let, :ref, :doc])
+      string.match(rxp).to_s.freeze
     end
 
     def tokenize_json_value(json_value, seq, char_seq)
@@ -247,7 +228,8 @@ module Eson
     end
 
     def match_leading_whitespace_or_variable_prefix?(string)
-      string.match(/\A(\$|\s)/).to_s == "" ? false : true   
+      rxp = LANG.make_alternation([:whitespace, :variable_prefix])
+      string.match(rxp).to_s == "" ? false : true
     end
 
     def tokenize_prefix(json_string, seq, char_seq)
@@ -262,11 +244,11 @@ module Eson
     end
 
     def match_other_chars?(string)
-      string.match(/\A[\W]*/).to_s == "" ? false : true
+      LANG.other_chars.match_rxp?(string)
     end
 
     def get_other_chars_and_string(string)
-      other_chars = string.match(/\A[\W]*/)
+      other_chars = LANG.other_chars.match(string)
       rest_start_index = other_chars.end(0)
       [other_chars.to_s.freeze, string[rest_start_index..-1].freeze]
     end
@@ -276,7 +258,7 @@ module Eson
     end
 
     def get_next_word_and_string(string)
-      next_word = string.match(/[a-zA-Z\-_.\d]*/)
+      next_word = LANG.word.match(string)
       rest_start_index = next_word.end(0)
       [next_word.to_s.freeze, string[rest_start_index..-1].freeze]
     end

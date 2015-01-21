@@ -23,6 +23,9 @@ describe Eson::Tokenizer do
       valid_token_seq_length = @token_sequence.select{|i| i.class == Struct::Token}.length
       (token_seq_length == valid_token_seq_length).must_equal true
     end
+    it "is a TokenSeq" do
+      assert @token_sequence.instance_of? Eson::Tokenizer::TokenSeq
+    end
   end
   
   describe "empty eson program" do

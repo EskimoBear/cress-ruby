@@ -19,6 +19,10 @@ module TestHelpers
     "{}"
   end
 
+  def get_invalid_program
+    "{\"invalid\": (}"
+  end
+
   def get_token_sequence
     Eson::Tokenizer.tokenize_program(get_tokenizer_sample_program).first
   end

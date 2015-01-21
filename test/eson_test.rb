@@ -11,6 +11,7 @@ describe Eson do
     @empty_program = get_empty_program
     @unknown_special_form_program = get_unknown_special_form_program
     @invalid_program = get_invalid_program
+    @valid_program = get_tokenizer_sample_program
   end
 
   describe "empty program" do
@@ -31,8 +32,12 @@ describe Eson do
     end
   end
 
-  describe "program with variable identifiers" do
-
+  describe "valid_program" do
+    it ".compile" do
+      result = Eson.compile(@valid_program)
+      result.must_be_instance_of Eson::Tokenizer::TokenSeq
+      result.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
+    end
   end
 end
 

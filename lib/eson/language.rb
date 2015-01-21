@@ -1,83 +1,5 @@
 module Eson
 
-  #Return the second formal language of the compiler
-  #@return L1 the second pass eson language
-  #@eskimobear.specification
-  # Prop : L1 is a struct of eson production rules
-  #      : production rule, a Rule struct of name, sequence and
-  #        regex patterns for legal tokens that can start or 
-  #        follow the rule.
-  #      : name, symbol of Rule, Terminal or NonTerminal
-  #      : sequence, the EBNF control for concatenation
-  #          it is an array of NonTerminals and Terminals
-  #      : Terminals are structs with type and operation
-  #      : NonTerminals are structs with type, rule and operation
-  #      : controls is the set of EBNF controls applied to a
-  #          Terminal or NonTerminal. Consisting of :choice,
-  #          :option and/or :repetition. The sequence control is
-  #          implicit in the ordering of Rule's sequence member.
-  #
-  # The following EBNF rules describe the eson grammar, L1:
-  #
-  # Additions
-  # =========
-  # variable_identifier is now a terminal
-  # char_list is now a terminal
-  # string_boundary := "\""
-  # string := string_boundary, {char_list | variable_identifier}, string_boundary
-  #
-  # Original
-  # ========
-  # The following EBNF rules describe the eson grammar, L0:
-  # variable_prefix := "$";
-  # word := {JSON_char}; (*letters, numbers, '-', '_', '.'*)
-  # variable_identifier := variable_prefix, word;
-  #
-  # whitespace := " ";
-  # other_chars := {JSON_char}; (*characters excluding those found
-  #   in variable_prefix, word and whitespace*)
-  # word_forms := whitespace | variable_identifier | word | other_chars;
-  # string := {word_forms};
-  #
-  # true := "true";
-  # false := "false";
-  # boolean := true | false;
-  #
-  # number := JSON_number;
-  # null := JSON_null;
-  # value := variable_identifier | string | number | boolean |
-  #          null | array | single;
-  #
-  # array_start := "[";
-  # array_end := "]";
-  # comma := ",";
-  # element_more := {comma, value}
-  # element_list := value, element_more    
-  # array := array_start, [element_list], array_end;
-  #
-  # let := "let";
-  # ref := "ref";
-  # doc := "doc";
-  # unknown_special_form := {JSON_char};
-  # proc_prefix := "&";
-  # special_form := let | ref | doc | unknown_special_form;
-  # procedure := proc_prefix, special_form;
-  #
-  # colon := ":";
-  # call_value := array | null | single;
-  # call := procedure, colon, call_value;
-  #
-  # program_start := "{";
-  # program_end := "}";
-  # single := program_start, call, program_end;
-  #
-  # key_word := {JSON_char}; (*all characters excluding proc_prefix*)
-  # attribute := key_word, colon, value;
-  #
-  # pair := call | attribute;
-  # declaration_more := {comma, pair};
-  # declaration_list := pair, declaration_more;
-  # program := program_start, [declaration_list], program_end;
   module Language
     
     extend self
@@ -428,10 +350,19 @@ module Eson
 
     #@return e1 the second language of the compiler
     #@eskimobear.specification
-    #  Prop : E1 is a struct of eson production rules of E0 with
-    #         'unknown_special_form' removed  
+    #  Prop : E1 is a struct of eson production rules of
+    #         E0 with 'unknown_special_form' removed  
     def e1
       e0.remove_rules([:unknown_special_form], "E1")
+    end
+
+    #@return e2 the third language of the compiler
+    #@eskimobear.specification
+    #  Prop : E2 is a struct of eson production rules of
+    #         E1 with 'variable_prefix' and 'word' combined
+    #         into 'variable_identifier'
+    def e2
+      e1.combine_rules([:variable_prefix, :word], :variable_identifier, "E2")
     end
 
     module LanguageOperations

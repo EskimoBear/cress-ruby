@@ -17,8 +17,8 @@ module Eson
   def compile(eson_program)
     if validate_json?(eson_program)
       tokenizer_output = Tokenizer.tokenize_program(eson_program)
-      verified = CompilePass.verify_special_forms(tokenizer_output.first, tokenizer_output[2])
-      CompilePass.tokenize_variable_identifiers(verified)
+      verified_special_forms = CompilePass.verify_special_forms(tokenizer_output.first)
+      variables = verified_special_forms.tokenize_variable_identifiers
     else
       validation_pass(eson_program)
     end

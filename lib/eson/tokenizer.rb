@@ -1,4 +1,5 @@
 require 'oj'
+require 'pry'
 require_relative 'language'
 
 module Eson
@@ -7,9 +8,97 @@ module Eson
 
     extend self
 
-    JsonSymbol = Struct.new "JsonSymbol", :lexeme, :type
-    Token = Struct.new "Token", :lexeme, :type
+    JsonSymbol = Struct.new "JsonSymbol", :lexeme, :name
+    
+    Token = Struct.new "Token", :lexeme, :name
 
+    class TokenSeq < Array
+
+      #Replace token pairs of variable prefix and word with variable_identifier
+      #@param [Array<Eson::Tokenizer::Token>] A sequence of tokens for E1
+      #@return [Array<Eson::Tokenizer::Token>] A sequence of tokens for E2 
+      #@eskimobear.specification
+      # Input token sequence, T
+      # Output token sequence, O
+      # Token pair, m
+      # Sequence ending in m, M
+      # Single token for token pair, mt
+      # Init : length(T) < 0
+      #        length(O) = 0
+      # Next : T' = T - M
+      #        O' = O + M - m + mt AND mt = combine(m)
+      # Final : length(T) = 0
+      def tokenize_variable_identifiers
+        pair = [Eson::Language.e1.variable_prefix.name, Eson::Language.e1.word.name]
+        return recur_scan(pair, self.clone, Eson::Tokenizer::TokenSeq.new)
+      end
+
+      def recur_scan(pattern_seq, token_sequence, output_sequence)
+        if token_sequence.seq_match?(*pattern_seq)
+          sub_seq = token_sequence.take_while_seq(*pattern_seq)
+          rest = token_sequence.drop(sub_seq.length)
+          new_token = reduce_tokens(:variable_identifier, *sub_seq.last(pattern_seq.length))
+          output_sequence.push(sub_seq.swap_tail(pattern_seq.length, new_token))
+          #binding.pry
+          recur_scan(pattern_seq, rest, output_sequence)
+        else
+          output_sequence.push(token_sequence).flatten
+        end
+      end
+
+      def reduce_tokens(new_name, *tokens)
+        combined_lexeme = tokens.each_with_object("") do |i, string|
+          string.concat(i.lexeme.to_s)
+        end
+        Token[combined_lexeme, new_name]
+      end
+
+      #@return [Eson::Tokenizer::TokenSeq, nil]the first sequence ending with given token names
+      def take_while_seq(*token_names)
+        if seq_match?(*token_names)
+          detect_seq(*token_names)
+        else
+          nil
+        end
+      end
+
+      def seq_match?(*token_names)
+        detect_seq(*token_names) ? true : false
+      end
+      
+      def detect_seq(*token_names)
+        size = token_names.length
+        indices = token_names.each_with_object([]) do |i, array|
+          if array.empty?
+            match = self.find_index { |j| j.name == i }
+            array.push(match) unless match.nil?
+          else
+            offset = array.last + 1
+            match = self.drop(offset).find_index { |j| j.name == i }
+            array.push(match + offset) unless match.nil?
+          end
+        end
+        if indices.length == size && consecutive_ints?(indices)
+          self.take(indices.last + 1)
+        else
+          nil
+        end
+      end
+         
+      def swap_tail(tail_length, new_tail)
+        self.pop(tail_length)
+        self.push(new_tail).flatten
+      end
+    
+      def consecutive_ints?(int_seq)
+        acc = Array.new
+        int_seq.each_with_index do |item, index|
+          acc.push(item.eql?( int_seq.first + index))
+        end
+        acc.empty? ? false : acc.all?
+      end
+    end
+    
     LANG = Language.tokenizer_lang
     
     #Converts an eson program into a sequence of eson tokens
@@ -42,7 +131,7 @@ module Eson
       program_char_seq = get_program_char_sequence(program_json_hash)
       json_symbol_seq = get_json_symbol_sequence(program_json_hash)
       token_seq = tokenize_json_symbols(json_symbol_seq, program_char_seq)
-      return token_seq, program_char_seq, LANG
+      return token_seq, program_char_seq
     end
 
     private
@@ -114,8 +203,8 @@ module Eson
     end
     
     def tokenize_json_symbols(symbol_seq, char_seq)
-      symbol_seq.each_with_object(Array.new) do |symbol, seq|
-        case symbol.type
+      symbol_seq.each_with_object(TokenSeq.new) do |symbol, seq|
+        case symbol.name
         when :object_start
           seq.push(Token.new(:"{", :program_start))
           pop_chars(symbol, char_seq) 

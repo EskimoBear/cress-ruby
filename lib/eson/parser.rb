@@ -1,56 +1,15 @@
+require_relative 'language.rb'
 module Eson
   
   module Parser
 
+    extend Eson::Language
     extend self
 
     #Parse tokens into abstract syntax tree
-    #
-    #Returns an array of syntax structs [[declaration, type]]
     #@param token_sequence [Array] the eson token sequence
-    #@return [Hash] abstract syntax tree
+    #@return [AbstractSyntaxTree] AbstractSyntaxTree of token sequence
     #@eskimobear.specification
-    #The following EBNF rules describe the eson grammar. 
-    #---EBNF
-    #program = program_start, [declaration], program_end, [end_of_file];
-    #
-    #declaration = pair, declaration_list;
-    #declaration_list = {comma, pair};
-    #pair = call | attribute;
-    #
-    #(*a call is a declaration performing procedure application without
-    #  direct substitution*)
-    #call = procedure, colon, call_value;
-    #call_value = array | null | single;
-    #
-    #procedure = proc_prefix, special_form; 
-    #
-    #special_form = let | ref | doc | unknown_special_form;
-    #
-    #value = variable_identifier | string | single | number |
-    #        array | boolean | null;
-    #boolean = true | false;
-    #
-    #(*a variable_identifier is a string that can be dereferenced to a value held 
-    #  in the value store*)
-    #variable_identifier = variable_prefix, word;
-    #
-    #string = [whitespace | variable_prefix], [word | other_chars],
-    #         {[whitespace | variable_prefix], [word | other_chars]};
-    #
-    #array = array_start, value, array_list, array_end;
-    #array_list = {comma, value}
-    #
-    #(*an attribute performs simultaneous variable and
-    # value creation*)
-    #attribute = key_word, colon, value;
-    #key_word = {char} (*all characters excluding proc_prefix*)
-    #
-    #(*a single is a program allowing
-    # procedure application and substitution*)
-    #single = program_start, call, program_end;
-    #---EBNF
-    #
     # T, is the token sequence
     # et, is a token in T
     # U, is the unparsed token sequence
@@ -69,7 +28,7 @@ module Eson
     #        
     # Next : U' = U - et
     #      : A' = A + tree_insert(p), when et=r0
-    #      : A' = A + tree_insert(et) otherwise
+    #        OR A' = A + tree_insert(et) otherwise
     #
     #  Call top production rule parser with U
     #  Inspect next
@@ -95,6 +54,15 @@ module Eson
     #  If next is not in p_first
     #  Throw a syntax error
     def generate_ast(token_sequence)
+      language = Eson::Language.initial
+    end
+
+    def lookahead(token_sequence)
+      token_sequence.first
+    end
+
+    def rest_of_tokens(token_sequence)
+      token_sequence.drop(1)
     end
 
   end

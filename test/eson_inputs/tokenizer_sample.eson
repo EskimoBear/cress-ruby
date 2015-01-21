@@ -9,7 +9,7 @@
   "&ref": "#/attribute",
   "bool": true,
   "attribute": 87,
-  "variable": "The value 87 is held in $attribute(refers to attribute)",
+  "variable": "The value 87 is held in   $attribute(refers to attribute)",
   "procedure application": {
     "&ref": "#/attribute"
   }

@@ -7,12 +7,20 @@ module TestHelpers
     load_test_inputs('valid')
   end
 
+  def get_unknown_special_form_program
+    load_test_inputs('unknown_special_form')
+  end
+
   def get_tokenizer_sample_program
     load_test_inputs('tokenizer_sample')
   end
 
   def get_empty_program
     "{}"
+  end
+
+  def get_invalid_program
+    "{\"invalid\": (}"
   end
 
   def get_token_sequence

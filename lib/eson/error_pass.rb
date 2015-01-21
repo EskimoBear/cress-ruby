@@ -2,7 +2,7 @@ require_relative 'language.rb'
 
 module Eson
   
-  module CompilePass
+  module ErrorPass
 
     extend self
 

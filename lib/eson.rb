@@ -1,7 +1,7 @@
 require 'vert'
 require_relative 'eson/tokenizer'
 require_relative 'eson/language'
-require_relative 'eson/compile_pass'
+require_relative 'eson/error_pass'
 
 module Eson
 
@@ -17,7 +17,7 @@ module Eson
   def compile(eson_program)
     if validate_json?(eson_program)
       tokenizer_output = Tokenizer.tokenize_program(eson_program)
-      verified_special_forms = CompilePass.verify_special_forms(tokenizer_output.first)
+      verified_special_forms = ErrorPass.verify_special_forms(tokenizer_output.first)
       variables = verified_special_forms.tokenize_variable_identifiers
     else
       validation_pass(eson_program)

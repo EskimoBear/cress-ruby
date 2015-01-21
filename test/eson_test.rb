@@ -28,7 +28,7 @@ describe Eson do
 
   describe "program with unknown special forms" do
     it ".compile" do
-      proc {Eson.compile(@unknown_special_form_program)}.must_raise Eson::CompilePass::SpecialFormError 
+      proc {Eson.compile(@unknown_special_form_program)}.must_raise Eson::ErrorPass::SpecialFormError 
     end
   end
 

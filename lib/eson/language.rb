@@ -272,7 +272,8 @@ module Eson
     # colon := ":";
     # program_start := "{";
     # program_end := "}";
-    # key_word := {JSON_char}; (*all characters excluding proc_prefix*)
+    # key_string := {JSON_char}; (*all characters excluding proc_prefix*)
+    # special_form := let | ref | doc;
     def e0
       rules = [variable_prefix_rule,
                word_rule,
@@ -292,7 +293,7 @@ module Eson
                colon_rule,
                program_start_rule,
                program_end_rule,
-               key_word_rule]
+               key_string_rule]
       e0_rules = Eson::Language::RuleSeq.new(rules)
       e0_rules.make_alternation_rule(:special_form, [:let, :ref, :doc])
       e0_rules.build_language("E0")
@@ -506,9 +507,9 @@ module Eson
       /\}/
     end
     
-    # key_word := {JSON_char}; (*all characters excluding proc_prefix*)
-    def key_word_rule
-      Rule.new(:key_word,
+    # key_string := {JSON_char}; (*all characters excluding proc_prefix*)
+    def key_string_rule
+      Rule.new(:key_string,
                [],
                all_chars_rxp)
     end
@@ -540,71 +541,7 @@ module Eson
 
       def to_s
         "#{self.class} has rules: ".concat(self.members.join(", "))
-      end
-      
-      def rule_names(rule_seq)
-        rule_seq.each_with_object([]) do |i, a|
-          a.push(i.name)
-        end
-      end
-            
-      def get_top_rule
-        self.members.last
-      end
-
-      def make_alternation(rule_array)
-        if valid_rules?(rule_array)
-          rxp_strings = get_rxp_sources(rule_array)
-          initial = rxp_strings.first
-          rest = rxp_strings.drop(1)
-          combination = rest.reduce(initial) do |memo, i|
-            memo.concat("|").concat(i)
-          end
-          apply_at_start(combination)
-        else
-          nil #TODO throw an exception or catch TypeError exception higher up
-        end
-      end
-
-      def valid_rules?(rule_array)
-        rule_array.all?{ |i| valid_rule? i }
-      end
-
-      def valid_rule?(rule_name) 
-        if rule_name.is_a? String
-          self.members.include? rule_name.intern
-        elsif rule_name.is_a? Symbol
-          self.members.include? rule_name
-        else
-          false
-        end
-      end
-
-      def get_rxp_sources(rule_array)
-        rule_array.map do |i|
-          self.send(i).start_rxp.source
-        end
-      end
-      
-      def apply_at_start(rxp_string)
-        /\A(#{rxp_string})/
-      end
-
-      #Automatically generate the start_regex for a rule
-      #@return [Regexp] the regexp that matches valid start strings
-      #                 for this rule
-      #@eskimobear.specification
-      #inspect self.sequence
-      #substitute all NonTerminals with their Terminals
-      #construct regex by applying :control to Terminal :regexp
-      #
-      #when :sequence has all Terminals and all nil :control
-      #  :start_regex -> :sequence.first.regex
-      #
-      #when :sequence has all Terminals and all :choice
-      #  :start_regex -> :sequence.each.regex.source |
-      def get_start_regex
-      end
+      end              
     end
 
     alias_method :tokenizer_lang, :e0

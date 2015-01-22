@@ -241,7 +241,7 @@ module Eson
         char_seq.slice!(0, 1)
         tokenize_special_forms(get_prefixed_string(json_key), seq, char_seq)
       else
-        seq.push(Token.new(json_key.freeze, :key_word))
+        seq.push(Token.new(json_key.freeze, :key_string))
         char_seq.slice!(0, json_key.length)
       end
     end
@@ -312,7 +312,7 @@ module Eson
     end
 
     def match_leading_whitespace_or_variable_prefix?(string)
-      rxp = LANG.make_alternation([:whitespace, :variable_prefix])
+      rxp = /#{LANG.whitespace.rxp.source}|#{LANG.variable_prefix.rxp.source}/
       string.match(rxp).to_s == "" ? false : true
     end
 

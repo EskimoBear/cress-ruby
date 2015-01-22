@@ -12,7 +12,6 @@ describe Eson::Language do
       Eson::Language.must_respond_to :tokenizer_lang
     end
     it "should contain built rules" do
-      puts Eson::Language.e0.rule_seq.get_rule(:special_form)
       Eson::Language.e0.values.detect{|i| i.name == :special_form}.wont_be_nil
     end
   end

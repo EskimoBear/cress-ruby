@@ -4,10 +4,6 @@ module Eson
     
     extend self
 
-    RuleSeqItemError = Class.new(StandardError)
-
-    ITEM_ERROR_MESSAGE = "One or more of the sequence elements are not of the type Eson::Language::Rule"
-
     #EBNF terminal representation
     #@eskimobear.specification
     # Prop : Terminals have a :rule_name and :control.
@@ -42,6 +38,8 @@ module Eson
     #        terminal it is the empty array. 
     Rule = Struct.new(:name, :sequence, :start_rxp, :follow_rxp,) do
 
+      ControlError = Class.new(StandardError)
+        
       def match(string)
         string.match(self.rxp)
       end
@@ -58,6 +56,14 @@ module Eson
         regex_match?(self.rxp, string)
       end
 
+      def match_start(string)
+        if self.nonterminal?
+          string.match(self.start_rxp)
+        else
+          nil
+        end
+      end
+
       def regex_match?(regex, string)
         #does not catch zero or more matches that return "", the empty string
         (string =~ apply_at_start(regex)).nil? ? false : true
@@ -69,6 +75,29 @@ module Eson
         
       def nonterminal?
         !terminal?
+      end
+
+      def rule_symbol(control=:none, nullable=false)
+        unless valid_control?(control)
+          raise ControlError, wrong_control_option_error_message(control)
+        end
+        if terminal?
+          Terminal[self.name, control]
+        else
+          NonTerminal[self.name, control, nullable]
+        end
+      end
+
+      def valid_control?(control)
+        control_options.include? control
+      end
+
+      def control_options
+        [:choice, :repetition, :option, :none]
+      end
+
+      def wrong_control_option_error_message(control)
+        "#{control} is not a valid control option. Try one of the following #{control_options.join(", ")}"
       end
 
       def valid_start?(string)
@@ -86,12 +115,18 @@ module Eson
 
     class RuleSeq < Array
 
+      ItemError = Class.new(StandardError)
+      
       def self.new(obj)
         array = super
         unless self.all_rules?(array)
-          raise RuleSeqItemError, ITEM_ERROR_MESSAGE
+          raise ItemError, self.new_item_error_message
         end
         array
+      end
+
+      def self.new_item_error_message
+        "One or more of the given array elements are not of the type Eson::Language::Rule"
       end
 
       def combine_rules(rule_names, new_rule_name)
@@ -104,6 +139,26 @@ module Eson
         end
       end
 
+      def make_alternation_rule(new_rule_name, rule_names)      
+        unless include_rules?(rule_names)
+          raise ItemError, missing_items_error_message(rule_names)
+        end
+        self.push(Rule.new(new_rule_name,
+                           rule_symbol_concatenation(rule_names),
+                           self.make_alternation_rxp(rule_names)))
+      end
+
+      def missing_items_error_message(rule_names)
+        names = rule_names.map{|i| ":".concat(i.to_s)}
+        "One or more of the following Eson::Language::Rule.name's are not present in the sequence: #{names.join(", ")}."
+      end
+      
+      def rule_symbol_concatenation(rule_names)
+       rule_names.map do |i|
+          get_rule(i).rule_symbol
+        end
+      end
+
       def make_concatenation_rxp(rule_names)
         if include_rules?(rule_names)
           rxp_strings = get_rxp_sources(rule_names)
@@ -113,6 +168,20 @@ module Eson
           apply_at_start(combination)
         else
           nil
+        end
+      end
+
+      def make_alternation_rxp(rule_names)
+        if include_rules?(rule_names)
+          rxp_strings = get_rxp_sources(rule_names)
+          initial = rxp_strings.first
+          rest = rxp_strings.drop(1)
+          combination = rest.reduce(initial) do |memo, i|
+            memo.concat("|").concat(i)
+          end
+          apply_at_start(combination)
+        else
+          nil #TODO throw an exception or catch TypeError exception higher up
         end
       end
 
@@ -134,9 +203,20 @@ module Eson
         self.map{|i| i.name}
       end
 
+      def get_rule(rule_name)
+        unless include_rule?(rule_name)
+          raise ItemError, missing_item_error_message(rule_name)
+        end
+        self.find{|i| i.name == rule_name}
+      end
+
+      def missing_item_error_message(rule_name)
+        "The Eson::Language::Rule.name ':#{rule_name}' is not present in the sequence."
+      end
+
       def get_rxp_sources(rule_array)
         rule_array.map do |i|
-          self.find{|j| j.name == i}.start_rxp.source
+          get_rule(i).start_rxp.source
         end
       end
       
@@ -213,7 +293,9 @@ module Eson
                program_start_rule,
                program_end_rule,
                key_word_rule]
-      Eson::Language::RuleSeq.new(rules).build_language("E0")
+      e0_rules = Eson::Language::RuleSeq.new(rules)
+      e0_rules.make_alternation_rule(:special_form, [:let, :ref, :doc])
+      e0_rules.build_language("E0")
     end
 
     def rule_names(rule_seq)

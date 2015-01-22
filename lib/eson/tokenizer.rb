@@ -255,8 +255,8 @@ module Eson
     end
 
     def tokenize_special_forms(json_string, seq, char_seq)
-      special_form = match_special_form(json_string)
-      case special_form.intern
+      special_form = LANG.special_form.match_start(json_string).to_s.intern
+      case special_form
       when :doc
         seq.push(Token.new(json_string, :doc))
         char_seq.slice!(0, 3)
@@ -270,11 +270,6 @@ module Eson
           seq.push(Token.new(json_string, :unknown_special_form))
           char_seq.slice!(0, json_string.length)
       end      
-    end
-
-    def match_special_form(string)
-      rxp = LANG.make_alternation([:let, :ref, :doc])
-      string.match(rxp).to_s.freeze
     end
 
     def tokenize_json_value(json_value, seq, char_seq)

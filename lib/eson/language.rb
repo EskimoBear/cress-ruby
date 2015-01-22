@@ -4,6 +4,10 @@ module Eson
     
     extend self
 
+    RuleSeqItemError = Class.new(StandardError)
+
+    ITEM_ERROR_MESSAGE = "One or more of the sequence elements are not of the type Eson::Language::Rule"
+
     #EBNF terminal representation
     #@eskimobear.specification
     # Prop : Terminals have a :rule_name and :control.
@@ -79,6 +83,88 @@ module Eson
         /\A#{regex.source}/
       end
     end    
+
+    class RuleSeq < Array
+
+      def self.new(obj)
+        array = super
+        unless self.all_rules?(array)
+          raise RuleSeqItemError, ITEM_ERROR_MESSAGE
+        end
+        array
+      end
+
+      def combine_rules(rule_names, new_rule_name)
+        if include_rules?(rule_names)
+          self.push(Rule.new(new_rule_name,
+                             [],
+                             make_concatenation_rxp(rule_names)))
+        else
+          nil
+        end
+      end
+
+      def make_concatenation_rxp(rule_names)
+        if include_rules?(rule_names)
+          rxp_strings = get_rxp_sources(rule_names)
+          combination = rxp_strings.reduce("") do |memo, i|
+            memo.concat(i)
+          end
+          apply_at_start(combination)
+        else
+          nil
+        end
+      end
+
+      def include_rules?(rule_names)
+        rule_names.all?{ |i| include_rule? i }
+      end
+
+      def include_rule?(rule_name)
+        if rule_name.is_a? String
+          names.include? rule_name.intern
+        elsif rule_name.is_a? Symbol
+          names.include? rule_name
+        else
+          false
+        end
+      end
+
+      def names
+        self.map{|i| i.name}
+      end
+
+      def get_rxp_sources(rule_array)
+        rule_array.map do |i|
+          self.find{|j| j.name == i}.start_rxp.source
+        end
+      end
+      
+      def apply_at_start(rxp_string)
+        /\A(#{rxp_string})/
+      end
+
+      def remove_rules(rule_names)
+        if include_rules?(rule_names)
+          initialize(self.reject{|i| rule_names.include?(i.name)})
+        else
+          nil
+        end
+      end
+
+      def build_language(lang_name)
+        result_lang = Struct.new lang_name, *names do
+          include LanguageOperations
+        end
+        result_lang.new *self
+      end
+            
+      protected
+      
+      def self.all_rules?(sequence)
+        sequence.all? {|i| i.class == Eson::Language::Rule }
+      end
+    end
     
     #eson formal language with tokens only
     #@return [E0] the initial compiler language used by Tokenizer
@@ -127,10 +213,7 @@ module Eson
                program_start_rule,
                program_end_rule,
                key_word_rule]
-      initial_language = Struct.new "E0", *rule_names(rules) do
-        include LanguageOperations
-      end
-      initial_language.new *rules
+      Eson::Language::RuleSeq.new(rules).build_language("E0")
     end
 
     def rule_names(rule_seq)
@@ -353,7 +436,7 @@ module Eson
     #  Prop : E1 is a struct of eson production rules of
     #         E0 with 'unknown_special_form' removed  
     def e1
-      e0.remove_rules([:unknown_special_form], "E1")
+      e0.rule_seq.remove_rules([:unknown_special_form]).build_language("E1")
     end
 
     #@return e2 the third language of the compiler
@@ -362,34 +445,27 @@ module Eson
     #         E1 with 'variable_prefix' and 'word' combined
     #         into 'variable_identifier'
     def e2
-      e1.combine_rules([:variable_prefix, :word], :variable_identifier, "E2")
+      e1.rule_seq.combine_rules([:variable_prefix, :word], :variable_identifier)
+        .remove_rules([:variable_prefix])
+        .build_language("E2")
     end
 
     module LanguageOperations
 
+      def rule_seq
+        Eson::Language::RuleSeq.new self.values
+      end
+
       def to_s
-        self.members.join(", ")
+        "#{self.class} has rules: ".concat(self.members.join(", "))
       end
       
-      def remove_rules(rule_names, lang_name="Edefault")
-        rules_hash = self.to_h
-        rule_names.each {|i| rules_hash.delete(i)}
-        build_language(rules_hash.values, lang_name)
-      end
-
-      def build_language(rule_seq, lang_name)
-        result_lang = Struct.new lang_name, *rule_names(rule_seq) do
-          include LanguageOperations
-        end
-        result_lang.new *rule_seq
-      end
-
       def rule_names(rule_seq)
         rule_seq.each_with_object([]) do |i, a|
           a.push(i.name)
         end
       end
-      
+            
       def get_top_rule
         self.members.last
       end

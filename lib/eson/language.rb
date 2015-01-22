@@ -4,118 +4,118 @@ module Eson
     
     extend self
 
-    #EBNF terminal representation
-    #@eskimobear.specification
-    # Prop : Terminals have a :rule_name and :control.
-    #      : :rule_name is the Rule.name of the matching production
-    #        rule for a terminal.
-    #      : :control is the set of EBNF controls applied to a
-    #          Terminal or NonTerminal consisting of :choice,
-    #          :option and/or :repetition.
-    Terminal = Struct.new(:rule_name, :control)
-
-    #EBNF non-terminal representation
-    #@eskimobear.specification
-    # Prop : NonTerminals have a :rule_name and :control
-    #      : :rule_name is the Rule.name of the matching production
-    #        rule for a non-terminal.
-    #      : :control is the set of EBNF controls applied to a
-    #          Terminal or NonTerminal. Consisting of :choice,
-    #          :option and/or :repetition.
-    #      : :nullable is a boolean, true when the non-terminal is
-    #         nullable
-    NonTerminal = Struct.new(:rule_name, :control, :nullable)
-
-    #EBNF production rule representation
-    #@eskimobear.specification
-    # Prop : Rule has a :name, :sequence and
-    #        regex patterns for legal tokens that can start or 
-    #        follow the rule.
-    #      : :sequence is the EBNF control for concatenation. It is
-    #        an array and concatenaton is implicit in the ordering of 
-    #        When Rule represents a non-terminal it is an array of
-    #        NonTerminals and Terminals. When Rule represents a
-    #        terminal it is the empty array. 
-    Rule = Struct.new(:name, :sequence, :start_rxp, :follow_rxp,) do
-
-      ControlError = Class.new(StandardError)
-        
-      def match(string)
-        string.match(self.rxp)
-      end
-
-      def rxp
-        if self.terminal?
-          apply_at_start(self.start_rxp)
-        else
-          nil
-        end
-      end
-      
-      def match_rxp?(string)
-        regex_match?(self.rxp, string)
-      end
-
-      def match_start(string)
-        if self.nonterminal?
-          string.match(self.start_rxp)
-        else
-          nil
-        end
-      end
-
-      def regex_match?(regex, string)
-        #does not catch zero or more matches that return "", the empty string
-        (string =~ apply_at_start(regex)).nil? ? false : true
-      end      
-
-      def terminal?
-        self.sequence.empty?
-      end
-        
-      def nonterminal?
-        !terminal?
-      end
-
-      def rule_symbol(control=:none, nullable=false)
-        unless valid_control?(control)
-          raise ControlError, wrong_control_option_error_message(control)
-        end
-        if terminal?
-          Terminal[self.name, control]
-        else
-          NonTerminal[self.name, control, nullable]
-        end
-      end
-
-      def valid_control?(control)
-        control_options.include? control
-      end
-
-      def control_options
-        [:choice, :repetition, :option, :none]
-      end
-
-      def wrong_control_option_error_message(control)
-        "#{control} is not a valid control option. Try one of the following #{control_options.join(", ")}"
-      end
-
-      def valid_start?(string)
-        regex_match?(self.start_regex, string)
-      end
-      
-      def valid_follow?(string)
-        regex_match?(self.follow_regex, string)
-      end
-
-      def apply_at_start(regex)
-        /\A#{regex.source}/
-      end
-    end    
-
     class RuleSeq < Array
 
       ItemError = Class.new(StandardError)
+
+      #EBNF terminal representation
+      #@eskimobear.specification
+      # Prop : Terminals have a :rule_name and :control.
+      #      : :rule_name is the Rule.name of the matching production
+      #        rule for a terminal.
+      #      : :control is the set of EBNF controls applied to a
+      #          Terminal or NonTerminal consisting of :choice,
+      #          :option and/or :repetition.
+      Terminal = Struct.new(:rule_name, :control)
+
+      #EBNF non-terminal representation
+      #@eskimobear.specification
+      # Prop : NonTerminals have a :rule_name and :control
+      #      : :rule_name is the Rule.name of the matching production
+      #        rule for a non-terminal.
+      #      : :control is the set of EBNF controls applied to a
+      #          Terminal or NonTerminal. Consisting of :choice,
+      #          :option and/or :repetition.
+      #      : :nullable is a boolean, true when the non-terminal is
+      #         nullable
+      NonTerminal = Struct.new(:rule_name, :control, :nullable)
+      
+      #EBNF production rule representation
+      #@eskimobear.specification
+      # Prop : Rule has a :name, :sequence and
+      #        regex patterns for legal tokens that can start or 
+      #        follow the rule.
+      #      : :sequence is the EBNF control for concatenation. It is
+      #        an array and concatenaton is implicit in the ordering of 
+      #        When Rule represents a non-terminal it is an array of
+      #        NonTerminals and Terminals. When Rule represents a
+      #        terminal it is the empty array. 
+      Rule = Struct.new(:name, :sequence, :start_rxp, :follow_rxp,) do
+
+        ControlError = Class.new(StandardError)
+        
+        def match(string)
+          string.match(self.rxp)
+        end
+
+        def rxp
+          if self.terminal?
+            apply_at_start(self.start_rxp)
+          else
+            nil
+          end
+        end
+        
+        def match_rxp?(string)
+          regex_match?(self.rxp, string)
+        end
+
+        def match_start(string)
+          if self.nonterminal?
+            string.match(self.start_rxp)
+          else
+            nil
+          end
+        end
+
+        def regex_match?(regex, string)
+          #does not catch zero or more matches that return "", the empty string
+          (string =~ apply_at_start(regex)).nil? ? false : true
+        end      
+
+        def terminal?
+          self.sequence.empty?
+        end
+        
+        def nonterminal?
+          !terminal?
+        end
+
+        def rule_symbol(control=:none, nullable=false)
+          unless valid_control?(control)
+            raise ControlError, wrong_control_option_error_message(control)
+          end
+          if terminal?
+            Terminal[self.name, control]
+          else
+            NonTerminal[self.name, control, nullable]
+          end
+        end
+
+        def valid_control?(control)
+          control_options.include? control
+        end
+
+        def control_options
+          [:choice, :repetition, :option, :none]
+        end
+
+        def wrong_control_option_error_message(control)
+          "#{control} is not a valid control option. Try one of the following #{control_options.join(", ")}"
+        end
+
+        def valid_start?(string)
+          regex_match?(self.start_regex, string)
+        end
+        
+        def valid_follow?(string)
+          regex_match?(self.follow_regex, string)
+        end
+
+        def apply_at_start(regex)
+          /\A#{regex.source}/
+        end
+      end    
       
       def self.new(obj)
         array = super
@@ -242,7 +242,7 @@ module Eson
       protected
       
       def self.all_rules?(sequence)
-        sequence.all? {|i| i.class == Eson::Language::Rule }
+        sequence.all? {|i| i.class == Rule }
       end
     end
     
@@ -303,7 +303,7 @@ module Eson
     
     # variable_prefix := "$";
     def variable_prefix_rule
-      Rule.new(:variable_prefix,
+      RuleSeq::Rule.new(:variable_prefix,
                [],
                variable_prefix_rxp)
     end
@@ -314,7 +314,7 @@ module Eson
     
     # word := {JSON_char}; (*letters, numbers, '-', '_', '.'*)
     def word_rule
-      Rule.new(:word,
+      RuleSeq::Rule.new(:word,
                [],
                word_rxp)
     end
@@ -325,7 +325,7 @@ module Eson
       
     # whitespace := {" "};
     def whitespace_rule
-      Rule.new(:whitespace,
+      RuleSeq::Rule.new(:whitespace,
                [],
                whitespace_rxp)
     end
@@ -337,7 +337,7 @@ module Eson
     # other_chars := {JSON_char}; (*characters excluding those found
     #   in variable_prefix, word and whitespace*)
     def other_chars_rule
-      Rule.new(:other_chars,
+      RuleSeq::Rule.new(:other_chars,
                [],
                other_chars_rxp)
     end
@@ -351,7 +351,7 @@ module Eson
 
     # true := "true";
     def true_rule
-      Rule.new(:true,
+      RuleSeq::Rule.new(:true,
                [],
                true_rxp)
     end
@@ -362,7 +362,7 @@ module Eson
     
     # false := "false";
     def false_rule
-      Rule.new(:false,
+      RuleSeq::Rule.new(:false,
                [],
                false_rxp)
     end
@@ -373,7 +373,7 @@ module Eson
 
     # number := JSON_number;
     def number_rule
-      Rule.new(:number,
+      RuleSeq::Rule.new(:number,
                [],
                number_rxp)
     end
@@ -384,7 +384,7 @@ module Eson
 
     # array_start := "[";
     def array_start_rule
-      Rule.new(:array_start,
+      RuleSeq::Rule.new(:array_start,
                [],
                array_start_rxp)
     end
@@ -395,7 +395,7 @@ module Eson
     
     # array_end := "]";
     def array_end_rule
-      Rule.new(:array_end,
+      RuleSeq::Rule.new(:array_end,
                [],
                array_end_rxp)
     end
@@ -406,7 +406,7 @@ module Eson
     
     # comma := ",";
     def comma_rule
-      Rule.new(:comma,
+      RuleSeq::Rule.new(:comma,
                [],
                comma_rxp)
     end
@@ -417,7 +417,7 @@ module Eson
 
     # let := "let";
     def let_rule
-      Rule.new(:let,
+      RuleSeq::Rule.new(:let,
                [],
                let_rxp)
     end
@@ -428,7 +428,7 @@ module Eson
     
     # ref := "ref";
     def ref_rule
-      Rule.new(:ref,
+      RuleSeq::Rule.new(:ref,
                [],
                ref_rxp)
     end
@@ -439,7 +439,7 @@ module Eson
     
     # doc := "doc";
     def doc_rule
-      Rule.new(:doc,
+      RuleSeq::Rule.new(:doc,
                [],
                doc_rxp)
     end
@@ -450,7 +450,7 @@ module Eson
 
     # unknown_special_form := {JSON_char};
     def unknown_special_form_rule
-      Rule.new(:unknown_special_form,
+      RuleSeq::Rule.new(:unknown_special_form,
                [],
                all_chars_rxp)
     end
@@ -461,7 +461,7 @@ module Eson
     
     # proc_prefix := "&";
     def proc_prefix_rule
-      Rule.new(:proc_prefix,
+      RuleSeq::Rule.new(:proc_prefix,
                [],
                proc_prefix_rxp)
     end
@@ -472,7 +472,7 @@ module Eson
     
     # colon := ":";
     def colon_rule
-      Rule.new(:colon,
+      RuleSeq::Rule.new(:colon,
                [],
                colon_rxp)
     end
@@ -483,7 +483,7 @@ module Eson
     
     # program_start := "{";
     def program_start_rule
-      Rule.new(:program_start,
+      RuleSeq::Rule.new(:program_start,
                [],
                program_start_rxp)
     end
@@ -494,7 +494,7 @@ module Eson
     
     # program_end := "}";
     def program_end_rule
-      Rule.new(:program_end,
+      RuleSeq::Rule.new(:program_end,
                [],
                program_end_rxp)
     end
@@ -505,7 +505,7 @@ module Eson
     
     # key_string := {JSON_char}; (*all characters excluding proc_prefix*)
     def key_string_rule
-      Rule.new(:key_string,
+      RuleSeq::Rule.new(:key_string,
                [],
                all_chars_rxp)
     end

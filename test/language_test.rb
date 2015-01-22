@@ -44,12 +44,12 @@ end
 
 describe Eson::Language::RuleSeq do
 
-  let(:rule_seq) {Eson::Language::RuleSeq.new( [Eson::Language::Rule[:rule_1,[],/RU/],
-                                                Eson::Language::Rule[:rule_2,[],/LE/]])}
+  let(:rule_seq) {Eson::Language::RuleSeq.new( [Eson::Language::RuleSeq::Rule[:rule_1,[],/RU/],
+                                                Eson::Language::RuleSeq::Rule[:rule_2,[],/LE/]])}
   
   describe ".new" do
     it "item is a Rule" do
-      proc { Eson::Language::RuleSeq.new([Eson::Language::Rule.new]) }.must_be_silent
+      proc { Eson::Language::RuleSeq.new([Eson::Language::RuleSeq::Rule.new]) }.must_be_silent
     end
     it "items not a Rule" do
       proc { Eson::Language::RuleSeq.new([45]) }.must_raise Eson::Language::RuleSeq::ItemError
@@ -93,7 +93,7 @@ describe Eson::Language::RuleSeq do
       rules.must_be_instance_of Eson::Language::RuleSeq
       rules.detect{|i| i.name == :new_rule}.wont_be_nil
       terminal_sequence = rules.find{|i| i.name == :new_rule}.sequence
-      terminal_sequence.all?{|i| i.class == Eson::Language::Terminal || i.class == Eson::Language::NonTerminal}
+      terminal_sequence.all?{|i| i.class == Eson::Language::RuleSeq::Terminal || i.class == Eson::Language::RuleSeq::NonTerminal}
         .must_equal true
     end
     it "fails" do

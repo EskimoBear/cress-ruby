@@ -255,20 +255,20 @@ module Eson
     end
 
     def tokenize_special_forms(json_string, seq, char_seq)
-      special_form = LANG.special_form.match_start(json_string).to_s.intern
+      special_form = LANG.special_form.match_start(json_string).to_s
       case special_form
-      when :doc
-        seq.push(Token.new(json_string, :doc))
-        char_seq.slice!(0, 3)
-      when :let
-        seq.push(Token.new(json_string, :let))
-        char_seq.slice!(0, 3)
-      when :ref
-        seq.push(Token.new(json_string, :ref))
-        char_seq.slice!(0, 3)
-      when :""
-          seq.push(Token.new(json_string, :unknown_special_form))
-          char_seq.slice!(0, json_string.length)
+      when LANG.doc.rxp
+        seq.push(Token.new(json_string, LANG.doc.name))
+        pop_chars_string(char_seq, json_string)
+      when LANG.let.rxp
+        seq.push(Token.new(json_string, LANG.let.name))
+        pop_chars_string(char_seq, json_string)
+      when LANG.ref.rxp
+        seq.push(Token.new(json_string, LANG.ref.name))
+        pop_chars_string(char_seq, json_string)
+      else
+        seq.push(Token.new(json_string, LANG.unknown_special_form.name))
+        pop_chars_string(char_seq, json_string)
       end      
     end
 
@@ -295,56 +295,35 @@ module Eson
     def tokenize_json_string(json_string, seq, char_seq)
       if json_string.empty?
         seq
-      elsif match_leading_whitespace_or_variable_prefix?(json_string)
-        tokenize_prefix(json_string, seq, char_seq)
-        tokenize_json_string(get_prefixed_string(json_string), seq, char_seq)
-      elsif match_other_chars?(json_string)
-        other_chars, rest = get_other_chars_and_string(json_string)
-        seq.push(Token.new(other_chars, :other_chars))
-        char_seq.slice!(0, other_chars.length)
-        tokenize_json_string(rest, seq, char_seq)
-      else
-        next_word, rest = get_next_word_and_string(json_string)
-        seq.push(Token.new(next_word, :word))
-        char_seq.slice!(0, next_word.length)
-        tokenize_json_string(rest, seq, char_seq)
+      elsif LANG.whitespace.match_rxp?(json_string)
+        lexeme = LANG.whitespace.match(json_string).to_s.intern
+        seq.push(Token[lexeme, LANG.whitespace.name])
+        pop_chars_string(char_seq, lexeme)
+        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+      elsif LANG.variable_prefix.match_rxp?(json_string)
+        lexeme = LANG.variable_prefix.match(json_string).to_s.intern
+        seq.push(Token[lexeme, LANG.variable_prefix.name])
+        pop_chars_string(char_seq, lexeme)
+        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+      elsif LANG.other_chars.match_rxp?(json_string)
+        lexeme = LANG.other_chars.match(json_string).to_s.intern
+        seq.push(Token[lexeme, LANG.other_chars.name])
+        pop_chars_string(char_seq, lexeme)
+        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+      elsif LANG.word.match_rxp?(json_string)
+        lexeme = LANG.word.match(json_string).to_s.intern
+        seq.push(Token[lexeme, LANG.word.name])
+        pop_chars_string(char_seq, lexeme)
+        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
       end
     end
 
-    def match_leading_whitespace_or_variable_prefix?(string)
-      rxp = /#{LANG.whitespace.rxp.source}|#{LANG.variable_prefix.rxp.source}/
-      string.match(rxp).to_s == "" ? false : true
+    def pop_chars_string(char_seq, matched_string)
+      char_seq.slice!(0, matched_string.size)
     end
-
-    def tokenize_prefix(json_string, seq, char_seq)
-      case next_char(json_string).intern
-      when :"$"
-          seq.push(Token.new(:"$", :variable_prefix))
-          char_seq.slice!(0, 1)
-      when :" "
-          seq.push(Token.new(:" ", :whitespace))
-          char_seq.slice!(0, 1)
-      end
-    end
-
-    def match_other_chars?(string)
-      LANG.other_chars.match_rxp?(string)
-    end
-
-    def get_other_chars_and_string(string)
-      other_chars = LANG.other_chars.match(string)
-      rest_start_index = other_chars.end(0)
-      [other_chars.to_s.freeze, string[rest_start_index..-1].freeze]
-    end
-
-    def next_char(string)
-      string[0].freeze
-    end
-
-    def get_next_word_and_string(string)
-      next_word = LANG.word.match(string)
-      rest_start_index = next_word.end(0)
-      [next_word.to_s.freeze, string[rest_start_index..-1].freeze]
+    
+    def get_rest(json_string, matched_string)
+      json_string[matched_string.size..-1]
     end
   end
   

@@ -274,6 +274,7 @@ module Eson
     # program_end := "}";
     # key_string := {JSON_char}; (*all characters excluding proc_prefix*)
     # special_form := let | ref | doc;
+    # word_form := whitespace | variable_prefix | word | other_chars;
     def e0
       rules = [variable_prefix_rule,
                word_rule,
@@ -296,13 +297,8 @@ module Eson
                key_string_rule]
       e0_rules = Eson::Language::RuleSeq.new(rules)
       e0_rules.make_alternation_rule(:special_form, [:let, :ref, :doc])
+      e0_rules.make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :other_chars])
       e0_rules.build_language("E0")
-    end
-
-    def rule_names(rule_seq)
-      rule_seq.each_with_object([]) do |i, a|
-        a.push(i.name)
-      end
     end
     
     # variable_prefix := "$";

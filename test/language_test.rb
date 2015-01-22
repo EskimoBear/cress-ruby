@@ -13,6 +13,7 @@ describe Eson::Language do
     end
     it "should contain built rules" do
       Eson::Language.e0.values.detect{|i| i.name == :special_form}.wont_be_nil
+      Eson::Language.e0.values.detect{|i| i.name == :word_form}.wont_be_nil
     end
   end
 

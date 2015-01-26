@@ -8,12 +8,49 @@ module Eson
 
     extend self
 
-    JsonSymbol = Struct.new "JsonSymbol", :lexeme, :name
-    
-    Token = Struct.new "Token", :lexeme, :name, :alternate_names
+    JsonSymbol = Struct.new :lexeme, :name
 
     class TokenSeq < Array
+    
+      Token = Struct.new :lexeme, :name, :alternation_names
+      
+      ItemError = Class.new(StandardError)
 
+      def self.new(obj=nil)
+        if obj.nil?
+          super []
+        else
+          array = super
+          unless self.all_tokens?(array)
+            raise ItemError, self.new_item_error_message
+          end
+          array
+        end
+      end
+
+      def self.all_tokens?(seq)
+        seq.all?{|i| i.class == Token}
+      end
+
+      def self.new_item_error_message
+        "One or more of the given array elements are not of the type Eson::Tokenizer::Token"
+      end
+      
+      #Given an alternation rule add rule.name to each referenced
+      #  token's alternation_names array.
+      #
+      #@param rule [Eson::Language::RuleSeq::Rule] alternation rule
+      def assign_alternation_names(rule)
+        token_names = rule.sequence.map{|i| i.rule_name}
+        new_token_name = rule.name
+        self.map! do |old_token|
+          if token_names.include?(old_token.name)
+            old_token.alternation_names = [].push(rule.name)
+          end
+            old_token
+        end
+      end
+      
       def tokenize_variable_identifiers
         tokenize_rule(LANG.variable_identifier)
       end
@@ -34,7 +71,6 @@ module Eson
       #  equivalent lexeme. Reduce all repetitions to a single token. 
       #  
       #@param rule [Eson::Language::RuleSeq::Rule] An alternation rule 
-      #@return [Eson::Tokenizer::TokenSeq] A sequence of tokens for E3 
       #@eskimobear.specification
       # Original token sequence, T
       # Output token sequence, O
@@ -49,39 +85,29 @@ module Eson
       #        O' = O + ets
       #        When head(T) = ots
       #        T' = T - ots
-      #        O' = O + nts
       #        O' = O + ntt AND ntt = combine(ots)
       #        When T does not contain ot
       #        T' = []
       #        O' = O + T
       # Final : length(T) = 0
       def tokenize_alternation_rule(rule)
-        token_names = rule.sequence.map{|i| i.rule_name}
-        new_token_name = rule.name
-        self.map! do |old_token|
-          if token_names.include?(old_token.name)
-            old_token.name = new_token_name
-            old_token
-          else
-            old_token
-          end
-        end
+        assign_alternation_names(rule)
         self.replace tokenize_alternation_rule_recur(rule, self.clone)
       end
 
       def tokenize_alternation_rule_recur(rule, input_sequence,
-                                          output_sequence = Eson::Tokenizer::TokenSeq.new)
+                                              output_sequence = Eson::Tokenizer::TokenSeq.new)
         new_token_name = rule.name
         token_names = rule.sequence.map{|i| i.rule_name}
-        
-        if input_sequence.include_token?(new_token_name)
-          scanned, unscanned = input_sequence.split_before_token(new_token_name)         
+
+        if input_sequence.include_alt_name?(rule)
+          scanned, unscanned = input_sequence.split_before_alt_name(rule)
           output_sequence.push(scanned).flatten!
-          head = unscanned.take_while{|i| i.name == new_token_name}
+          head = unscanned.take_while{|i| i.alternation_names.to_a.include? new_token_name}
           new_input = unscanned.drop(head.size)
           new_token = reduce_tokens(new_token_name, *head)
           tokenize_alternation_rule_recur(rule, new_input,
-                                          output_sequence.push(new_token).flatten)
+                                              output_sequence.push(new_token).flatten)
         else
           output_sequence.push(input_sequence).flatten
         end
@@ -97,12 +123,42 @@ module Eson
           nil
         end
       end
+
+      def split_before_alt_name(rule)
+        if self.include_alt_name?(rule)
+          split_point = get_alt_name_index(rule.name)
+          head = self.take(split_point)
+          tail = self[split_point..-1]
+          return head, tail
+        end
+      end
+
+      def include_alt_name?(rule)
+        get_alt_name_token(rule.name) ? true : false
+      end
+
+      def alt_names
+        self.map{|i| i.alternation_names.to_a}
+      end
+
+      def get_alt_name_token(rule_name)
+        index = get_alt_name_index(rule_name)
+        if index.nil?
+          nil
+        else
+          self[index]
+        end
+      end
+
+      def get_alt_name_index(rule_name)
+        alt_names.find_index{|i| i.include? rule_name}
+      end
+        
       
       #Replace inner token sequence of :none names with token of rule
       #  name and equivalent lexeme.
       #
-      #@param rule [Eson::Language::RuleSeq::Rule] A concatenation rule 
-      #@return [Eson::Tokenizer::TokenSeq] A token sequence
+      #@param rule [Eson::Language::RuleSeq::Rule] A concatenation rule
       #@eskimobear.specification
       # Original token sequence, T
       # Output token sequence, O
@@ -373,22 +429,22 @@ module Eson
       symbol_seq.each_with_object(TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start
-          seq.push(Token.new(:"{", :program_start))
+          seq.push(TokenSeq::Token.new(:"{", :program_start))
           pop_chars(symbol, char_seq) 
         when :object_end
-          seq.push(Token.new(:"}", :program_end))
+          seq.push(TokenSeq::Token.new(:"}", :program_end))
           pop_chars(symbol, char_seq)
         when :array_start
-          seq.push(Token.new(:"[", :array_start))
+          seq.push(TokenSeq::Token.new(:"[", :array_start))
           pop_chars(symbol, char_seq)
         when :array_end
-          seq.push(Token.new(:"]", :array_end))
+          seq.push(TokenSeq::Token.new(:"]", :array_end))
           pop_chars(symbol, char_seq)
         when :colon
-          seq.push(Token.new(:":", :colon))
+          seq.push(TokenSeq::Token.new(:":", :colon))
           pop_chars(symbol, char_seq) 
         when :comma
-          seq.push(Token.new(:",", :comma))
+          seq.push(TokenSeq::Token.new(:",", :comma))
           pop_chars(symbol, char_seq) 
         when :JSON_key
           tokenize_json_key(symbol.lexeme, seq, char_seq)
@@ -404,11 +460,11 @@ module Eson
 
     def tokenize_json_key(json_key, seq, char_seq)
       if begins_with_proc_prefix?(json_key)
-        seq.push(Token.new(:"&", :proc_prefix))
+        seq.push(TokenSeq::Token.new(:"&", :proc_prefix))
         char_seq.slice!(0, 1)
         tokenize_special_forms(get_prefixed_string(json_key), seq, char_seq)
       else
-        seq.push(Token.new(json_key.freeze, :key_string))
+        seq.push(TokenSeq::Token.new(json_key.freeze, :key_string))
         char_seq.slice!(0, json_key.length)
       end
     end
@@ -425,32 +481,32 @@ module Eson
       special_form = LANG.special_form.match_start(json_string).to_s
       case special_form
       when LANG.doc.rxp
-        seq.push(Token.new(json_string, LANG.doc.name))
+        seq.push(TokenSeq::Token.new(json_string, LANG.doc.name))
         pop_chars_string(char_seq, json_string)
       when LANG.let.rxp
-        seq.push(Token.new(json_string, LANG.let.name))
+        seq.push(TokenSeq::Token.new(json_string, LANG.let.name))
         pop_chars_string(char_seq, json_string)
       when LANG.ref.rxp
-        seq.push(Token.new(json_string, LANG.ref.name))
+        seq.push(TokenSeq::Token.new(json_string, LANG.ref.name))
         pop_chars_string(char_seq, json_string)
       else
-        seq.push(Token.new(json_string, LANG.unknown_special_form.name))
+        seq.push(TokenSeq::Token.new(json_string, LANG.unknown_special_form.name))
         pop_chars_string(char_seq, json_string)
       end      
     end
 
     def tokenize_json_value(json_value, seq, char_seq)
       if json_value.is_a? TrueClass
-        seq.push(Token.new(json_value, :true))
+        seq.push(TokenSeq::Token.new(json_value, :true))
         char_seq.slice!(0, json_value.to_s.size)
       elsif json_value.is_a? Numeric
-        seq.push(Token.new(json_value, :number))
+        seq.push(TokenSeq::Token.new(json_value, :number))
         char_seq.slice!(0, json_value.to_s.size)
       elsif json_value.is_a? FalseClass
-        seq.push(Token.new(json_value, :false))
+        seq.push(TokenSeq::Token.new(json_value, :false))
         char_seq.slice!(0, json_value.to_s.size)
       elsif json_value.nil?
-        seq.push(Token.new(json_value, :null))
+        seq.push(TokenSeq::Token.new(json_value, :null))
         char_seq.slice!(0, :null.to_s.size)
       elsif json_value.is_a? String
         tokenize_json_string(json_value.freeze, seq, char_seq)
@@ -464,22 +520,22 @@ module Eson
         seq
       elsif LANG.whitespace.match_rxp?(json_string)
         lexeme = LANG.whitespace.match(json_string).to_s.intern
-        seq.push(Token[lexeme, LANG.whitespace.name])
+        seq.push(TokenSeq::Token[lexeme, LANG.whitespace.name])
         pop_chars_string(char_seq, lexeme)
         tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
       elsif LANG.variable_prefix.match_rxp?(json_string)
         lexeme = LANG.variable_prefix.match(json_string).to_s.intern
-        seq.push(Token[lexeme, LANG.variable_prefix.name])
+        seq.push(TokenSeq::Token[lexeme, LANG.variable_prefix.name])
         pop_chars_string(char_seq, lexeme)
         tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
       elsif LANG.other_chars.match_rxp?(json_string)
         lexeme = LANG.other_chars.match(json_string).to_s.intern
-        seq.push(Token[lexeme, LANG.other_chars.name])
+        seq.push(TokenSeq::Token[lexeme, LANG.other_chars.name])
         pop_chars_string(char_seq, lexeme)
         tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
       elsif LANG.word.match_rxp?(json_string)
         lexeme = LANG.word.match(json_string).to_s.intern
-        seq.push(Token[lexeme, LANG.word.name])
+        seq.push(TokenSeq::Token[lexeme, LANG.word.name])
         pop_chars_string(char_seq, lexeme)
         tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
       end

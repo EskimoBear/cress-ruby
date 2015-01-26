@@ -46,7 +46,7 @@ describe Eson do
     it "#label_sub_strings" do
       result = Eson.compile(@valid_program)
       result.must_be_instance_of Eson::Tokenizer::TokenSeq
-      result.find_all {|i| i.alternate_names.include?(:sub_string)}.length.must_equal 7
+      result.find_all {|i| i.alternation_names.to_a.include?(:sub_string)}.length.must_equal 7
     end
   end
 end

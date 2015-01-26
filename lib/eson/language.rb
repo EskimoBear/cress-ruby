@@ -149,7 +149,7 @@ module Eson
       end
 
       def self.new_item_error_message
-        "One or more of the given array elements are not of the type Eson::Language::Rule"
+        "One or more of the given array elements are not of the type Eson::Language::RuleSeq::Rule"
       end
 
       def combine_rules(rule_names, new_rule_name)

@@ -19,6 +19,7 @@ module Eson
       tokenizer_output = Tokenizer.tokenize_program(eson_program)
       verified_special_forms = ErrorPass.verify_special_forms(tokenizer_output.first)
       variables = verified_special_forms.tokenize_variable_identifiers
+                  .tokenize_word_form
     else
       validation_pass(eson_program)
     end

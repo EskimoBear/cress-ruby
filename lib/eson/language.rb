@@ -4,6 +4,17 @@ module Eson
     
     extend self
 
+    module LanguageOperations
+
+      def rule_seq
+        Eson::Language::RuleSeq.new self.values
+      end
+
+      def to_s
+        "#{self.class} has rules: ".concat(self.members.join(", "))
+      end              
+    end
+
     class RuleSeq < Array
 
       ItemError = Class.new(StandardError)
@@ -81,6 +92,14 @@ module Eson
           !terminal?
         end
 
+        def alternation?
+          self.sequence.all?{|i| i.control == :choice}
+        end
+
+        def concatenation?
+          self.sequence.all?{|i| i.control == :none}
+        end
+        
         def rule_symbol(control=:none, nullable=false)
           unless valid_control?(control)
             raise ControlError, wrong_control_option_error_message(control)
@@ -139,18 +158,47 @@ module Eson
         end
       end
 
-      def make_alternation_rule(new_rule_name, rule_names)      
+      def convert_to_terminal(rule_name)
+        unless include_rule?(rule_name)
+          raise ItemError, missing_item_error_message(rule_name)
+        end
+        self.map! do |rule|
+          if rule_name == rule.name
+            rule.sequence = []
+            rule
+          else
+            rule
+          end
+        end
+      end
+
+      def make_concatenation_rule(new_rule_name, rule_names)
         unless include_rules?(rule_names)
           raise ItemError, missing_items_error_message(rule_names)
         end
         self.push(Rule.new(new_rule_name,
                            rule_symbol_concatenation(rule_names),
+                           self.make_concatenation_rxp(rule_names)))
+      end
+
+      def make_alternation_rule(new_rule_name, rule_names)      
+        unless include_rules?(rule_names)
+          raise ItemError, missing_items_error_message(rule_names)
+        end
+        self.push(Rule.new(new_rule_name,
+                           rule_symbol_alternation(rule_names),
                            self.make_alternation_rxp(rule_names)))
       end
 
       def missing_items_error_message(rule_names)
         names = rule_names.map{|i| ":".concat(i.to_s)}
         "One or more of the following Eson::Language::Rule.name's are not present in the sequence: #{names.join(", ")}."
+      end
+
+      def rule_symbol_alternation(rule_names)
+        rule_names.map do |i|
+          get_rule(i).rule_symbol(:choice)
+        end
       end
       
       def rule_symbol_concatenation(rule_names)
@@ -244,61 +292,6 @@ module Eson
       def self.all_rules?(sequence)
         sequence.all? {|i| i.class == Rule }
       end
-    end
-    
-    #eson formal language with tokens only
-    #@return [E0] the initial compiler language used by Tokenizer
-    #@eskimobear.specification
-    # Prop : E0 is a struct of eson production rules for the language 
-    #
-    # The following EBNF rules describe the eson grammar, E0:
-    # variable_prefix := "$";
-    # word := {JSON_char}; (*letters, numbers, '-', '_', '.'*)
-    # whitespace := {" "};
-    # other_chars := {JSON_char}; (*characters excluding those found
-    #   in variable_prefix, word and whitespace*)
-    # true := "true";
-    # false := "false";
-    # number := JSON_number;
-    # null := "null";
-    # array_start := "[";
-    # array_end := "]";
-    # comma := ",";
-    # let := "let";
-    # ref := "ref";
-    # doc := "doc";
-    # unknown_special_form := {JSON_char};
-    # proc_prefix := "&";
-    # colon := ":";
-    # program_start := "{";
-    # program_end := "}";
-    # key_string := {JSON_char}; (*all characters excluding proc_prefix*)
-    # special_form := let | ref | doc;
-    # word_form := whitespace | variable_prefix | word | other_chars;
-    def e0
-      rules = [variable_prefix_rule,
-               word_rule,
-               whitespace_rule,
-               other_chars_rule,
-               true_rule,
-               false_rule,
-               number_rule,
-               array_start_rule,
-               array_end_rule,
-               comma_rule,
-               let_rule,
-               ref_rule,
-               doc_rule,
-               unknown_special_form_rule,
-               proc_prefix_rule,
-               colon_rule,
-               program_start_rule,
-               program_end_rule,
-               key_string_rule]
-      e0_rules = Eson::Language::RuleSeq.new(rules)
-      e0_rules.make_alternation_rule(:special_form, [:let, :ref, :doc])
-      e0_rules.make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :other_chars])
-      e0_rules.build_language("E0")
     end
     
     # variable_prefix := "$";
@@ -510,34 +503,92 @@ module Eson
                all_chars_rxp)
     end
 
+    #eson formal language with tokens only
+    #@return [E0] the initial compiler language used by Tokenizer
+    #@eskimobear.specification
+    # Prop : E0 is a struct of eson production rules for the language 
+    #
+    # The following EBNF rules describe the eson grammar, E0:
+    # variable_prefix := "$";
+    # word := {JSON_char}; (*letters, numbers, '-', '_', '.'*)
+    # whitespace := {" "};
+    # other_chars := {JSON_char}; (*characters excluding those found
+    #   in variable_prefix, word and whitespace*)
+    # true := "true";
+    # false := "false";
+    # number := JSON_number;
+    # null := "null";
+    # array_start := "[";
+    # array_end := "]";
+    # comma := ",";
+    # let := "let";
+    # ref := "ref";
+    # doc := "doc";
+    # unknown_special_form := {JSON_char};
+    # proc_prefix := "&";
+    # colon := ":";
+    # program_start := "{";
+    # program_end := "}";
+    # key_string := {JSON_char}; (*all characters excluding proc_prefix*)
+    # special_form := let | ref | doc;
+    # word_form := whitespace | variable_prefix | word | other_chars;
+    # variable_identifier := variable_prefix, word;
+    def e0
+      rules = [variable_prefix_rule,
+               word_rule,
+               whitespace_rule,
+               other_chars_rule,
+               true_rule,
+               false_rule,
+               number_rule,
+               array_start_rule,
+               array_end_rule,
+               comma_rule,
+               let_rule,
+               ref_rule,
+               doc_rule,
+               unknown_special_form_rule,
+               proc_prefix_rule,
+               colon_rule,
+               program_start_rule,
+               program_end_rule,
+               key_string_rule]
+      e0_rules = Eson::Language::RuleSeq.new(rules)
+      e0_rules.make_alternation_rule(:special_form, [:let, :ref, :doc])
+      e0_rules.make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :other_chars])
+      e0_rules.make_concatenation_rule(:variable_identifier, [:variable_prefix, :word])
+      e0_rules.build_language("E0")
+    end
+
     #@return e1 the second language of the compiler
     #@eskimobear.specification
     #  Prop : E1 is a struct of eson production rules of
     #         E0 with 'unknown_special_form' removed  
     def e1
-      e0.rule_seq.remove_rules([:unknown_special_form]).build_language("E1")
+      e0.rule_seq.remove_rules([:unknown_special_form])
+        .build_language("E1")
     end
 
     #@return e2 the third language of the compiler
     #@eskimobear.specification
-    #  Prop : E2 is a struct of eson production rules of
-    #         E1 with 'variable_prefix' and 'word' combined
-    #         into 'variable_identifier'
+    #  Prop : E2 is a struct of eson production rules
+    #         of E1 with 'variable_identifier'
+    #         converted to a terminal
     def e2
-      e1.rule_seq.combine_rules([:variable_prefix, :word], :variable_identifier)
-        .remove_rules([:variable_prefix])
+      e1.rule_seq.convert_to_terminal(:variable_identifier)
         .build_language("E2")
     end
 
-    module LanguageOperations
-
-      def rule_seq
-        Eson::Language::RuleSeq.new self.values
-      end
-
-      def to_s
-        "#{self.class} has rules: ".concat(self.members.join(", "))
-      end              
+    #@return e3 the fourth language of the compiler
+    #@eskimobear.specification
+    #  Prop : E3 is a struct of eson production rules of E2 with
+    #         'word_form' tokenized and
+    #         'whitespace', 'variable_prefix', 'word' and 
+    #         'other_chars' removed.    
+    def e3
+      e2.rule_seq.convert_to_terminal(:word_form)
+        .remove_rules([:other_chars, :variable_prefix, :word, :whitespace])
+        .build_language("E3")
     end
 
     alias_method :tokenizer_lang, :e0

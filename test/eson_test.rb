@@ -32,11 +32,16 @@ describe Eson do
     end
   end
 
-  describe "valid_program" do
-    it ".compile" do
+  describe "compile valid_program" do
+    it "tokenize variable identifier" do
       result = Eson.compile(@valid_program)
       result.must_be_instance_of Eson::Tokenizer::TokenSeq
       result.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
+    end
+    it "tokenize word form" do
+      result = Eson.compile(@valid_program)
+      result.must_be_instance_of Eson::Tokenizer::TokenSeq
+      result.find_all {|i| i.name == :word_form}.length.must_equal 6
     end
   end
 end

@@ -10,7 +10,7 @@ module Eson
 
     JsonSymbol = Struct.new "JsonSymbol", :lexeme, :name
     
-    Token = Struct.new "Token", :lexeme, :name
+    Token = Struct.new "Token", :lexeme, :name, :alternate_names
 
     class TokenSeq < Array
 

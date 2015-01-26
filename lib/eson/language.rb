@@ -6,6 +6,10 @@ module Eson
 
     module LanguageOperations
 
+      def get_rule(rule_name)
+        rule_seq.get_rule(rule_name)
+      end
+      
       def rule_seq
         Eson::Language::RuleSeq.new self.values
       end
@@ -553,11 +557,11 @@ module Eson
                program_start_rule,
                program_end_rule,
                key_string_rule]
-      e0_rules = Eson::Language::RuleSeq.new(rules)
-      e0_rules.make_alternation_rule(:special_form, [:let, :ref, :doc])
-      e0_rules.make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :other_chars])
-      e0_rules.make_concatenation_rule(:variable_identifier, [:variable_prefix, :word])
-      e0_rules.build_language("E0")
+      Eson::Language::RuleSeq.new(rules)
+        .make_alternation_rule(:special_form, [:let, :ref, :doc])
+        .make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :other_chars])
+        .make_concatenation_rule(:variable_identifier, [:variable_prefix, :word])
+        .build_language("E0")
     end
 
     #@return e1 the second language of the compiler
@@ -591,7 +595,19 @@ module Eson
         .build_language("E3")
     end
 
+    #@return e4 the fifth language of the compiler
+    #@eskimobear.specification
+    # Prop : E4 is a struct of eson production rules of E3 with
+    #        'sub_string' production rule added.
+    def e4
+      e3.rule_seq.make_alternation_rule(:sub_string, [:word_form, :variable_identifier])
+        .build_language("E4")
+    end
+
     alias_method :tokenizer_lang, :e0
-    alias_method :verified_special_forms_lang , :e1
+    alias_method :verified_special_forms_lang, :e1
+    alias_method :tokenize_variable_identifier_lang, :e2
+    alias_method :tokenize_word_form_lang, :e3
+    alias_method :label_sub_string_lang, :e4
   end
 end

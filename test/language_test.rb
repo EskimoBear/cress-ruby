@@ -4,7 +4,7 @@ require_relative '../lib/eson/language.rb'
 
 describe Eson::Language do
   
-  describe "validate e0 properties" do
+  describe "validate e0" do
     it "should be E0" do
       Eson::Language.e0.class.must_equal Struct::E0
     end
@@ -12,9 +12,9 @@ describe Eson::Language do
       Eson::Language.must_respond_to :tokenizer_lang
     end
     it "should contain built rules" do
-      Eson::Language.e0.values.detect{|i| i.name == :special_form}.wont_be_nil
-      Eson::Language.e0.values.detect{|i| i.name == :word_form}.wont_be_nil
-      Eson::Language.e0.values.detect{|i| i.name == :variable_identifier}.wont_be_nil
+      Eson::Language.e0.get_rule(:special_form).wont_be_nil
+      Eson::Language.e0.get_rule(:word_form).wont_be_nil
+      Eson::Language.e0.get_rule(:variable_identifier).wont_be_nil
     end
   end
 
@@ -26,8 +26,7 @@ describe Eson::Language do
       Eson::Language.must_respond_to :verified_special_forms_lang
     end
     it "should contain new rules" do
-      rules = Eson::Language.e1.values
-      rules.detect{|i| i.name == :unknown_special_form}.must_be_nil
+      proc {Eson::Language.e1.get_rule(:unknown_special_form)}.must_raise Eson::Language::RuleSeq::ItemError
     end
   end
 
@@ -35,9 +34,35 @@ describe Eson::Language do
     it "should be E2" do
       Eson::Language.e2.class.must_equal Struct::E2
     end
+    it "should be aliased" do
+      Eson::Language.must_respond_to :tokenize_variable_identifier_lang
+    end
     it "should contain new rules" do
-      rules = Eson::Language.e2.values
-      rules.detect{|i| i.name == :variable_identifier}.wont_be_nil
+      Eson::Language.e2.get_rule(:variable_identifier).wont_be_nil
+    end
+  end
+
+  describe "validate e3" do
+    it "should be E3" do
+      Eson::Language.e3.class.must_equal Struct::E3
+    end
+    it "should be aliased" do
+      Eson::Language.must_respond_to :tokenize_word_form_lang
+    end
+    it "should contain new rules" do
+      Eson::Language.e3.get_rule(:word_form).wont_be_nil
+    end
+  end
+
+    describe "validate e4" do
+    it "should be E4" do
+      Eson::Language.e4.class.must_equal Struct::E4
+    end
+    it "should be aliased" do
+      Eson::Language.must_respond_to :label_sub_string_lang
+    end
+    it "should contain new rules" do
+      Eson::Language.e4.get_rule(:sub_string).wont_be_nil
     end
   end
 end

@@ -55,7 +55,7 @@ module Eson
       #        When Rule represents a non-terminal it is an array of
       #        NonTerminals and Terminals. When Rule represents a
       #        terminal it is the empty array. 
-      Rule = Struct.new(:name, :sequence, :start_rxp, :follow_rxp,) do
+      Rule = Struct.new(:name, :sequence, :start_rxp, :follow_rxp) do
 
         ControlError = Class.new(StandardError)
         
@@ -176,6 +176,21 @@ module Eson
         end
       end
 
+      def make_terminal_rule(new_rule_name, rxp)
+        self.push(Rule.new(new_rule_name,
+                           [],
+                           rxp))
+      end
+
+      def make_repetition_rule(new_rule_name, rule_name)
+        unless include_rule?(rule_name)
+          raise ItemError, missing_item_error_message(rule_name)
+        end
+        self.push(Rule.new(new_rule_name,
+                           rule_symbol_repetition(rule_name),
+                           self.make_repetition_rxp(rule_name)))
+      end
+
       def make_concatenation_rule(new_rule_name, rule_names)
         unless include_rules?(rule_names)
           raise ItemError, missing_items_error_message(rule_names)
@@ -199,6 +214,10 @@ module Eson
         "One or more of the following Eson::Language::Rule.name's are not present in the sequence: #{names.join(", ")}."
       end
 
+      def rule_symbol_repetition(rule_name)
+        [].push(get_rule(rule_name).rule_symbol(:repetition, true))
+      end
+
       def rule_symbol_alternation(rule_names)
         rule_names.map do |i|
           get_rule(i).rule_symbol(:choice)
@@ -211,6 +230,10 @@ module Eson
         end
       end
 
+      def make_repetition_rxp(rule_name)
+        get_rule(rule_name).start_rxp
+      end
+      
       def make_concatenation_rxp(rule_names)
         if include_rules?(rule_names)
           rxp_strings = get_rxp_sources(rule_names)
@@ -599,8 +622,15 @@ module Eson
     #@eskimobear.specification
     # Prop : E4 is a struct of eson production rules of E3 with
     #        'sub_string' production rule added.
+    #
+    # sub_string := variable_identifier | word_form;
+    # sub_string_list := {sub_string};
+    # string_delimiter := ";
+    # string := string_delimiter, sub_string_list, string_delimiter
     def e4
       e3.rule_seq.make_alternation_rule(:sub_string, [:word_form, :variable_identifier])
+        .make_terminal_rule(:string_delimiter, /"/)
+        .make_repetition_rule(:sub_string_list, :sub_string)
         .build_language("E4")
     end
 
@@ -609,5 +639,6 @@ module Eson
     alias_method :tokenize_variable_identifier_lang, :e2
     alias_method :tokenize_word_form_lang, :e3
     alias_method :label_sub_string_lang, :e4
+    alias_method :insert_string_delimiter_lang, :e4
   end
 end

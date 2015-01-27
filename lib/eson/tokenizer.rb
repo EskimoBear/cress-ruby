@@ -33,7 +33,63 @@ module Eson
       end
 
       def self.new_item_error_message
-        "One or more of the given array elements are not of the type Eson::Tokenizer::Token"
+        "One or more of the given array elements are not of the type Eson::Tokenizer::TokenSeq::Token"
+      end
+
+      #Add a string_delimiter token before and after each sequence of
+      #  possible sub_strings
+      #
+      #@eskimobear.specification
+      #T, inpuut token sequence
+      #O, output token sequence
+      #ets, sequence between T start and sub_string
+      #ss, sequence of sub_string tokens
+      #
+      # Init : length(T) > 0
+      #        length(O) = 0
+      # Next : when T contains sub_string
+      #        T' = T - ets
+      #        O' = O + ets + string_delimiter
+      #        when head(T) = ss
+      #        T' = T - ss
+      #        O' = O + ss + string_delimiter
+      #        when T does not contain sub_string
+      #        T' = []
+      #        O' = O + T
+      def insert_string_delimiters
+        self.replace insert_string_delimiters_recur(Eson::Language::e4.sub_string, self.clone)  
+      end
+
+      def insert_string_delimiters_recur(rule, input_sequence,
+                                         output_sequence = Eson::Tokenizer::TokenSeq.new)
+        if input_sequence.include_alt_name?(rule)
+          scanned, unscanned = input_sequence.split_before_alt_name(rule)
+          
+          delimiter = rule_to_token(Eson::Language::e4.string_delimiter)
+          output_sequence.push(scanned).push(delimiter).flatten!
+          head = unscanned.take_while{|i| i.alternation_names.to_a.include?(rule.name)}
+          new_input = unscanned.drop(head.length)
+          insert_string_delimiters_recur(rule,
+                                         new_input,
+                                         output_sequence.push(head).push(delimiter).flatten)
+        else
+          output_sequence.push(input_sequence).flatten
+        end        
+      end
+      
+      def rule_to_token(rule)
+        if rule.terminal?
+          lexeme = rule.start_rxp.source.intern
+          Token.new(lexeme,
+                    rule.name,
+                    [])
+        else
+          nil
+        end
+      end
+      
+      def label_sub_strings
+        assign_alternation_names(Eson::Language::e4.sub_string)
       end
       
       #Given an alternation rule add rule.name to each referenced
@@ -55,7 +111,7 @@ module Eson
         tokenize_rule(LANG.variable_identifier)
       end
 
-      def tokenize_word_form
+      def tokenize_word_forms
         tokenize_rule(LANG.word_form)
       end
 

@@ -48,6 +48,11 @@ describe Eson do
       result.must_be_instance_of Eson::Tokenizer::TokenSeq
       result.find_all {|i| i.alternation_names.to_a.include?(:sub_string)}.length.must_equal 7
     end
+    it "#insert_string_delimiters" do
+      result = Eson.compile(@valid_program)
+      result.must_be_instance_of Eson::Tokenizer::TokenSeq
+      result.find_all {|i| i.name == :string_delimiter}.length.must_equal 10
+    end
   end
 end
 

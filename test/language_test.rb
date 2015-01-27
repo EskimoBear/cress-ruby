@@ -60,9 +60,12 @@ describe Eson::Language do
     end
     it "should be aliased" do
       Eson::Language.must_respond_to :label_sub_string_lang
+      Eson::Language.must_respond_to :insert_string_delimiter_lang
     end
     it "should contain new rules" do
       Eson::Language.e4.get_rule(:sub_string).wont_be_nil
+      Eson::Language.e4.get_rule(:string_delimiter).wont_be_nil
+      Eson::Language.e4.get_rule(:sub_string_list).wont_be_nil
     end
   end
 end
@@ -130,6 +133,15 @@ describe Eson::Language::RuleSeq do
   describe "#make_concatenation_rule" do
     it "succeeds" do
       rules = rule_seq.make_concatenation_rule(:new_rule, [:rule_1, :rule_2])
+      rules.must_be_instance_of Eson::Language::RuleSeq
+      rules.get_rule(:new_rule).must_be_instance_of Eson::Language::RuleSeq::Rule
+      rules.get_rule(:new_rule).nonterminal?.must_equal true
+    end
+  end
+
+  describe "#make_repetition_rule" do
+    it "succeeds" do
+      rules = rule_seq.make_repetition_rule(:new_rule, :rule_1)
       rules.must_be_instance_of Eson::Language::RuleSeq
       rules.get_rule(:new_rule).must_be_instance_of Eson::Language::RuleSeq::Rule
       rules.get_rule(:new_rule).nonterminal?.must_equal true

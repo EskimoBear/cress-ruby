@@ -78,8 +78,6 @@ describe Eson::Language do
     end
     it "should contain new rules" do
       lang = Eson::Language.e5
-      puts Eson::Language.e5.to_s
-      #puts Eson::Language.e5.value.sequence
       lang.get_rule(:value).wont_be_nil
       lang.get_rule(:element_more_once).wont_be_nil
       lang.get_rule(:element_more).wont_be_nil

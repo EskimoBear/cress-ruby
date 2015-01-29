@@ -19,8 +19,8 @@ describe Eson::Tokenizer do
       @token_sequence.empty?.wont_equal true 
     end
     it "has only tokens in sequence" do
-      token_seq_length = @token_sequence.length 
-      valid_token_seq_length = @token_sequence.select{|i| i.class == Struct::Token}.length
+      token_seq_length = @token_sequence.length
+      valid_token_seq_length = @token_sequence.select{|i| i.class == Eson::Tokenizer::TokenSeq::Token}.length
       (token_seq_length == valid_token_seq_length).must_equal true
     end
     it "is a TokenSeq" do
@@ -42,7 +42,7 @@ describe Eson::Tokenizer do
     end
     it "has only tokens in sequence" do
       token_seq_length = @token_sequence.length 
-      valid_token_seq_length = @token_sequence.select{|i| i.class == Struct::Token}.length
+      valid_token_seq_length = @token_sequence.select{|i| i.class == Eson::Tokenizer::TokenSeq::Token}.length
       (token_seq_length == valid_token_seq_length).must_equal true
     end
   end

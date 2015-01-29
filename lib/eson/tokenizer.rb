@@ -8,41 +8,250 @@ module Eson
 
     extend self
 
-    JsonSymbol = Struct.new "JsonSymbol", :lexeme, :name
-    
-    Token = Struct.new "Token", :lexeme, :name
+    JsonSymbol = Struct.new :lexeme, :name
 
     class TokenSeq < Array
+    
+      Token = Struct.new :lexeme, :name, :alternation_names
+      
+      ItemError = Class.new(StandardError)
 
-      #Replace token pairs of variable prefix and word with variable_identifier
-      #@param [Array<Eson::Tokenizer::Token>] A sequence of tokens for E1
-      #@return [Array<Eson::Tokenizer::Token>] A sequence of tokens for E2 
-      #@eskimobear.specification
-      # Input token sequence, T
-      # Output token sequence, O
-      # Token pair, m
-      # Sequence ending in m, M
-      # Single token for token pair, mt
-      # Init : length(T) < 0
-      #        length(O) = 0
-      # Next : T' = T - M
-      #        O' = O + M - m + mt AND mt = combine(m)
-      # Final : length(T) = 0
-      def tokenize_variable_identifiers
-        pair = [Eson::Language.e1.variable_prefix.name, Eson::Language.e1.word.name]
-        return recur_scan(pair, self.clone, Eson::Tokenizer::TokenSeq.new)
+      def self.new(obj=nil)
+        if obj.nil?
+          super []
+        else
+          array = super
+          unless self.all_tokens?(array)
+            raise ItemError, self.new_item_error_message
+          end
+          array
+        end
       end
 
-      def recur_scan(pattern_seq, token_sequence, output_sequence)
-        if token_sequence.seq_match?(*pattern_seq)
-          sub_seq = token_sequence.take_while_seq(*pattern_seq)
-          rest = token_sequence.drop(sub_seq.length)
-          new_token = reduce_tokens(:variable_identifier, *sub_seq.last(pattern_seq.length))
-          output_sequence.push(sub_seq.swap_tail(pattern_seq.length, new_token))
-          #binding.pry
-          recur_scan(pattern_seq, rest, output_sequence)
+      def self.all_tokens?(seq)
+        seq.all?{|i| i.class == Token}
+      end
+
+      def self.new_item_error_message
+        "One or more of the given array elements are not of the type Eson::Tokenizer::TokenSeq::Token"
+      end
+
+      #Add a string_delimiter token before and after each sequence of
+      #  possible sub_strings
+      #
+      #@eskimobear.specification
+      #T, inpuut token sequence
+      #O, output token sequence
+      #ets, sequence between T start and sub_string
+      #ss, sequence of sub_string tokens
+      #
+      # Init : length(T) > 0
+      #        length(O) = 0
+      # Next : when T contains sub_string
+      #        T' = T - ets
+      #        O' = O + ets + string_delimiter
+      #        when head(T) = ss
+      #        T' = T - ss
+      #        O' = O + ss + string_delimiter
+      #        when T does not contain sub_string
+      #        T' = []
+      #        O' = O + T
+      def insert_string_delimiters
+        self.replace insert_string_delimiters_recur(Eson::Language::e4.sub_string, self.clone)  
+      end
+
+      def insert_string_delimiters_recur(rule, input_sequence,
+                                         output_sequence = Eson::Tokenizer::TokenSeq.new)
+        if input_sequence.include_alt_name?(rule)
+          scanned, unscanned = input_sequence.split_before_alt_name(rule)
+          
+          delimiter = rule_to_token(Eson::Language::e4.string_delimiter)
+          output_sequence.push(scanned).push(delimiter).flatten!
+          head = unscanned.take_while{|i| i.alternation_names.to_a.include?(rule.name)}
+          new_input = unscanned.drop(head.length)
+          insert_string_delimiters_recur(rule,
+                                         new_input,
+                                         output_sequence.push(head).push(delimiter).flatten)
         else
-          output_sequence.push(token_sequence).flatten
+          output_sequence.push(input_sequence).flatten
+        end        
+      end
+      
+      def rule_to_token(rule)
+        if rule.terminal?
+          lexeme = rule.start_rxp.source.intern
+          Token.new(lexeme,
+                    rule.name,
+                    [])
+        else
+          nil
+        end
+      end
+      
+      def label_sub_strings
+        assign_alternation_names(Eson::Language::e4.sub_string)
+      end
+      
+      #Given an alternation rule add rule.name to each referenced
+      #  token's alternation_names array.
+      #
+      #@param rule [Eson::Language::RuleSeq::Rule] alternation rule
+      def assign_alternation_names(rule)
+        token_names = rule.sequence.map{|i| i.rule_name}
+        new_token_name = rule.name
+        self.map! do |old_token|
+          if token_names.include?(old_token.name)
+            old_token.alternation_names = [].push(rule.name)
+          end
+            old_token
+        end
+      end
+      
+      def tokenize_variable_identifiers
+        tokenize_rule(LANG.variable_identifier)
+      end
+
+      def tokenize_word_forms
+        tokenize_rule(LANG.word_form)
+      end
+
+      def tokenize_rule(rule)
+        if rule.alternation?
+          tokenize_alternation_rule(rule)
+        elsif rule.concatenation?
+          tokenize_concatenation_rule(rule)
+        end
+      end
+
+      #Replace tokens of :choice names with token of rule name and
+      #  equivalent lexeme. Reduce all repetitions to a single token. 
+      #  
+      #@param rule [Eson::Language::RuleSeq::Rule] An alternation rule 
+      #@eskimobear.specification
+      # Original token sequence, T
+      # Output token sequence, O
+      # Old token, ot
+      # Token sequence of ot, ots
+      # Sequence between T start and ot, ets
+      # Single token for token sequence ots, ntt
+      # Init : length(T) < 0
+      #        length(O) = 0
+      # Next : When T contains ot
+      #        T' = T - ets
+      #        O' = O + ets
+      #        When head(T) = ots
+      #        T' = T - ots
+      #        O' = O + ntt AND ntt = combine(ots)
+      #        When T does not contain ot
+      #        T' = []
+      #        O' = O + T
+      # Final : length(T) = 0
+      def tokenize_alternation_rule(rule)
+        assign_alternation_names(rule)
+        self.replace tokenize_alternation_rule_recur(rule, self.clone)
+      end
+
+      def tokenize_alternation_rule_recur(rule, input_sequence,
+                                              output_sequence = Eson::Tokenizer::TokenSeq.new)
+        new_token_name = rule.name
+        token_names = rule.sequence.map{|i| i.rule_name}
+
+        if input_sequence.include_alt_name?(rule)
+          scanned, unscanned = input_sequence.split_before_alt_name(rule)
+          output_sequence.push(scanned).flatten!
+          head = unscanned.take_while{|i| i.alternation_names.to_a.include? new_token_name}
+          new_input = unscanned.drop(head.size)
+          new_token = reduce_tokens(new_token_name, *head)
+          tokenize_alternation_rule_recur(rule, new_input,
+                                              output_sequence.push(new_token).flatten)
+        else
+          output_sequence.push(input_sequence).flatten
+        end
+      end
+
+      def split_before_token(token_name)
+        if self.include_token?(token_name)
+          split_point = get_token_index(token_name)
+          head = self.take(split_point)
+          tail = self[split_point..-1]
+          return head, tail
+        else
+          nil
+        end
+      end
+
+      def split_before_alt_name(rule)
+        if self.include_alt_name?(rule)
+          split_point = get_alt_name_index(rule.name)
+          head = self.take(split_point)
+          tail = self[split_point..-1]
+          return head, tail
+        end
+      end
+
+      def include_alt_name?(rule)
+        get_alt_name_token(rule.name) ? true : false
+      end
+
+      def alt_names
+        self.map{|i| i.alternation_names.to_a}
+      end
+
+      def get_alt_name_token(rule_name)
+        index = get_alt_name_index(rule_name)
+        if index.nil?
+          nil
+        else
+          self[index]
+        end
+      end
+
+      def get_alt_name_index(rule_name)
+        alt_names.find_index{|i| i.include? rule_name}
+      end
+        
+      
+      #Replace inner token sequence of :none names with token of rule
+      #  name and equivalent lexeme.
+      #
+      #@param rule [Eson::Language::RuleSeq::Rule] A concatenation rule
+      #@eskimobear.specification
+      # Original token sequence, T
+      # Output token sequence, O
+      # Inner token sequence, m
+      # First token of m, m_start
+      # Sequence between T start and m_start, ets
+      # Single token for token sequence, mt
+      # Init : length(T) < 0
+      #        length(O) = 0
+      # Next : when T contains m
+      #        T' = T - ets
+      #        O' = O + ets + mt AND mt = reduce(m)
+      #        otherwise
+      #        T' = []
+      #        O' = O + T
+      def tokenize_concatenation_rule(rule)
+        self.replace tokenize_concatenation_rule_recur(rule, self.clone)
+      end
+
+      def tokenize_concatenation_rule_recur(rule, input_sequence,
+                                            output_sequence =  Eson::Tokenizer::TokenSeq.new)
+        token_names = rule.sequence.map{|i| i.rule_name}
+        match_seq_size = token_names.length
+        new_token_name = rule.name
+        if input_sequence.seq_match?(*token_names)         
+          input_sequence.take_with_seq(*token_names) do |m|
+            new_input =  input_sequence.drop(m.length)
+            matching_tokens = m.last(match_seq_size)
+            new_token = reduce_tokens(new_token_name, *matching_tokens)
+            m.swap_tail(match_seq_size, new_token)
+            new_output = output_sequence.push(m).flatten
+            tokenize_concatenation_rule_recur(rule,
+                                              new_input,
+                                              new_output)
+          end
+        else
+          output_sequence.push(input_sequence).flatten
         end
       end
 
@@ -50,52 +259,122 @@ module Eson
         combined_lexeme = tokens.each_with_object("") do |i, string|
           string.concat(i.lexeme.to_s)
         end
-        Token[combined_lexeme, new_name]
-      end
-
-      #@return [Eson::Tokenizer::TokenSeq, nil]the first sequence ending with given token names
-      def take_while_seq(*token_names)
-        if seq_match?(*token_names)
-          detect_seq(*token_names)
-        else
-          nil
-        end
-      end
-
-      def seq_match?(*token_names)
-        detect_seq(*token_names) ? true : false
+        Token[combined_lexeme.intern, new_name]
       end
       
-      def detect_seq(*token_names)
-        size = token_names.length
-        indices = token_names.each_with_object([]) do |i, array|
-          if array.empty?
-            match = self.find_index { |j| j.name == i }
-            array.push(match) unless match.nil?
-          else
-            offset = array.last + 1
-            match = self.drop(offset).find_index { |j| j.name == i }
-            array.push(match + offset) unless match.nil?
-          end
-        end
-        if indices.length == size && consecutive_ints?(indices)
-          self.take(indices.last + 1)
-        else
-          nil
-        end
-      end
-         
       def swap_tail(tail_length, new_tail)
         self.pop(tail_length)
         self.push(new_tail).flatten
       end
-    
-      def consecutive_ints?(int_seq)
-        acc = Array.new
-        int_seq.each_with_index do |item, index|
-          acc.push(item.eql?( int_seq.first + index))
+
+      def seq_match?(*token_names)
+        take_with_seq(*token_names) ? true : false
+      end
+
+      def take_with_seq(*token_names)
+        if block_given?
+          yield take_with_seq_recur(token_names, self.clone)
+        else
+          take_with_seq_recur(token_names, self.clone)
         end
-        acc.empty? ? false : acc.all?
+      end
+
+      #Returns a token sequence that begins at head of sequence and
+      #  ends with the pattern sequence.
+      #@param token_names [Array<Symbols>] sequence of token names to match
+      #@return [Eson::Tokenizer::TokenSeq] sequence ending with token
+      #  names pattern.
+      #Currently exits on first partially failing pattern it matches
+      #Need to start another scan when first fails
+      #@eskimobear.specification
+      # T, input token sequence
+      # et,tokens in T
+      # ets, sequence of et between T start and p_start
+      # S, scanned token sequence
+      # p, pattern sequence
+      # p_start, first token of p
+      # P, output sequence ending in p
+      # Init : length(T) > 0
+      #        length(S) = 0
+      #        length(P) = 0
+      # Next : when T contains p_start
+      #        T' = T - ets
+      #        S' = S + ets 
+      #        when head(T') == p
+      #        P = S' + p
+      #        T' = T
+      #        S' = S
+      #        when head(T') != p
+      #        T' = T - p_start
+      #        S' = S + p_start
+      #        when T does not contain p_start
+      #        T' = []
+      #        S' = S + T
+      #        P = T'
+      def take_with_seq_recur(pat_seq, input_sequence,
+                         output_sequence = Eson::Tokenizer::TokenSeq.new)
+        pat_start = pat_seq.first
+        if input_sequence.include_token?(pat_start)
+          scanned, unscanned = input_sequence.split_before_token(pat_start)
+          unscanned_head = unscanned.take(pat_seq.length)
+          head_names = unscanned_head.map{|i| i.name}
+          if scanned.empty?
+            if pat_seq == head_names
+              output_sequence.push(unscanned_head).flatten!
+              if block_given?
+                yield output_sequence
+              else
+                return output_sequence
+              end
+            else
+              take_with_seq_recur(pat_seq,
+                             unscanned.drop(1),
+                             output_sequence.push(unscanned.first).flatten)
+            end
+          else
+            new_input = unscanned
+            new_output = output_sequence.push(scanned).flatten!
+            if pat_seq == head_names
+              output_sequence.push(unscanned_head).flatten!
+              if block_given?
+                yield output_sequence
+              else
+                return output_sequence
+              end
+            else
+              take_with_seq_recur(pat_seq,
+                             unscanned,
+                             new_output)
+            end
+          end 
+        else
+          nil
+        end
+      end
+      
+      def include_token?(token_name)
+        get_token(token_name) ? true : false
+      end
+
+      def get_token(token_name)
+        self.find{|i| i.name == token_name}
+      end
+
+      def last_token?(token_name)
+        get_token_index(token_name) == (self.length - 1)
+      end
+
+      def get_token_index(token_name)
+        self.find_index{|i| i.name == token_name}
+      end
+
+      def first_token?(token_name)
+        self.first.name == token_name
+      end
+    
+      def swap_tail(tail_length, new_tail)
+        self.pop(tail_length)
+        self.push(new_tail).flatten
       end
     end
     
@@ -206,22 +485,22 @@ module Eson
       symbol_seq.each_with_object(TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start
-          seq.push(Token.new(:"{", :program_start))
+          seq.push(TokenSeq::Token.new(:"{", :program_start))
           pop_chars(symbol, char_seq) 
         when :object_end
-          seq.push(Token.new(:"}", :program_end))
+          seq.push(TokenSeq::Token.new(:"}", :program_end))
           pop_chars(symbol, char_seq)
         when :array_start
-          seq.push(Token.new(:"[", :array_start))
+          seq.push(TokenSeq::Token.new(:"[", :array_start))
           pop_chars(symbol, char_seq)
         when :array_end
-          seq.push(Token.new(:"]", :array_end))
+          seq.push(TokenSeq::Token.new(:"]", :array_end))
           pop_chars(symbol, char_seq)
         when :colon
-          seq.push(Token.new(:":", :colon))
+          seq.push(TokenSeq::Token.new(:":", :colon))
           pop_chars(symbol, char_seq) 
         when :comma
-          seq.push(Token.new(:",", :comma))
+          seq.push(TokenSeq::Token.new(:",", :comma))
           pop_chars(symbol, char_seq) 
         when :JSON_key
           tokenize_json_key(symbol.lexeme, seq, char_seq)
@@ -237,11 +516,11 @@ module Eson
 
     def tokenize_json_key(json_key, seq, char_seq)
       if begins_with_proc_prefix?(json_key)
-        seq.push(Token.new(:"&", :proc_prefix))
+        seq.push(TokenSeq::Token.new(:"&", :proc_prefix))
         char_seq.slice!(0, 1)
         tokenize_special_forms(get_prefixed_string(json_key), seq, char_seq)
       else
-        seq.push(Token.new(json_key.freeze, :key_word))
+        seq.push(TokenSeq::Token.new(json_key.freeze, :key_string))
         char_seq.slice!(0, json_key.length)
       end
     end
@@ -255,40 +534,35 @@ module Eson
     end
 
     def tokenize_special_forms(json_string, seq, char_seq)
-      special_form = match_special_form(json_string)
-      case special_form.intern
-      when :doc
-        seq.push(Token.new(json_string, :doc))
-        char_seq.slice!(0, 3)
-      when :let
-        seq.push(Token.new(json_string, :let))
-        char_seq.slice!(0, 3)
-      when :ref
-        seq.push(Token.new(json_string, :ref))
-        char_seq.slice!(0, 3)
-      when :""
-          seq.push(Token.new(json_string, :unknown_special_form))
-          char_seq.slice!(0, json_string.length)
+      special_form = LANG.special_form.match_start(json_string).to_s
+      case special_form
+      when LANG.doc.rxp
+        seq.push(TokenSeq::Token.new(json_string, LANG.doc.name))
+        pop_chars_string(char_seq, json_string)
+      when LANG.let.rxp
+        seq.push(TokenSeq::Token.new(json_string, LANG.let.name))
+        pop_chars_string(char_seq, json_string)
+      when LANG.ref.rxp
+        seq.push(TokenSeq::Token.new(json_string, LANG.ref.name))
+        pop_chars_string(char_seq, json_string)
+      else
+        seq.push(TokenSeq::Token.new(json_string, LANG.unknown_special_form.name))
+        pop_chars_string(char_seq, json_string)
       end      
-    end
-
-    def match_special_form(string)
-      rxp = LANG.make_alternation([:let, :ref, :doc])
-      string.match(rxp).to_s.freeze
     end
 
     def tokenize_json_value(json_value, seq, char_seq)
       if json_value.is_a? TrueClass
-        seq.push(Token.new(json_value, :true))
+        seq.push(TokenSeq::Token.new(json_value, :true))
         char_seq.slice!(0, json_value.to_s.size)
       elsif json_value.is_a? Numeric
-        seq.push(Token.new(json_value, :number))
+        seq.push(TokenSeq::Token.new(json_value, :number))
         char_seq.slice!(0, json_value.to_s.size)
       elsif json_value.is_a? FalseClass
-        seq.push(Token.new(json_value, :false))
+        seq.push(TokenSeq::Token.new(json_value, :false))
         char_seq.slice!(0, json_value.to_s.size)
       elsif json_value.nil?
-        seq.push(Token.new(json_value, :null))
+        seq.push(TokenSeq::Token.new(json_value, :null))
         char_seq.slice!(0, :null.to_s.size)
       elsif json_value.is_a? String
         tokenize_json_string(json_value.freeze, seq, char_seq)
@@ -300,56 +574,35 @@ module Eson
     def tokenize_json_string(json_string, seq, char_seq)
       if json_string.empty?
         seq
-      elsif match_leading_whitespace_or_variable_prefix?(json_string)
-        tokenize_prefix(json_string, seq, char_seq)
-        tokenize_json_string(get_prefixed_string(json_string), seq, char_seq)
-      elsif match_other_chars?(json_string)
-        other_chars, rest = get_other_chars_and_string(json_string)
-        seq.push(Token.new(other_chars, :other_chars))
-        char_seq.slice!(0, other_chars.length)
-        tokenize_json_string(rest, seq, char_seq)
-      else
-        next_word, rest = get_next_word_and_string(json_string)
-        seq.push(Token.new(next_word, :word))
-        char_seq.slice!(0, next_word.length)
-        tokenize_json_string(rest, seq, char_seq)
+      elsif LANG.whitespace.match_rxp?(json_string)
+        lexeme = LANG.whitespace.match(json_string).to_s.intern
+        seq.push(TokenSeq::Token[lexeme, LANG.whitespace.name])
+        pop_chars_string(char_seq, lexeme)
+        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+      elsif LANG.variable_prefix.match_rxp?(json_string)
+        lexeme = LANG.variable_prefix.match(json_string).to_s.intern
+        seq.push(TokenSeq::Token[lexeme, LANG.variable_prefix.name])
+        pop_chars_string(char_seq, lexeme)
+        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+      elsif LANG.other_chars.match_rxp?(json_string)
+        lexeme = LANG.other_chars.match(json_string).to_s.intern
+        seq.push(TokenSeq::Token[lexeme, LANG.other_chars.name])
+        pop_chars_string(char_seq, lexeme)
+        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+      elsif LANG.word.match_rxp?(json_string)
+        lexeme = LANG.word.match(json_string).to_s.intern
+        seq.push(TokenSeq::Token[lexeme, LANG.word.name])
+        pop_chars_string(char_seq, lexeme)
+        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
       end
     end
 
-    def match_leading_whitespace_or_variable_prefix?(string)
-      rxp = LANG.make_alternation([:whitespace, :variable_prefix])
-      string.match(rxp).to_s == "" ? false : true
+    def pop_chars_string(char_seq, matched_string)
+      char_seq.slice!(0, matched_string.size)
     end
-
-    def tokenize_prefix(json_string, seq, char_seq)
-      case next_char(json_string).intern
-      when :"$"
-          seq.push(Token.new(:"$", :variable_prefix))
-          char_seq.slice!(0, 1)
-      when :" "
-          seq.push(Token.new(:" ", :whitespace))
-          char_seq.slice!(0, 1)
-      end
-    end
-
-    def match_other_chars?(string)
-      LANG.other_chars.match_rxp?(string)
-    end
-
-    def get_other_chars_and_string(string)
-      other_chars = LANG.other_chars.match(string)
-      rest_start_index = other_chars.end(0)
-      [other_chars.to_s.freeze, string[rest_start_index..-1].freeze]
-    end
-
-    def next_char(string)
-      string[0].freeze
-    end
-
-    def get_next_word_and_string(string)
-      next_word = LANG.word.match(string)
-      rest_start_index = next_word.end(0)
-      [next_word.to_s.freeze, string[rest_start_index..-1].freeze]
+    
+    def get_rest(json_string, matched_string)
+      json_string[matched_string.size..-1]
     end
   end
   

@@ -32,11 +32,26 @@ describe Eson do
     end
   end
 
-  describe "valid_program" do
-    it ".compile" do
+  describe "compile valid_program" do
+    it "#tokenize_variable_identifier" do
       result = Eson.compile(@valid_program)
       result.must_be_instance_of Eson::Tokenizer::TokenSeq
       result.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
+    end
+    it "#tokenize_word_form" do
+      result = Eson.compile(@valid_program)
+      result.must_be_instance_of Eson::Tokenizer::TokenSeq
+      result.find_all {|i| i.name == :word_form}.length.must_equal 6
+    end
+    it "#label_sub_strings" do
+      result = Eson.compile(@valid_program)
+      result.must_be_instance_of Eson::Tokenizer::TokenSeq
+      result.find_all {|i| i.alternation_names.to_a.include?(:sub_string)}.length.must_equal 7
+    end
+    it "#insert_string_delimiters" do
+      result = Eson.compile(@valid_program)
+      result.must_be_instance_of Eson::Tokenizer::TokenSeq
+      result.find_all {|i| i.name == :string_delimiter}.length.must_equal 10
     end
   end
 end

@@ -116,7 +116,28 @@ describe Eson::Language::RuleSeq do
       rules.must_be_instance_of Struct::LANG
     end
   end
+  
+  describe "RuleSeq::Rule#to_s" do
+    it "is a terminal rule" do
+      Eson::Language::e0.comma.to_s.must_match /( := )/ 
+    end
+    it "is a concatenation rule" do
+      Eson::Language::e0.variable_identifier.to_s.must_match /( := )/
+    end
+    it "is a alternation rule" do
+      Eson::Language::e0.special_form.to_s.must_match /( := )/
+    end
+    it "is a repetition rule" do
+      Eson::Language::e4.sub_string_list.to_s.must_match /( := )/
+    end
+  end
 
+  describe "to_s" do
+    it "" do
+      Eson::Language::e0.to_s.must_match /has the following production rules/
+    end
+  end
+  
   describe "#make_alternation_rule" do
     it "succeeds" do
       rules = rule_seq.make_alternation_rule(:new_rule, [:rule_1, :rule_2])

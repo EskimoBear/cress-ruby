@@ -15,7 +15,8 @@ module Eson
       end
 
       def to_s
-        "#{self.class} has rules: ".concat(self.members.join(", "))
+        rule_list = rule_seq.map{|i| i.to_s}
+        "#{self.class.to_s.gsub(/Struct::/, "")} has the following production rules:\n#{rule_list.join("\n")}"
       end              
     end
 
@@ -58,6 +59,40 @@ module Eson
       Rule = Struct.new(:name, :sequence, :start_rxp, :follow_rxp) do
 
         ControlError = Class.new(StandardError)
+
+        def to_s       
+          "#{name} := #{sequence_to_s};"
+        end
+
+        def sequence_to_s
+          if terminal?
+            "\"#{start_rxp.source.gsub(/\\/, "")}\""
+          elsif alternation?
+            join_rule_name(" | ")
+          elsif concatenation?
+            join_rule_name(", ")
+          elsif repetition?
+            "{#{join_rule_name}}"
+          end
+        end
+        
+        def concatenation?
+          self.sequence.all?{|i| i.control == :none}
+        end
+
+        def alternation?
+          self.sequence.all?{|i| i.control == :choice}
+        end
+        
+        def repetition?
+          sequence.length.eql?(1) && sequence.first.control == :repetition
+        end
+      
+        def join_rule_name(infix="")
+          initial = sequence.first.rule_name.to_s
+          rest = sequence.drop(1)
+          rest.each_with_object(initial){|i, memo| memo.concat(infix).concat(i.rule_name.to_s)}
+        end
         
         def match(string)
           string.match(self.rxp)
@@ -94,14 +129,6 @@ module Eson
         
         def nonterminal?
           !terminal?
-        end
-
-        def alternation?
-          self.sequence.all?{|i| i.control == :choice}
-        end
-
-        def concatenation?
-          self.sequence.all?{|i| i.control == :none}
         end
         
         def rule_symbol(control=:none, nullable=false)
@@ -181,16 +208,7 @@ module Eson
                            [],
                            rxp))
       end
-
-      def make_repetition_rule(new_rule_name, rule_name)
-        unless include_rule?(rule_name)
-          raise ItemError, missing_item_error_message(rule_name)
-        end
-        self.push(Rule.new(new_rule_name,
-                           rule_symbol_repetition(rule_name),
-                           self.make_repetition_rxp(rule_name)))
-      end
-
+      
       def make_concatenation_rule(new_rule_name, rule_names)
         unless include_rules?(rule_names)
           raise ItemError, missing_items_error_message(rule_names)
@@ -199,7 +217,7 @@ module Eson
                            rule_symbol_concatenation(rule_names),
                            self.make_concatenation_rxp(rule_names)))
       end
-
+        
       def make_alternation_rule(new_rule_name, rule_names)      
         unless include_rules?(rule_names)
           raise ItemError, missing_items_error_message(rule_names)
@@ -207,6 +225,15 @@ module Eson
         self.push(Rule.new(new_rule_name,
                            rule_symbol_alternation(rule_names),
                            self.make_alternation_rxp(rule_names)))
+      end
+      
+      def make_repetition_rule(new_rule_name, rule_name)
+        unless include_rule?(rule_name)
+          raise ItemError, missing_item_error_message(rule_name)
+        end
+        self.push(Rule.new(new_rule_name,
+                           rule_symbol_repetition(rule_name),
+                           self.make_repetition_rxp(rule_name)))
       end
 
       def missing_items_error_message(rule_names)

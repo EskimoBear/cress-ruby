@@ -17,11 +17,11 @@ module Eson
   def compile(eson_program)
     if validate_json?(eson_program)
       tokenizer_output = Tokenizer.tokenize_program(eson_program)
-      verified_special_forms = ErrorPass.verify_special_forms(tokenizer_output.first)
-      verified_special_forms.tokenize_variable_identifiers
-                  .tokenize_word_forms
-                  .label_sub_strings
-                  .insert_string_delimiters
+      ErrorPass.verify_special_forms(tokenizer_output.first)
+        .tokenize_variable_identifiers
+        .tokenize_word_forms
+        .label_sub_strings
+        .insert_string_delimiters
     else
       validation_pass(eson_program)
     end

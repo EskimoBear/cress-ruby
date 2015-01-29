@@ -44,7 +44,7 @@ module Eson
       #          :option and/or :repetition.
       #      : :nullable is a boolean, true when the non-terminal is
       #         nullable
-      NonTerminal = Struct.new(:rule_name, :control, :nullable)
+      NonTerminal = Struct.new(:rule_name, :control, :nullable, :recursive)
       
       #EBNF production rule representation
       #@eskimobear.specification
@@ -73,6 +73,8 @@ module Eson
             join_rule_name(", ")
           elsif repetition?
             "{#{join_rule_name}}"
+          elsif option?
+            "[#{join_rule_name}]"
           end
         end
         
@@ -86,6 +88,10 @@ module Eson
         
         def repetition?
           sequence.length.eql?(1) && sequence.first.control == :repetition
+        end
+
+        def option?
+          sequence.length.eql?(1) && sequence.first.control == :option
         end
       
         def join_rule_name(infix="")
@@ -209,21 +215,29 @@ module Eson
                            rxp))
       end
       
-      def make_concatenation_rule(new_rule_name, rule_names)
+      def make_concatenation_rule(new_rule_name, rule_names, recursive_names=[])
         unless include_rules?(rule_names)
           raise ItemError, missing_items_error_message(rule_names)
         end
+        symbol_seq = recursive_names.map do |i|
+          NonTerminal[i, :none, false, true]
+        end
+        symbol_seq.push(rule_symbol_concatenation(rule_names)).flatten!
         self.push(Rule.new(new_rule_name,
-                           rule_symbol_concatenation(rule_names),
+                           symbol_seq,
                            self.make_concatenation_rxp(rule_names)))
       end
         
-      def make_alternation_rule(new_rule_name, rule_names)      
+      def make_alternation_rule(new_rule_name, rule_names, recursive_names=[])      
         unless include_rules?(rule_names)
           raise ItemError, missing_items_error_message(rule_names)
         end
+        symbol_seq = recursive_names.map do |i|
+            NonTerminal[i, :choice, false, true]
+        end
+        symbol_seq.push(rule_symbol_alternation(rule_names)).flatten!
         self.push(Rule.new(new_rule_name,
-                           rule_symbol_alternation(rule_names),
+                           symbol_seq,
                            self.make_alternation_rxp(rule_names)))
       end
       
@@ -236,11 +250,24 @@ module Eson
                            self.make_repetition_rxp(rule_name)))
       end
 
+      def make_option_rule(new_rule_name, rule_name)
+        unless include_rule?(rule_name)
+          raise ItemError, missing_item_error_message(rule_name)
+        end
+        self.push(Rule.new(new_rule_name,
+                           rule_symbol_option(rule_name),
+                           self.make_option_rxp(rule_name)))
+      end
+                  
       def missing_items_error_message(rule_names)
         names = rule_names.map{|i| ":".concat(i.to_s)}
         "One or more of the following Eson::Language::Rule.name's are not present in the sequence: #{names.join(", ")}."
       end
 
+      def rule_symbol_option(rule_name)
+        [].push(get_rule(rule_name).rule_symbol(:option, true))
+      end
+      
       def rule_symbol_repetition(rule_name)
         [].push(get_rule(rule_name).rule_symbol(:repetition, true))
       end
@@ -255,6 +282,10 @@ module Eson
        rule_names.map do |i|
           get_rule(i).rule_symbol
         end
+      end
+
+      def make_option_rxp(rule_name)
+        get_rule(rule_name).start_rxp
       end
 
       def make_repetition_rxp(rule_name)
@@ -346,6 +377,17 @@ module Eson
       def self.all_rules?(sequence)
         sequence.all? {|i| i.class == Rule }
       end
+    end
+
+    # null := "nil";
+    def null_rule
+      RuleSeq::Rule.new(:null,
+                        [],
+                        null_rxp)
+    end
+
+    def null_rxp
+      /null/
     end
     
     # variable_prefix := "$";
@@ -594,6 +636,7 @@ module Eson
                other_chars_rule,
                true_rule,
                false_rule,
+               null_rule,
                number_rule,
                array_start_rule,
                array_end_rule,
@@ -649,16 +692,35 @@ module Eson
     #@eskimobear.specification
     # Prop : E4 is a struct of eson production rules of E3 with
     #        'sub_string' production rule added.
-    #
-    # sub_string := variable_identifier | word_form;
-    # sub_string_list := {sub_string};
-    # string_delimiter := ";
-    # string := string_delimiter, sub_string_list, string_delimiter
     def e4
       e3.rule_seq.make_alternation_rule(:sub_string, [:word_form, :variable_identifier])
         .make_terminal_rule(:string_delimiter, /"/)
         .make_repetition_rule(:sub_string_list, :sub_string)
+        .make_concatenation_rule(:string, [:string_delimiter, :sub_string_list, :string_delimiter])
         .build_language("E4")
+    end
+
+    #@return e5 the sixth language of the compiler
+    #@eskimobear.specification
+    # Prop : E5 is a struct of eson production rules of E4 with
+    #        recursive production rules such as 'value', 'array',
+    #        and 'program' added.
+    def e5
+      e4.rule_seq
+        .make_alternation_rule(:value, [:variable_identifier, :true, :false,
+                                        :null, :string, :number], [:array, :program])
+        .make_concatenation_rule(:element_more_once, [:comma, :value])
+        .make_repetition_rule(:element_more, :element_more_once)
+        .make_concatenation_rule(:element_list, [:value, :element_more])
+        .make_option_rule(:element_set, :element_list)
+        .make_concatenation_rule(:array, [:array_start, :element_set, :array_end])
+        .make_concatenation_rule(:declaration, [:key_string, :colon], [:value])
+        .make_concatenation_rule(:declaration_more_once, [:comma, :declaration])
+        .make_repetition_rule(:declaration_more, :declaration_more_once)
+        .make_concatenation_rule(:declaration_list, [:declaration, :declaration_more])
+        .make_option_rule(:declaration_set, :declaration_list)
+        .make_concatenation_rule(:program, [:program_start, :declaration_set, :program_end])
+        .build_language("E5")
     end
 
     alias_method :tokenizer_lang, :e0

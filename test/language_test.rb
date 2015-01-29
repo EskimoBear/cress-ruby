@@ -54,7 +54,7 @@ describe Eson::Language do
     end
   end
 
-    describe "validate e4" do
+  describe "validate e4" do
     it "should be E4" do
       Eson::Language.e4.class.must_equal Struct::E4
     end
@@ -66,8 +66,34 @@ describe Eson::Language do
       Eson::Language.e4.get_rule(:sub_string).wont_be_nil
       Eson::Language.e4.get_rule(:string_delimiter).wont_be_nil
       Eson::Language.e4.get_rule(:sub_string_list).wont_be_nil
+      Eson::Language.e4.get_rule(:string).wont_be_nil
     end
   end
+
+  describe "validate e5" do
+    it "should be E5" do
+      Eson::Language.e5.class.must_equal Struct::E5
+    end
+    it "should be aliased" do
+    end
+    it "should contain new rules" do
+      lang = Eson::Language.e5
+      puts Eson::Language.e5.to_s
+      #puts Eson::Language.e5.value.sequence
+      lang.get_rule(:value).wont_be_nil
+      lang.get_rule(:element_more_once).wont_be_nil
+      lang.get_rule(:element_more).wont_be_nil
+      lang.get_rule(:element_list).wont_be_nil
+      lang.get_rule(:element_set).wont_be_nil
+      lang.get_rule(:array).wont_be_nil
+      lang.get_rule(:declaration).wont_be_nil
+      lang.get_rule(:declaration_more_once).wont_be_nil
+      lang.get_rule(:declaration_more).wont_be_nil
+      lang.get_rule(:declaration_list).wont_be_nil
+      lang.get_rule(:declaration_set).wont_be_nil
+      lang.get_rule(:program).wont_be_nil
+    end
+  end    
 end
 
 describe Eson::Language::RuleSeq do

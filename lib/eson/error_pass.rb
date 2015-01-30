@@ -15,18 +15,14 @@ module Eson
     def verify_special_forms(token_sequence)
       error_token = token_sequence.find { |i| i.name == LANG.unknown_special_form.name}
       raise SpecialFormError,
-            build_exception_message(error_token.lexeme) unless error_token.nil?
+            build_exception_message(error_token, token_sequence) unless error_token.nil?
       return token_sequence
     end
 
     private
 
-    def build_exception_message(lexeme)
-      "'#{lexeme}' is not a known special form:\n\t#{locate_line()}"
-    end
-
-    def locate_line()
-      "TODO print occurence of error"
+    def build_exception_message(token, token_seq)
+      "'#{token.lexeme}' is not a known special form in line #{token.line_number}:\n #{token.line_number}. #{token_seq.get_program_line(token.line_number)}" 
     end
   end
 end

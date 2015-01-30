@@ -36,6 +36,11 @@ module Eson
         "One or more of the given array elements are not of the type Eson::Tokenizer::TokenSeq::Token"
       end
 
+      def get_program_line(line_no)
+        take_while{|i| i.line_number == line_no}
+          .each_with_object(""){|i, acc| acc.concat(i.lexeme.to_s)}
+      end
+      
       #Add line number metadata to each token
       #
       #@eskimobear.specification
@@ -623,7 +628,7 @@ module Eson
         seq.push(TokenSeq::Token.new(json_value, :false))
         char_seq.slice!(0, json_value.to_s.size)
       elsif json_value.nil?
-        seq.push(TokenSeq::Token.new(json_value, :null))
+        seq.push(TokenSeq::Token.new("null", :null))
         char_seq.slice!(0, :null.to_s.size)
       elsif json_value.is_a? String
         tokenize_json_string(json_value.freeze, seq, char_seq)

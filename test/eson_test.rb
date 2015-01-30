@@ -33,25 +33,29 @@ describe Eson do
   end
 
   describe "compile valid_program" do
+    before do
+      @result = Eson.compile(@valid_program)
+    end
+    
+    it "#add_line_numbers" do
+      @result.last.line_number.must_equal 6
+      @result.find_all {|i| i.line_number == nil}.size.must_equal 0
+    end
     it "#tokenize_variable_identifier" do
-      result = Eson.compile(@valid_program)
-      result.must_be_instance_of Eson::Tokenizer::TokenSeq
-      result.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
+      @result.must_be_instance_of Eson::Tokenizer::TokenSeq
+      @result.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
     end
     it "#tokenize_word_form" do
-      result = Eson.compile(@valid_program)
-      result.must_be_instance_of Eson::Tokenizer::TokenSeq
-      result.find_all {|i| i.name == :word_form}.length.must_equal 6
+      @result.must_be_instance_of Eson::Tokenizer::TokenSeq
+      @result.find_all {|i| i.name == :word_form}.length.must_equal 6
     end
     it "#label_sub_strings" do
-      result = Eson.compile(@valid_program)
-      result.must_be_instance_of Eson::Tokenizer::TokenSeq
-      result.find_all {|i| i.alternation_names.to_a.include?(:sub_string)}.length.must_equal 7
+      @result.must_be_instance_of Eson::Tokenizer::TokenSeq
+      @result.find_all {|i| i.alternation_names.to_a.include?(:sub_string)}.length.must_equal 7
     end
     it "#insert_string_delimiters" do
-      result = Eson.compile(@valid_program)
-      result.must_be_instance_of Eson::Tokenizer::TokenSeq
-      result.find_all {|i| i.name == :string_delimiter}.length.must_equal 10
+      @result.must_be_instance_of Eson::Tokenizer::TokenSeq
+      @result.find_all {|i| i.name == :string_delimiter}.length.must_equal 10
     end
   end
 end

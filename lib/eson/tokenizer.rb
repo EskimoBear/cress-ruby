@@ -12,7 +12,7 @@ module Eson
 
     class TokenSeq < Array
     
-      Token = Struct.new :lexeme, :name, :alternation_names
+      Token = Struct.new :lexeme, :name, :alternation_names, :line_number
       
       ItemError = Class.new(StandardError)
 
@@ -34,6 +34,42 @@ module Eson
 
       def self.new_item_error_message
         "One or more of the given array elements are not of the type Eson::Tokenizer::TokenSeq::Token"
+      end
+
+      #Add line number metadata to each token
+      #
+      #@eskimobear.specification
+      # T, input token sequence
+      # O, output token sequence
+      # t, end_of_line token
+      # ets, sequence begins with T start and ends with end_of_line
+      # L, line number integer
+      #
+      # Init : length(T) > 0
+      #      : length(O) = 0
+      #        L = 1
+      # Next : when T contains end_of_line
+      #        T' = T - ets - t
+      #        O' = O + label(ets, L)
+      #        L' = L + 1
+      #        when T does not contain end_of_line
+      #        T' = []
+      #        O' = O + label(T, L)
+      def add_line_numbers
+        self.replace add_line_numbers_recur(1, self.clone)        
+      end
+
+      def add_line_numbers_recur(line_no, input_seq,
+                                 output_seq = Eson::Tokenizer::TokenSeq.new)
+        if input_seq.include_token?(:end_of_line)
+          scanned, unscanned = input_seq.split_after_token(:end_of_line)
+          scanned.map{|i| i.line_number = line_no}
+          add_line_numbers_recur(line_no + 1, unscanned,
+                                 output_seq.push(scanned).flatten)                              
+        else
+          lined_seq = input_seq.each{|i| i.line_number = line_no}
+          output_seq.push(lined_seq).flatten
+        end
       end
 
       #Add a string_delimiter token before and after each sequence of
@@ -66,6 +102,7 @@ module Eson
           scanned, unscanned = input_sequence.split_before_alt_name(rule)
           
           delimiter = rule_to_token(Eson::Language::e4.string_delimiter)
+          delimiter.line_number = scanned.get_next_line_number
           output_sequence.push(scanned).push(delimiter).flatten!
           head = unscanned.take_while{|i| i.alternation_names.to_a.include?(rule.name)}
           new_input = unscanned.drop(head.length)
@@ -180,6 +217,17 @@ module Eson
         end
       end
 
+      def split_after_token(token_name)
+        if self.include_token?(token_name)
+          split_point = get_token_index(token_name) + 1
+          head = self.take(split_point)
+          tail = self[split_point..-1]
+          return head, tail
+        else
+          nil
+        end
+      end
+
       def split_before_alt_name(rule)
         if self.include_alt_name?(rule)
           split_point = get_alt_name_index(rule.name)
@@ -256,10 +304,20 @@ module Eson
       end
 
       def reduce_tokens(new_name, *tokens)
+        line_no = Eson::Tokenizer::TokenSeq.new(tokens).get_next_line_number
         combined_lexeme = tokens.each_with_object("") do |i, string|
           string.concat(i.lexeme.to_s)
         end
-        Token[combined_lexeme.intern, new_name]
+        Token[combined_lexeme.intern, new_name, nil, line_no]
+      end
+
+      def get_next_line_number
+        end_token = self.last
+        if end_token.name == :end_of_line       
+          end_token.line_number + 1
+        else
+          end_token.line_number
+        end
       end
       
       def swap_tail(tail_length, new_tail)
@@ -436,7 +494,7 @@ module Eson
         rest = json_pairs.drop(1)
         unless rest.empty?
           rest.each_with_object(seq) do |i, seq|
-            seq.push(JsonSymbol.new(:",", :comma))
+            seq.push(JsonSymbol.new(:",", :member_comma))
               .push(pair_to_json_symbols(i))
           end
         end
@@ -469,7 +527,7 @@ module Eson
         seq.push(value_to_json_symbols(json_array.first))
         unless json_array.drop(1).empty?
           json_array.drop(1).each do |i|
-            seq.push(JsonSymbol.new(:",", :comma))
+            seq.push(JsonSymbol.new(:",", :array_comma))
             seq.push(value_to_json_symbols(i))
           end
         end
@@ -499,9 +557,12 @@ module Eson
         when :colon
           seq.push(TokenSeq::Token.new(:":", :colon))
           pop_chars(symbol, char_seq) 
-        when :comma
+        when :array_comma
           seq.push(TokenSeq::Token.new(:",", :comma))
-          pop_chars(symbol, char_seq) 
+          pop_chars(symbol, char_seq)
+        when :member_comma
+          seq.push(TokenSeq::Token.new(:",", :end_of_line))
+          pop_chars(symbol, char_seq)
         when :JSON_key
           tokenize_json_key(symbol.lexeme, seq, char_seq)
         when :JSON_value

@@ -504,6 +504,13 @@ module Eson
       /\,/
     end
 
+    # end_of_line := ",";
+    def end_of_line_rule
+      RuleSeq::Rule.new(:end_of_line,
+                        [],
+                        comma_rxp)
+    end
+    
     # let := "let";
     def let_rule
       RuleSeq::Rule.new(:let,
@@ -617,6 +624,7 @@ module Eson
     # array_start := "[";
     # array_end := "]";
     # comma := ",";
+    # end_of_line := ",";
     # let := "let";
     # ref := "ref";
     # doc := "doc";
@@ -641,6 +649,7 @@ module Eson
                array_start_rule,
                array_end_rule,
                comma_rule,
+               end_of_line_rule,
                let_rule,
                ref_rule,
                doc_rule,

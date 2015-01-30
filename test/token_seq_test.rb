@@ -9,13 +9,6 @@ class TestTokenSeq < MiniTest::Test
     @token_seq = Eson::Tokenizer::TokenSeq.new(5) {Eson::Tokenizer::TokenSeq::Token.new}
   end
 
-  def test_swap_tail_should_succeed
-    new_tail = Eson::Tokenizer::TokenSeq::Token["lexeme", "name"]
-    @token_seq.swap_tail(3, new_tail)
-    assert_equal @token_seq.last, new_tail, "last item in token seq should be the new tail"
-    assert @token_seq.length == 3, "token seq should be length 3"
-  end
-
   def test_take_with_seq_should_succeed
     @token_seq[3].name = "target_1"
     @token_seq.last.name = "target_2"
@@ -55,16 +48,11 @@ describe Eson::Tokenizer::TokenSeq do
   describe "#tokenize_rule" do
     it "with-alternation-rule" do
       @token_seq[0].name = :variable_prefix
-      #@token_seq[1].name = :whitespace
       @token_seq[1].lexeme = :word_1
       @token_seq[2].name = :other_chars
       @token_seq[2].lexeme = :word_1
       @token_seq[3].name = :word
       @token_seq[3].lexeme = :word_1
-      @token_seq.push(Eson::Tokenizer::TokenSeq::Token.new)
-      @token_seq.push(Eson::Tokenizer::TokenSeq::Token.new)
-      @token_seq.push(Eson::Tokenizer::TokenSeq::Token.new)
-      @token_seq.push(Eson::Tokenizer::TokenSeq::Token.new)
       @token_seq.tokenize_rule(@alternation_rule)
       @token_seq.any?{|i| i.name == @alternation_rule.name}.must_equal true
     end

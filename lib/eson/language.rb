@@ -14,6 +14,11 @@ module Eson
         Eson::Language::RuleSeq.new self.values
       end
 
+      def make_top_rule(rule_name)
+        self.class.send(:define_method, :top_rule){get_rule(rule_name)}
+        self
+      end
+
       def to_s
         rule_list = rule_seq.map{|i| i.to_s}
         "#{self.class.to_s.gsub(/Struct::/, "")} has the following production rules:\n#{rule_list.join("\n")}"
@@ -365,11 +370,16 @@ module Eson
         end
       end
 
-      def build_language(lang_name)
+      def build_language(lang_name, top_rule_name=nil)
         result_lang = Struct.new lang_name, *names do
           include LanguageOperations
         end
-        result_lang.new *self
+        lang = result_lang.new *self
+        if top_rule_name.nil?
+          lang
+        else
+          lang.make_top_rule(top_rule_name)
+        end
       end
             
       protected
@@ -729,7 +739,7 @@ module Eson
         .make_concatenation_rule(:declaration_list, [:declaration, :declaration_more])
         .make_option_rule(:declaration_set, :declaration_list)
         .make_concatenation_rule(:program, [:program_start, :declaration_set, :program_end])
-        .build_language("E5")
+        .build_language("E5", :program)
     end
 
     alias_method :tokenizer_lang, :e0

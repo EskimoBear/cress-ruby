@@ -91,6 +91,9 @@ describe Eson::Language do
       lang.get_rule(:declaration_set).wont_be_nil
       lang.get_rule(:program).wont_be_nil
     end
+    it "should have top rule" do
+      Eson::Language.e5.must_respond_to :top_rule
+    end
   end    
 end
 

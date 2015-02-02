@@ -153,8 +153,16 @@ module Eson
         tokenize_rule(LANG.variable_identifier)
       end
 
+      def tokenize_proc_identifiers
+        tokenize_rule(LANG.proc_identifier)
+      end
+
       def tokenize_word_forms
         tokenize_rule(LANG.word_form)
+      end
+
+      def tokenize_special_forms
+        tokenize_rule(LANG.special_form)
       end
 
       def tokenize_rule(rule)
@@ -584,7 +592,7 @@ module Eson
       if begins_with_proc_prefix?(json_key)
         seq.push(TokenSeq::Token.new(:"&", :proc_prefix))
         char_seq.slice!(0, 1)
-        tokenize_special_forms(get_prefixed_string(json_key), seq, char_seq)
+        tokenize_special_form(get_prefixed_string(json_key), seq, char_seq)
       else
         seq.push(TokenSeq::Token.new(json_key.freeze, :key_string))
         char_seq.slice!(0, json_key.length)
@@ -599,7 +607,7 @@ module Eson
       string[1..-1]     
     end
 
-    def tokenize_special_forms(json_string, seq, char_seq)
+    def tokenize_special_form(json_string, seq, char_seq)
       special_form = LANG.special_form.match_start(json_string).to_s
       case special_form
       when LANG.doc.rxp

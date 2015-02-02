@@ -45,6 +45,9 @@ describe Eson do
       @result.must_be_instance_of Eson::Tokenizer::TokenSeq
       @result.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
     end
+    it "tokenize_proc_identifier" do
+      @result.find_all {|i| i.name == :proc_identifier}.length.must_equal 4
+    end
     it "#tokenize_word_form" do
       @result.must_be_instance_of Eson::Tokenizer::TokenSeq
       @result.find_all {|i| i.name == :word_form}.length.must_equal 6

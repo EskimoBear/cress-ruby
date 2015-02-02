@@ -10,8 +10,5 @@ class TestEsonParser <  MiniTest::Test
   def setup
     @tokens = get_token_sequence
   end
-
-  def test_asm_generated
-  end
   
 end

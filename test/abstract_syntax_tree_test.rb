@@ -11,16 +11,19 @@ describe Eson::AbstractSyntaxTree do
 
   it "get an empty tree" do
     @ast.must_be_instance_of Eson::AbstractSyntaxTree
+    @ast.get.rule.must_equal Eson::Language.e5.top_rule
   end
 
   describe "#add_node" do
-    it "add invalid node" do
-      proc {@ast.add_node("poo")}.must_raise Eson::TreeInsertionError
+    it "has invalid node type" do
+      proc {@ast.add_node("poo")}.must_raise Eson::AbstractSyntaxTree::TreeSeqInsertionError
     end
-    it "add a token" do
+    it "is invalid token" do
+      skip
+      
       token = Eson::Tokenizer::TokenSeq::Token.new(",", :comma)
-      @ast.add_node(token)
-      @ast.children.wont_be_empty
+      proc {@ast.add_node(token)}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
+      @ast.children.must_be_empty
     end
     it "add a rule" do
       rule = Eson::Language::e0.variable_identifier

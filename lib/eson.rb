@@ -20,6 +20,8 @@ module Eson
                          .add_line_numbers
       ErrorPass.verify_special_forms(tokenizer_output)
         .tokenize_variable_identifiers
+        .tokenize_special_forms
+        .tokenize_proc_identifiers
         .tokenize_word_forms
         .label_sub_strings
         .insert_string_delimiters

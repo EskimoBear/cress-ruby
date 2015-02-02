@@ -13,6 +13,7 @@ describe Eson::Language do
     end
     it "should contain built rules" do
       Eson::Language.e0.get_rule(:special_form).wont_be_nil
+      Eson::Language.e0.get_rule(:proc_identifier).wont_be_nil
       Eson::Language.e0.get_rule(:word_form).wont_be_nil
       Eson::Language.e0.get_rule(:variable_identifier).wont_be_nil
     end
@@ -38,7 +39,12 @@ describe Eson::Language do
       Eson::Language.must_respond_to :tokenize_variable_identifier_lang
     end
     it "should contain new rules" do
-      Eson::Language.e2.get_rule(:variable_identifier).wont_be_nil
+      Eson::Language.e2.get_rule(:key).wont_be_nil
+      proc {Eson::Language.e2.get_rule(:let)}.must_raise Eson::Language::RuleSeq::ItemError
+      proc {Eson::Language.e2.get_rule(:ref)}.must_raise Eson::Language::RuleSeq::ItemError
+      proc {Eson::Language.e2.get_rule(:doc)}.must_raise Eson::Language::RuleSeq::ItemError
+      proc {Eson::Language.e2.get_rule(:special_form)}.must_raise Eson::Language::RuleSeq::ItemError
+      proc {Eson::Language.e2.get_rule(:proc_prefix)}.must_raise Eson::Language::RuleSeq::ItemError
     end
   end
 

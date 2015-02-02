@@ -673,6 +673,7 @@ module Eson
         .make_alternation_rule(:special_form, [:let, :ref, :doc])
         .make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :other_chars])
         .make_concatenation_rule(:variable_identifier, [:variable_prefix, :word])
+        .make_concatenation_rule(:proc_identifier, [:proc_prefix, :special_form])
         .build_language("E0")
     end
 
@@ -681,17 +682,22 @@ module Eson
     #  Prop : E1 is a struct of eson production rules of
     #         E0 with 'unknown_special_form' removed  
     def e1
-      e0.rule_seq.remove_rules([:unknown_special_form])
+      e0.rule_seq
+        .remove_rules([:unknown_special_form])
         .build_language("E1")
     end
 
     #@return e2 the third language of the compiler
     #@eskimobear.specification
     #  Prop : E2 is a struct of eson production rules
-    #         of E1 with 'variable_identifier'
-    #         converted to a terminal
+    #         of E1 with 'variable_identifier' and 'proc identifier'
+    #         converted to terminals.
     def e2
-      e1.rule_seq.convert_to_terminal(:variable_identifier)
+      e1.rule_seq
+        .convert_to_terminal(:variable_identifier)
+        .convert_to_terminal(:proc_identifier)
+        .make_alternation_rule(:key, [:proc_identifier, :key_string])
+        .remove_rules([:let, :ref, :doc, :proc_prefix, :special_form])
         .build_language("E2")
     end
 
@@ -733,7 +739,7 @@ module Eson
         .make_concatenation_rule(:element_list, [:value, :element_more])
         .make_option_rule(:element_set, :element_list)
         .make_concatenation_rule(:array, [:array_start, :element_set, :array_end])
-        .make_concatenation_rule(:declaration, [:key_string, :colon], [:value])
+        .make_concatenation_rule(:declaration, [:key, :colon], [:value])
         .make_concatenation_rule(:declaration_more_once, [:comma, :declaration])
         .make_repetition_rule(:declaration_more, :declaration_more_once)
         .make_concatenation_rule(:declaration_list, [:declaration, :declaration_more])

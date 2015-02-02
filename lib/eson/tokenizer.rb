@@ -155,6 +155,12 @@ module Eson
 
       def tokenize_proc_identifiers
         tokenize_rule(LANG.proc_identifier)
+        self.each do |i|
+          if i.name == :proc_identifier
+            old_lexeme = i.lexeme.to_s
+            i.lexeme = "\"#{old_lexeme}\""
+          end
+        end
       end
 
       def tokenize_word_forms

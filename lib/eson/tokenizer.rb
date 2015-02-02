@@ -600,7 +600,7 @@ module Eson
         char_seq.slice!(0, 1)
         tokenize_special_form(get_prefixed_string(json_key), seq, char_seq)
       else
-        seq.push(TokenSeq::Token.new(json_key.freeze, :key_string))
+        seq.push(TokenSeq::Token.new("\"#{json_key.freeze}\"", :key_string))
         char_seq.slice!(0, json_key.length)
       end
     end

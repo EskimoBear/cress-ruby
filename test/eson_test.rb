@@ -34,7 +34,7 @@ describe Eson do
 
   describe "compile valid_program" do
     before do
-      @result = Eson.compile(@valid_program)
+      @result = get_token_sequence
     end
     
     it "#add_line_numbers" do

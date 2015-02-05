@@ -10,7 +10,7 @@ To compile an eson file call the `compile` method with the file path of the eson
 Eson.compile('program.eson')
 ```
 
-A `compile` will evaluate all singles and calls in the eson file and output a .json file in the same directory. 
+A `compile` will evaluate all singles and calls in the eson file and output a `.json` file in the same directory. 
 
 ##Code generation
 Eson will generate JSON documents by default but the compiler can also generate Ruby source code. The Ruby code generator can be invoked by passing `:ruby` as the second argument.
@@ -23,18 +23,18 @@ Eson.compile('program.eson', :ruby)
 eson can also be used from the command-line.
 
 ```shell
-# Calls read with the JSON code generator
+# Calls compile with the JSON code generator
 eson program.eson
 
-#Calls read with the Ruby code generator
+#Calls compile with the Ruby code generator
 eson --ruby program.eson
 ```
 
-##Extending the reader
-Eson reader supports eson extensibilty by allowing users to define new special forms to sit alongside those built-in to eson. To create a DSL atop eson a user defines a domain specific set of special forms and their respective handlers.
+##Extending the compiler
+Eson compiler supports extensibilty by allowing users to define additional special forms to sit alongside those built-in to eson. This allows a user to create declarative DSLs that use eson syntax. To create a DSL atop eson a user defines a domain specific set of special forms and their respective handlers.
 
 ```ruby
-golf-reader = Eson.extend(GolfDsl, "golf")
+golf-compiler = Eson.extend(GolfDsl, "golf")
 ```
 
-In the snippet above the `extend` method returns a reader for a new eson based DSL called `golf`. `golf-reader` has all the abilities of the eson reader and can also parse the special forms defined in the GolfDsl module.
+In the snippet above the `extend` method returns a compiler for a new eson based DSL called `golf`. `golf-compiler` has all the abilities of the original eson compiler as well as the ability to parse the special forms defined in the GolfDsl module.

@@ -5,3 +5,4 @@ gem 'oj'
 
 gem 'minitest'
 gem 'rake'
+gem 'pry'

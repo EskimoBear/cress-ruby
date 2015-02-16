@@ -84,17 +84,15 @@ module Eson
       end
     end
 
+    #Initialize tree with the main production rule of a formal language
+    #@param language [Eson::Language::e0] eson formal language
     def initialize(language)
       if language.respond_to?(:top_rule)
         @language = language
-        @tree = make_root_node
+        @tree = Eson::AbstractSyntaxTree::Tree.new(language.top_rule, TreeSeq.new)
       else
         raise TreeInitializationError, not_a_valid_language_error_message(language)
       end
-    end
-
-    def make_root_node
-      Eson::AbstractSyntaxTree::Tree.new(@language.top_rule, TreeSeq.new)
     end
     
     def not_a_valid_language_error_message(language)

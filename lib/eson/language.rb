@@ -739,7 +739,7 @@ module Eson
         .make_concatenation_rule(:element_list, [:value, :element_more])
         .make_option_rule(:element_set, :element_list)
         .make_concatenation_rule(:array, [:array_start, :element_set, :array_end])
-        .make_concatenation_rule(:declaration, [:key, :value, :colon])
+        .make_concatenation_rule(:declaration, [:key, :colon, :value])
         .make_concatenation_rule(:declaration_more_once, [:comma, :declaration])
         .make_repetition_rule(:declaration_more, :declaration_more_once)
         .make_concatenation_rule(:declaration_list, [:declaration, :declaration_more])

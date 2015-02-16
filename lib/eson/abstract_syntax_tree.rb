@@ -10,14 +10,18 @@ module Eson
   #conform to the following properties. 
   #Properties of the tree A, abstract syntax tree 
   # Prop : An eson token is added to A as a leaf node.
-  #      : An production rule is added to A as a tree node.
-  #      : A tree node is marked complete if it contains a
+  #      : An production rule is added to A as a tree node
+  #        with open status.
+  #      : A tree node is marked closed if it contains a
   #        full symbol with respect to the next token tried
   #        for insertion.
-  #      : A node is added to the first incomplete tree node
-  #        where it is a valid next member. Insertion begins
-  #        at the complete nodes from the bottom right of the
-  #        tree going up to it's parent.
+  #      : The tree has a single active node. This is the
+  #        open tree node to the bottom right of the tree. If
+  #        this tree node is closed, the active node is it's
+  #        next open ancestor.
+  #      : A node is added to the active node if is a valid
+  #        next child node. If the node is not a valid next
+  #        child node insertion fails.
   class AbstractSyntaxTree
     
     TreeInsertionError = Class.new(StandardError)

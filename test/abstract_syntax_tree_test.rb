@@ -33,14 +33,14 @@ describe Eson::AbstractSyntaxTree do
     end
     
     it "node is invalid type" do
-      proc {@ast.insert_node("poo")}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
+      proc {@ast.insert("poo")}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
     end
     it "node is an invalid Token" do
-      proc {@ast.insert_node(@invalid_token)}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
+      proc {@ast.insert(@invalid_token)}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
       @ast.children.must_be_empty
     end
     it "node is valid Token" do
-      @ast.insert_node(@valid_token)
+      @ast.insert(@valid_token)
       @ast.children.wont_be_empty
     end
   end

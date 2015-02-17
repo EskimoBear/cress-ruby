@@ -57,19 +57,16 @@ module Eson
         children.empty?
       end
 
-      #Determine if a Token is a valid next child
-      #node for an open tree node.
-      #@param token [Eson::Tokenizer::TokenSeq::Token] token to be inserted as a child node
+      #Determine if a Token is a member of the set of
+      #valid lookahead tokens for the active tree node.
+      #@param token [Eson::Tokenizer::TokenSeq::Token]
       #@return [Boolean]
-      def valid_next?(token)
+      def valid_token?(token)
         if empty?
           self.rule.match_first?(token.name)
         end
       end
         
-      def degree
-        self.children.length
-      end
     end
     
     class TreeSeq < Array
@@ -115,22 +112,38 @@ module Eson
       "'#{language.class}' is not a valid language for #{self.class}."
     end
 
-    #Insert a valid node into the active tree node.
+    #Insert a token or child node into the active tree node.
     #A node is added to the active node if and only
     #if is a valid next child node. Otherwise the
     #insertion fails.
-    #@param [Eson::RuleSeq::Rule, Eson::Tokenizer::Token] node
-    def insert_node(node)
+    #@param [Eson::Tokenizer::TokenSeq::Token] eson token
+    #@eskimobear.specification
+    #et, given token
+    #t, an eson token
+    #n, active tree node
+    #r, rule/value of n
+    #ch, sequence of child nodes of n
+    #rn, rule or tree node
+    #E, sequence of error tokens
+    #
+    # Init : et, n
+    #        length(E) = 0
+    # Next : when lookahead(n) = t
+    #          when valid_token?(n, et) = true
+    #            add_child(n, et)
+    #          otherwise
+    #            E' = E + et
+    #        when lookahead(n) = rn
+    #          insert_node(n, rn)
+    #          n' = rn
+    def insert(node)
       case node.class.to_s
       when Token
-        if active_node.valid_next?(node)
+        if active_node.valid_token?(node)
           self.children.push(node)
         else
           raise TreeInsertionError, not_a_valid_token_error_message(node)
         end
-      when Rule
-        tree = Eson::AbstractSyntaxTree::Tree.new(node, TreeSeq.new)
-        self.children.push(tree)
       else
         raise TreeInsertionError, not_a_valid_node_type_error_message(node)
       end
@@ -157,7 +170,7 @@ module Eson
     end
 
     def_delegators :@tree, :root_value, :closed?, :open?, :empty?,
-                   :rule, :children, :degree
+                   :rule, :children
   end
 end
 

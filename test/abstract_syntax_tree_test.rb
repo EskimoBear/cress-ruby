@@ -43,11 +43,6 @@ describe Eson::AbstractSyntaxTree do
       @ast.insert_node(@valid_token)
       @ast.children.wont_be_empty
     end
-    it "node is an invalid Rule" do
-      skip
-      @ast.insert_node(@invalid_rule)
-      @ast.children.must_be_empty
-    end
   end
 end
 

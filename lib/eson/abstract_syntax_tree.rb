@@ -56,37 +56,19 @@ module Eson
       def empty?
         children.empty?
       end
-           
-      def add_node(node)
-        case node.class.to_s
-        when Rule
-          tree = Eson::AbstractSyntaxTree::Tree.new(node, TreeSeq.new)
-          self.children.push(tree)
-        when Token
-          if valid_token? node
-            self.children.push(node)
-          else
-            raise TreeInsertionError, not_a_valid_token_error_message(node)
-          end
-        else
-          raise TreeInsertionError, not_a_valid_node_type_error_message(node)
+
+      #Determine if a Token is a valid next child
+      #node for an open tree node.
+      #@param token [Eson::Tokenizer::TokenSeq::Token] token to be inserted as a child node
+      #@return [Boolean]
+      def valid_next?(token)
+        if empty?
+          self.rule.match_first?(token.name)
         end
       end
-
-      def valid_token?(token)
-        self.rule.contains_terminal? token.name
-      end
-
+        
       def degree
         self.children.length
-      end
-
-      def not_a_valid_token_error_message(token)
-        "The token #{token.name} does not constitute legal syntax in the available position."
-      end
-
-      def not_a_valid_node_type_error_message(node)
-        "The class #{node.class} of '#{node}' is not a valid node for the #{self.class}. Must be either a #{Token} or a #{Rule}."
       end
     end
     
@@ -133,6 +115,35 @@ module Eson
       "'#{language.class}' is not a valid language for #{self.class}."
     end
 
+    #Insert a valid node into the active tree node.
+    #A node is added to the active node if and only
+    #if is a valid next child node. Otherwise the
+    #insertion fails.
+    #@param [Eson::RuleSeq::Rule, Eson::Tokenizer::Token] node
+    def insert_node(node)
+      case node.class.to_s
+      when Token
+        if active_node.valid_next?(node)
+          self.children.push(node)
+        else
+          raise TreeInsertionError, not_a_valid_token_error_message(node)
+        end
+      when Rule
+        tree = Eson::AbstractSyntaxTree::Tree.new(node, TreeSeq.new)
+        self.children.push(tree)
+      else
+        raise TreeInsertionError, not_a_valid_node_type_error_message(node)
+      end
+    end
+
+    def not_a_valid_token_error_message(token)
+      "The token :#{token.name} does not constitute legal syntax in it's current position."
+    end
+    
+    def not_a_valid_node_type_error_message(node)
+      "The class #{node.class} of '#{node}' is not a valid node for the #{self.class}. Must be either a #{Token} or a #{Rule}."
+    end
+    
     #Get the active node of the tree. This is the open tree node to
     #the bottom right of the tree. If this tree node is closed, the
     #active node is it's next open ancestor.  
@@ -145,7 +156,8 @@ module Eson
       @tree
     end
 
-    def_delegators :@tree, :root_value, :closed?, :open?, :empty?, :rule, :children, :add_node, :degree
+    def_delegators :@tree, :root_value, :closed?, :open?, :empty?,
+                   :rule, :children, :degree
   end
 end
 

@@ -5,16 +5,11 @@ require_relative '../lib/eson/abstract_syntax_tree'
 
 describe Eson::AbstractSyntaxTree do
 
-  before do
-    @ast = Eson::AbstractSyntaxTree.new(Eson::Language.e5)
-    @token = Eson::Tokenizer::TokenSeq::Token.new(",", :comma)
-    @rule = Eson::Language::e0.variable_identifier
-  end
-
   describe "create an e5 tree" do
     before do
       @tree = Eson::AbstractSyntaxTree.new(Eson::Language.e5)
     end
+    
     it "root is top rule" do 
       @tree.must_be_instance_of Eson::AbstractSyntaxTree
       @tree.root_value.must_equal Eson::Language.e5.top_rule
@@ -29,22 +24,28 @@ describe Eson::AbstractSyntaxTree do
     end
   end
 
-  describe "#add_node" do
+  describe "#insert_node_concatenation_rule" do
+    before do
+      @ast = Eson::AbstractSyntaxTree.new(Eson::Language.e5)
+      @invalid_token = Eson::Tokenizer::TokenSeq::Token.new(",", :comma)
+      @valid_token = Eson::Tokenizer::TokenSeq::Token.new("{", :program_start)
+      @invalid_rule = Eson::Language::e0.variable_identifier
+    end
+    
     it "node is invalid type" do
-      proc {@ast.add_node("poo")}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
+      proc {@ast.insert_node("poo")}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
     end
-    it "node is a Rule" do
-      @ast.add_node(@rule)
+    it "node is an invalid Token" do
+      proc {@ast.insert_node(@invalid_token)}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
+      @ast.children.must_be_empty
+    end
+    it "node is valid Token" do
+      @ast.insert_node(@valid_token)
       @ast.children.wont_be_empty
     end
-    it "node is a Token" do
-      @ast.add_node(@token)
-      @ast.children.wont_be_empty
-    end
-    it "node is invalid token" do
+    it "node is an invalid Rule" do
       skip
-      token = Eson::Tokenizer::TokenSeq::Token.new(",", :comma)
-      proc {@ast.add_node(token)}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
+      @ast.insert_node(@invalid_rule)
       @ast.children.must_be_empty
     end
   end

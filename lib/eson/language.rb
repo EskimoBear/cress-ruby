@@ -65,6 +65,16 @@ module Eson
 
         ControlError = Class.new(StandardError)
 
+        def match_first?(token_name)
+          first_token = sequence.first
+          if first_token.instance_of? Eson::Language::RuleSeq::Terminal
+            case
+            when concatenation?
+              first_token.rule_name == token_name
+            end
+          end
+        end
+        
         def to_s       
           "#{name} := #{sequence_to_s};"
         end

@@ -61,7 +61,7 @@ module Eson
       #        When Rule represents a non-terminal it is an array of
       #        NonTerminals and Terminals. When Rule represents a
       #        terminal it is the empty array. 
-      Rule = Struct.new(:name, :sequence, :start_rxp, :follow_rxp) do
+      Rule = Struct.new(:name, :sequence, :start_rxp) do
 
         ControlError = Class.new(StandardError)
 
@@ -73,6 +73,44 @@ module Eson
               first_token.rule_name == token_name
             end
           end
+        end
+
+        #Return a set of terminals that can legally appear
+        #at the start of the sequences of symbols derivable
+        #from this rule
+        #@eskimobear.specification
+        #t, a terminal
+        #nt, a nonterminal
+        #r_def, rule definition of n
+        #e, nullable_token
+        #F, output set of terminals
+        #
+        # Init: r_def
+        #       length(F) = 0
+        # Next: a = get_next_term(r_def)
+        #       when a.terminal?
+        #         when r_def.concatenation?
+        #           F' =  F + a
+        #         when r_def.alternation?
+        #           F' = F + a
+        #           r_new = remove_next_term(r_def)
+        #           when r_new.empty?
+        #             F'
+        #           otherwise
+        #             r_def' = r_new
+        #         when r_def.repetition?
+        #            F' = F + a + e
+        #         when r_def.option?
+        #            F' = F + a + e
+        #       otherwise
+        #         r_def' = get_rule(a)
+        #         when a.nullable?
+        #           b = get_next_term(r_def)
+        #             when b.nil?
+        #               F' = F + e
+        #             otherwise
+        #               r_def' = get_rule(b)
+        def first_set
         end
         
         def to_s       

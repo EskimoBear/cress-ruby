@@ -87,29 +87,34 @@ module Eson
         #
         # Init: r_def
         #       length(F) = 0
-        # Next: a = get_next_term(r_def)
-        #       when a.terminal?
-        #         when r_def.concatenation?
-        #           F' =  F + a
-        #         when r_def.alternation?
-        #           F' = F + a
-        #           r_new = remove_next_term(r_def)
-        #           when r_new.empty?
-        #             F'
-        #           otherwise
-        #             r_def' = r_new
-        #         when r_def.repetition?
-        #            F' = F + a + e
-        #         when r_def.option?
-        #            F' = F + a + e
+        # Next: when r_def.terminal?
+        #         F' = F + get_name(r_def)
         #       otherwise
-        #         r_def' = get_rule(a)
-        #         when a.nullable?
-        #           b = get_next_term(r_def)
-        #             when b.nil?
-        #               F' = F + e
+        #         a = get_next_term(r_def)
+        #         when a.terminal?
+        #           when r_def.terminal?
+        #             F' = F + a
+        #           when r_def.concatenation?
+        #             F' =  F + a
+        #           when r_def.alternation?
+        #             F' = F + a
+        #             r_new = remove_next_term(r_def)
+        #             when r_new.empty?
+        #               F'
         #             otherwise
-        #               r_def' = get_rule(b)
+        #               r_def' = r_new
+        #           when r_def.repetition?
+        #             F' = F + a + e
+        #           when r_def.option?
+        #             F' = F + a + e
+        #         otherwise
+        #           r_def' = get_rule(a)
+        #           when a.nullable?
+        #             b = get_next_term(r_def)
+        #               when b.nil?
+        #                 F' = F + e
+        #               otherwise
+        #                 r_def' = get_rule(b)
         def first_set
         end
         

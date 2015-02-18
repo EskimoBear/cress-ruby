@@ -92,8 +92,6 @@ module Eson
         #       otherwise
         #         a = get_next_term(r_def)
         #         when a.terminal?
-        #           when r_def.terminal?
-        #             F' = F + a
         #           when r_def.concatenation?
         #             F' =  F + a
         #           when r_def.alternation?

@@ -12,7 +12,7 @@ describe Eson::AbstractSyntaxTree do
     
     it "root is top rule" do 
       @tree.must_be_instance_of Eson::AbstractSyntaxTree
-      @tree.root_value.must_equal Eson::Language.e5.top_rule
+      @tree.root_value.name.must_equal Eson::Language.e5.top_rule.name
     end
     it "root is open" do
       @tree.open?.must_equal true

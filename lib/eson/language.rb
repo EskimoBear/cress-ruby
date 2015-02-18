@@ -61,8 +61,20 @@ module Eson
       #        When Rule represents a non-terminal it is an array of
       #        NonTerminals and Terminals. When Rule represents a
       #        terminal it is the empty array. 
-      Rule = Struct.new(:name, :sequence, :start_rxp) do
+      #      : :pedigree is a hook to the formal language that the
+      #         rule belongs to
+      #Rule = Struct.new(:name, :sequence, :start_rxp, :pedigree) do
+      class Rule
 
+        attr_accessor :name, :sequence, :start_rxp, :pedigree
+
+        def initialize(name, sequence, start_rxp=nil, pedigree=nil)
+          @name = name
+          @sequence = sequence
+          @start_rxp = start_rxp
+          @pedigree = pedigree
+        end
+        
         ControlError = Class.new(StandardError)
 
         def match_first?(token_name)

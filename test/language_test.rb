@@ -108,13 +108,13 @@ describe Eson::Language::RuleSeq do
   let(:rule_terminal_seq) {[Eson::Language::RuleSeq::Terminal[:rule_1],
                             Eson::Language::RuleSeq::Terminal[:rule_2x]]}
   let(:rule_seq) {Eson::Language::RuleSeq.
-                   new([Eson::Language::RuleSeq::Rule[:rule_1, [], /RU/],
-                        Eson::Language::RuleSeq::Rule[:rule_2, [], /LE/],
-                        Eson::Language::RuleSeq::Rule[:rule3, :rule_terminal_seq, /RULE/]])}
+                   new([Eson::Language::RuleSeq::Rule.new(:rule_1, [], /RU/),
+                        Eson::Language::RuleSeq::Rule.new(:rule_2, [], /LE/),
+                        Eson::Language::RuleSeq::Rule.new(:rule3, :rule_terminal_seq, /RULE/)])}
   
   describe ".new" do
     it "item is a Rule" do
-      proc { Eson::Language::RuleSeq.new([Eson::Language::RuleSeq::Rule.new]) }.must_be_silent
+      proc { Eson::Language::RuleSeq.new([Eson::Language::RuleSeq::Rule.new(nil, nil)]) }.must_be_silent
     end
     it "items not a Rule" do
       proc { Eson::Language::RuleSeq.new([45]) }.must_raise Eson::Language::RuleSeq::ItemError
@@ -162,6 +162,9 @@ describe Eson::Language::RuleSeq do
     end
     it "is a repetition rule" do
       Eson::Language::e4.sub_string_list.to_s.must_match /( := )/
+    end
+    it "is an option rule" do
+      Eson::Language::e5.element_set.to_s.must_match /( := )/
     end
   end
 

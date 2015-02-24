@@ -49,85 +49,51 @@ module Eson
       #          :option and/or :repetition.
       #      : :nullable is a boolean, true when the non-terminal is
       #         nullable
+      #      : :recursive is a boolean, true when the non-terminal
+      #         references it's containing rule in it's associated
+      #         rule definition
       NonTerminal = Struct.new(:rule_name, :control, :nullable, :recursive)
       
-      #EBNF production rule representation
-      #@eskimobear.specification
-      # Prop : Rule has a :name, :sequence and
-      #        regex patterns for legal tokens that can start or 
-      #        follow the rule.
-      #      : :sequence is the EBNF control for concatenation. It is
-      #        an array and concatenaton is implicit in the ordering of 
-      #        When Rule represents a non-terminal it is an array of
-      #        NonTerminals and Terminals. When Rule represents a
-      #        terminal it is the empty array. 
-      #      : :pedigree is a hook to the formal language that the
-      #         rule belongs to
-      #Rule = Struct.new(:name, :sequence, :start_rxp, :pedigree) do
+      #EBNF production rule representation for terminals and non-terminals
       class Rule
 
-        attr_accessor :name, :sequence, :start_rxp, :pedigree
+        attr_accessor :name, :sequence, :start_rxp, :first_set, :partial_first
 
-        def initialize(name, sequence, start_rxp=nil, pedigree=nil)
+        #@param name [Symbol] name of the production rule
+        #@param sequence [Array<Terminal, NonTerminal>] list of terms this
+        #  rule references, this list is empty when the rule is a terminal
+        #@param start_rxp [Regexp] regexp that accepts valid symbols for this
+        #  rule
+        #@param first_set [Array<Symbol>] the set of terminals that can legally
+        #  appear at the start of the sequences of symbols derivable from
+        #  this rule. The first set of a terminal is the rule name. Any rule that
+        #  has terms marked as recursive generates a partial first set; the
+        #  full first set is computed when a formal language is built using the
+        #  rule.
+        #@param partial_first [Boolean] false if first_set is incomplete, this occurs
+        #   when sequence contains recursive terms either directly or indirectly.
+        def initialize(name, sequence, start_rxp=nil, first_set=nil, partial_first=nil)
           @name = name
           @sequence = sequence
           @start_rxp = start_rxp
-          @pedigree = pedigree
+          @first_set = terminal? ? [name] : first_set
+          @partial_first = terminal? ? false : partial_first
+        end
+
+        def all_terminals?(term_seq)
+          term_seq.all?{|x| x.instance_of? Terminal}
+        end
+        
+        def partial_first_set?
+          @partial_first
         end
         
         ControlError = Class.new(StandardError)
 
-        def match_first?(token_name)
-          first_token = sequence.first
-          if first_token.instance_of? Eson::Language::RuleSeq::Terminal
-            case
-            when concatenation?
-              first_token.rule_name == token_name
-            end
-          end
+        def get_rule(rule_name)
+          Language.send(pedigree).send(rule_name)
         end
-
-        #Return a set of terminals that can legally appear
-        #at the start of the sequences of symbols derivable
-        #from this rule
-        #@eskimobear.specification
-        #t, a terminal
-        #nt, a nonterminal
-        #r_def, rule definition of n
-        #e, nullable_token
-        #F, output set of terminals
-        #
-        # Init: r_def
-        #       length(F) = 0
-        # Next: when r_def.terminal?
-        #         F' = F + get_name(r_def)
-        #       otherwise
-        #         a = get_next_term(r_def)
-        #         when a.terminal?
-        #           when r_def.concatenation?
-        #             F' =  F + a
-        #           when r_def.alternation?
-        #             F' = F + a
-        #             r_new = remove_next_term(r_def)
-        #             when r_new.empty?
-        #               F'
-        #             otherwise
-        #               r_def' = r_new
-        #           when r_def.repetition?
-        #             F' = F + a + e
-        #           when r_def.option?
-        #             F' = F + a + e
-        #         otherwise
-        #           r_def' = get_rule(a)
-        #           when a.nullable?
-        #             b = get_next_term(r_def)
-        #               when b.nil?
-        #                 F' = F + e
-        #               otherwise
-        #                 r_def' = get_rule(b)
-        def first_set
-        end
-        
+       
         def to_s       
           "#{name} := #{sequence_to_s};"
         end
@@ -147,7 +113,7 @@ module Eson
         end
         
         def concatenation?
-          self.sequence.all?{|i| i.control == :none}
+          sequence.all?{|i| i.control == :none}
         end
 
         def alternation?
@@ -198,13 +164,13 @@ module Eson
         end      
 
         def terminal?
-          self.sequence.empty?
+          self.sequence.nil? || self.sequence.empty?
         end
         
         def nonterminal?
           !terminal?
         end
-        
+
         def rule_symbol(control=:none, nullable=false)
           unless valid_control?(control)
             raise ControlError, wrong_control_option_error_message(control)
@@ -269,8 +235,9 @@ module Eson
         end
         self.map! do |rule|
           if rule_name == rule.name
-            rule.sequence = []
-            rule
+            Rule.new(rule.name,
+                     [],
+                     rule.start_rxp)
           else
             rule
           end
@@ -282,74 +249,202 @@ module Eson
                            [],
                            rxp))
       end
-      
+
+      #Create a non-terminal production rule with concatenation
+      #  controls
+      #@param new_rule_name [Symbol] name of the production rule
+      #@param rule_names [Array<Symbol>] sequence of the terms in
+      #  the rule given in order
+      #@param recursive_names [Array<Symbol>] terms which refer
+      #  to themselves in their definition  
+      #@eskimobear.specification
+      # Prop: The first set of is the first set of the first term
+      #       of the rule definition
       def make_concatenation_rule(new_rule_name, rule_names, recursive_names=[])
         unless include_rules?(rule_names)
           raise ItemError, missing_items_error_message(rule_names)
         end
-        symbol_seq = recursive_names.map do |i|
-          NonTerminal[i, :none, false, true]
-        end
-        symbol_seq.push(rule_symbol_concatenation(rule_names)).flatten!
+        first_rule_name = rule_names.first
+        term_seq = rule_term_concatenation(rule_names, recursive_names)
+        inherited_partial_status = get_rule(first_rule_name).partial_first_set?
+        recursive_partial_status = if recursive_names.empty?
+                                     false
+                                   else
+                                     if recursive_names.include? rule_names.first
+                                       true
+                                     else
+                                       false
+                                     end
+                                   end
+        partial_status = inherited_partial_status || recursive_partial_status
         self.push(Rule.new(new_rule_name,
-                           symbol_seq,
-                           self.make_concatenation_rxp(rule_names)))
+                           term_seq,
+                           self.make_concatenation_rxp(rule_names),
+                           first_set_concat(term_seq, recursive_names),
+                           partial_status))
       end
-        
-      def make_alternation_rule(new_rule_name, rule_names, recursive_names=[])      
+
+      def first_set_concat(term_seq, recursive_names)
+        first = term_seq.first
+        inherited_partial_status = get_rule(first.rule_name).partial_first_set?
+        recursive_partial_status = if recursive_names.empty?
+                                     false
+                                   else
+                                     if recursive_names.include? first.rule_name
+                                       true
+                                     else
+                                       false
+                                     end
+                                   end
+        partial_status = inherited_partial_status || recursive_partial_status
+        if partial_status
+          []
+        else
+          get_rule(first.rule_name).first_set
+        end
+      end
+
+      def recursive_term?(term)
+        if term.instance_of? NonTerminal
+          term.recursive
+        else
+          false
+        end
+      end
+
+      def any_recursive_terms?(term_seq)
+        term_seq.any? do |x|
+          if x.instance_of? NonTerminal
+            x.recursive == true
+          end
+        end
+      end
+
+      def rule_term_concatenation(rule_names, recursive_names)
+        rule_names.map do |i|
+          if recursive_names.include? i
+            NonTerminal[i, :none, false, true]
+          else
+            get_rule(i).rule_symbol
+          end
+        end
+      end
+
+      #Create a non-terminal production rule with alternation
+      #  controls
+      #@param new_rule_name [Symbol] name of the production rule
+      #@param rule_names [Array<Symbol>] sequence of the terms in
+      #  the rule given in order
+      #@param recursive_names [Array<Symbol>] terms which refer
+      #  to themselves in their definition  
+      #@eskimobear.specification
+      # Prop: The first set is the union of the first set of each
+      #       term in the rule definition
+      def make_alternation_rule(new_rule_name, rule_names, recursive_names=[])
         unless include_rules?(rule_names)
           raise ItemError, missing_items_error_message(rule_names)
         end
-        symbol_seq = recursive_names.map do |i|
-            NonTerminal[i, :choice, false, true]
-        end
-        symbol_seq.push(rule_symbol_alternation(rule_names)).flatten!
+        term_seq = rule_term_alternation(rule_names, recursive_names)
+        partial_status = recursive_names.empty? ? false : true
         self.push(Rule.new(new_rule_name,
-                           symbol_seq,
-                           self.make_alternation_rxp(rule_names)))
+                           term_seq,
+                           self.make_alternation_rxp(rule_names),
+                           first_set_alt(term_seq),
+                           partial_status))
       end
-      
+
+      def rule_term_alternation(rule_names, recursive_names)
+        terms = rule_names.map do |i|
+          get_rule(i).rule_symbol(:choice)
+        end
+        recursive_terms = recursive_names.map do |i|
+          NonTerminal[i, :choice, false, true]
+        end
+        terms.concat(recursive_terms)
+      end
+
+      def first_set_alt(term_seq)
+        recursive_terms, rest = recursive_terms_and_rest(term_seq)
+        rest.map{|i| get_rule(i.rule_name).first_set}.flatten.uniq
+      end
+
+      def recursive_terms_and_rest(term_seq)
+        term_seq.partition do |i|
+          if i.instance_of? NonTerminal
+            i.recursive == true
+          end
+        end
+      end
+
+      #Create a non-terminal production rule with repetition
+      #  controls
+      #@param new_rule_name [Symbol] name of the production rule
+      #@param rule_names [Array<Symbol>] sequence of the terms in
+      #  the rule given in order 
+      #@eskimobear.specification
+      # Prop: The first set is the union of the first set of the single
+      #       term in the rule definition and the special terminal
+      #       'nullable'
       def make_repetition_rule(new_rule_name, rule_name)
         unless include_rule?(rule_name)
           raise ItemError, missing_item_error_message(rule_name)
         end
+        term_seq = rule_term_repetition(rule_name)
+        partial_status = get_rule(rule_name).partial_first_set?
         self.push(Rule.new(new_rule_name,
-                           rule_symbol_repetition(rule_name),
-                           self.make_repetition_rxp(rule_name)))
+                           term_seq,
+                           self.make_repetition_rxp(rule_name),
+                           first_set_rep(term_seq),
+                           partial_status))
       end
 
+      def rule_term_repetition(rule_name)
+        [get_rule(rule_name).rule_symbol(:repetition, true)]
+      end
+      
+      def first_set_rep(term_seq)
+        first = term_seq.first
+        partial_status = get_rule(first.rule_name).partial_first_set?
+        if partial_status
+          [:nullable]
+        else
+          Array.new(get_rule(first.rule_name).first_set).push(:nullable)
+        end
+      end
+
+      #Create a non-terminal production rule with option
+      #  controls
+      #@param new_rule_name [Symbol] name of the production rule
+      #@param rule_names [Array<Symbol>] sequence of the terms in
+      #  the rule given in order 
+      #@eskimobear.specification
+      # Prop: The first set is the union of first set of the single
+      #       term in the rule definition and the special terminal
+      #       'nullable'
       def make_option_rule(new_rule_name, rule_name)
         unless include_rule?(rule_name)
           raise ItemError, missing_item_error_message(rule_name)
         end
+        term_seq = rule_term_option(rule_name)
+        partial_status = get_rule(rule_name).partial_first_set?
         self.push(Rule.new(new_rule_name,
-                           rule_symbol_option(rule_name),
-                           self.make_option_rxp(rule_name)))
+                           term_seq,
+                           self.make_option_rxp(rule_name),
+                           first_set_opt(term_seq),
+                           partial_status))
+      end
+
+      def rule_term_option(rule_name)
+        [].push(get_rule(rule_name).rule_symbol(:option, true))
+      end
+
+      def first_set_opt(term_seq)
+        first_set_rep(term_seq)
       end
                   
       def missing_items_error_message(rule_names)
         names = rule_names.map{|i| ":".concat(i.to_s)}
         "One or more of the following Eson::Language::Rule.name's are not present in the sequence: #{names.join(", ")}."
-      end
-
-      def rule_symbol_option(rule_name)
-        [].push(get_rule(rule_name).rule_symbol(:option, true))
-      end
-      
-      def rule_symbol_repetition(rule_name)
-        [].push(get_rule(rule_name).rule_symbol(:repetition, true))
-      end
-
-      def rule_symbol_alternation(rule_names)
-        rule_names.map do |i|
-          get_rule(i).rule_symbol(:choice)
-        end
-      end
-      
-      def rule_symbol_concatenation(rule_names)
-       rule_names.map do |i|
-          get_rule(i).rule_symbol
-        end
       end
 
       def make_option_rxp(rule_name)
@@ -434,15 +529,51 @@ module Eson
       end
 
       def build_language(lang_name, top_rule_name=nil)
-        result_lang = Struct.new lang_name, *names do
+        rules = self.clone
+        result_lang = Struct.new lang_name, *rules.names do
           include LanguageOperations
         end
-        lang = result_lang.new *self
+        apply_first_set(rules)
+        lang = result_lang.new *rules
         if top_rule_name.nil?
           lang
         else
           lang.make_top_rule(top_rule_name)
         end
+      end
+
+      def apply_first_set(rules)
+        rules.each do |i|
+          if i.partial_first_set?
+            complete_first_set(rules, i.name)
+          end
+        end
+        rules
+      end
+
+              
+      #Add the first_set of the recursive terms to the
+      #partially completed first set for this rule.
+      #@param rules [Eson::Language::RuleSeq::Rules] An array of rules
+      #@param rule_name [Symbol] name of rule with partial first_set
+      #@eskimobear.specification
+      # For alternate rules add recursive terms to first set
+      # For concat, repet and option apply first set to single term
+      def complete_first_set(rules, rule_name)
+        rule = rules.get_rule(rule_name)
+        terms = rule.sequence
+        set = if rule.alternation?
+                terms.each_with_object([]) do |i, a|
+                  if recursive_term? i
+                    first_set = rules.get_rule(i.rule_name).first_set
+                    a.concat(first_set)
+                  end
+                end
+              else
+                rules.get_rule(terms.first.rule_name).first_set
+              end
+        rule.first_set.concat set
+        rule.partial_first = false
       end
             
       protected
@@ -802,7 +933,7 @@ module Eson
         .make_concatenation_rule(:element_list, [:value, :element_more])
         .make_option_rule(:element_set, :element_list)
         .make_concatenation_rule(:array, [:array_start, :element_set, :array_end])
-        .make_concatenation_rule(:declaration, [:key, :colon, :value])
+        .make_concatenation_rule(:declaration, [:key, :colon, :value], [:value])
         .make_concatenation_rule(:declaration_more_once, [:comma, :declaration])
         .make_repetition_rule(:declaration_more, :declaration_more_once)
         .make_concatenation_rule(:declaration_list, [:declaration, :declaration_more])

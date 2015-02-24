@@ -1,5 +1,6 @@
 require 'minitest/autorun'
 require 'minitest/pride'
+require 'pp'
 require_relative '../lib/eson/language.rb'
 
 describe Eson::Language do
@@ -12,10 +13,14 @@ describe Eson::Language do
       Eson::Language.must_respond_to :tokenizer_lang
     end
     it "should contain built rules" do
-      Eson::Language.e0.get_rule(:special_form).wont_be_nil
-      Eson::Language.e0.get_rule(:proc_identifier).wont_be_nil
-      Eson::Language.e0.get_rule(:word_form).wont_be_nil
-      Eson::Language.e0.get_rule(:variable_identifier).wont_be_nil
+      Eson::Language.e0.must_respond_to :special_form
+      Eson::Language.e0.must_respond_to :proc_identifier
+      Eson::Language.e0.must_respond_to :word_form
+      Eson::Language.e0.must_respond_to :variable_identifier
+    end
+    it "has no partial first_sets" do
+      all_rules = Eson::Language.e5.values
+      all_rules.none?{|x| x.partial_first_set?}.must_equal true
     end
   end
 
@@ -27,7 +32,11 @@ describe Eson::Language do
       Eson::Language.must_respond_to :verified_special_forms_lang
     end
     it "should contain new rules" do
-      proc {Eson::Language.e1.get_rule(:unknown_special_form)}.must_raise Eson::Language::RuleSeq::ItemError
+      Eson::Language.e1.wont_respond_to :unkown_special_form
+    end
+    it "has no partial first_sets" do
+      all_rules = Eson::Language.e1.values
+      all_rules.none?{|x| x.partial_first_set?}.must_equal true
     end
   end
 
@@ -39,12 +48,16 @@ describe Eson::Language do
       Eson::Language.must_respond_to :tokenize_variable_identifier_lang
     end
     it "should contain new rules" do
-      Eson::Language.e2.get_rule(:key).wont_be_nil
-      proc {Eson::Language.e2.get_rule(:let)}.must_raise Eson::Language::RuleSeq::ItemError
-      proc {Eson::Language.e2.get_rule(:ref)}.must_raise Eson::Language::RuleSeq::ItemError
-      proc {Eson::Language.e2.get_rule(:doc)}.must_raise Eson::Language::RuleSeq::ItemError
-      proc {Eson::Language.e2.get_rule(:special_form)}.must_raise Eson::Language::RuleSeq::ItemError
-      proc {Eson::Language.e2.get_rule(:proc_prefix)}.must_raise Eson::Language::RuleSeq::ItemError
+      Eson::Language.e2.must_respond_to :key
+      Eson::Language.e2.wont_respond_to :let
+      Eson::Language.e2.wont_respond_to :ref
+      Eson::Language.e2.wont_respond_to :doc
+      Eson::Language.e2.wont_respond_to :special_form
+      Eson::Language.e2.wont_respond_to :proc_prefix
+    end
+    it "has no partial first_sets" do
+      all_rules = Eson::Language.e2.values
+      all_rules.none?{|x| x.partial_first_set?}.must_equal true
     end
   end
 
@@ -56,7 +69,15 @@ describe Eson::Language do
       Eson::Language.must_respond_to :tokenize_word_form_lang
     end
     it "should contain new rules" do
-      Eson::Language.e3.get_rule(:word_form).wont_be_nil
+      Eson::Language.e3.must_respond_to :word_form
+      Eson::Language.e3.wont_respond_to :other_chars
+      Eson::Language.e3.wont_respond_to :variable_prefix
+      Eson::Language.e3.wont_respond_to :word
+      Eson::Language.e3.wont_respond_to :whitespace
+    end
+    it "has no partial first_sets" do
+      all_rules = Eson::Language.e3.values
+      all_rules.none?{|x| x.partial_first_set?}.must_equal true
     end
   end
 
@@ -69,14 +90,18 @@ describe Eson::Language do
       Eson::Language.must_respond_to :insert_string_delimiter_lang
     end
     it "should contain new rules" do
-      Eson::Language.e4.get_rule(:sub_string).wont_be_nil
-      Eson::Language.e4.get_rule(:string_delimiter).wont_be_nil
-      Eson::Language.e4.get_rule(:sub_string_list).wont_be_nil
-      Eson::Language.e4.get_rule(:string).wont_be_nil
+      Eson::Language.e4.must_respond_to :sub_string
+      Eson::Language.e4.must_respond_to :string_delimiter
+      Eson::Language.e4.must_respond_to :sub_string_list
+      Eson::Language.e4.must_respond_to :string
+    end
+    it "has no partial first_sets" do
+      all_rules = Eson::Language.e4.values
+      all_rules.none?{|x| x.partial_first_set?}.must_equal true
     end
   end
 
-  describe "validate e5" do
+  describe "validate_e5" do
     it "should be E5" do
       Eson::Language.e5.class.must_equal Struct::E5
     end
@@ -84,21 +109,25 @@ describe Eson::Language do
     end
     it "should contain new rules" do
       lang = Eson::Language.e5
-      lang.get_rule(:value).wont_be_nil
-      lang.get_rule(:element_more_once).wont_be_nil
-      lang.get_rule(:element_more).wont_be_nil
-      lang.get_rule(:element_list).wont_be_nil
-      lang.get_rule(:element_set).wont_be_nil
-      lang.get_rule(:array).wont_be_nil
-      lang.get_rule(:declaration).wont_be_nil
-      lang.get_rule(:declaration_more_once).wont_be_nil
-      lang.get_rule(:declaration_more).wont_be_nil
-      lang.get_rule(:declaration_list).wont_be_nil
-      lang.get_rule(:declaration_set).wont_be_nil
-      lang.get_rule(:program).wont_be_nil
+      lang.must_respond_to :value
+      lang.must_respond_to :element_more_once
+      lang.must_respond_to :element_more
+      lang.must_respond_to :element_list
+      lang.must_respond_to :element_set
+      lang.must_respond_to :array
+      lang.must_respond_to :declaration
+      lang.must_respond_to :declaration_more_once
+      lang.must_respond_to :declaration_more
+      lang.must_respond_to :declaration_list
+      lang.must_respond_to :declaration_set
+      lang.must_respond_to :program
     end
     it "should have top rule" do
       Eson::Language.e5.must_respond_to :top_rule
+    end
+    it "has no partial first_sets" do
+      all_rules = Eson::Language.e5.values
+      all_rules.none?{|x| x.partial_first_set?}.must_equal true
     end
   end    
 end
@@ -106,11 +135,12 @@ end
 describe Eson::Language::RuleSeq do
 
   let(:rule_terminal_seq) {[Eson::Language::RuleSeq::Terminal[:rule_1],
-                            Eson::Language::RuleSeq::Terminal[:rule_2x]]}
+                            Eson::Language::RuleSeq::Terminal[:rule_2]]}
+  let(:rule_recur_terms) {[Eson::Language::RuleSeq::NonTerminal.new(:rule_3, :none, true, true),
+                           Eson::Language::RuleSeq::Terminal.new(:rule_1, :none)]}
   let(:rule_seq) {Eson::Language::RuleSeq.
                    new([Eson::Language::RuleSeq::Rule.new(:rule_1, [], /RU/),
-                        Eson::Language::RuleSeq::Rule.new(:rule_2, [], /LE/),
-                        Eson::Language::RuleSeq::Rule.new(:rule3, :rule_terminal_seq, /RULE/)])}
+                        Eson::Language::RuleSeq::Rule.new(:rule_2, [], /LE/)])}
   
   describe ".new" do
     it "item is a Rule" do
@@ -122,12 +152,18 @@ describe Eson::Language::RuleSeq do
   end
 
   describe "#convert_to_terminal" do
+    before do
+      @rules = rule_seq
+               .make_concatenation_rule(:rule_3, [:rule_1, :rule_2])
+               .convert_to_terminal(:rule_3)
+      @new_rule = @rules.get_rule(:rule_3)
+    end
     it "succeeds" do
-      original_size = rule_seq.length
-      rules = rule_seq.convert_to_terminal(:rule3)
-      rules.must_be_instance_of Eson::Language::RuleSeq
-      rules.get_rule(:rule3).terminal?.must_equal true
-      rules.length.must_equal original_size
+      @rules.must_be_instance_of Eson::Language::RuleSeq
+      @new_rule.terminal?.must_equal true
+    end
+    it "has new first_set" do
+      @new_rule.first_set.must_include @new_rule.name
     end
   end
 
@@ -136,7 +172,7 @@ describe Eson::Language::RuleSeq do
       rules = rule_seq.remove_rules([:rule_1])
       rules.must_be_instance_of Eson::Language::RuleSeq
       proc {rules.get_rule(:rule_1)}.must_raise Eson::Language::RuleSeq::ItemError
-      rules.length.must_equal 2
+      rules.length.must_equal 1
     end
     it "fails" do
       rule_seq.remove_rules([:not_there]).must_be_nil
@@ -144,9 +180,15 @@ describe Eson::Language::RuleSeq do
   end
 
   describe "#build_language" do
-    it "succeeds" do
-      rules = rule_seq.build_language("LANG")
-      rules.must_be_instance_of Struct::LANG
+    before do
+      @rules = rule_seq.
+               make_concatenation_rule(:rule_3, [:rule_1, :rule_2], [:rule_1])
+    end
+    it "has correct properties" do
+      @rules.build_language("LANG").must_be_instance_of Struct::LANG
+    end
+    it "has no partial first sets" do
+      @rules.build_language("LANG").rule_3.partial_first_set?.must_equal false
     end
   end
   
@@ -175,11 +217,34 @@ describe Eson::Language::RuleSeq do
   end
   
   describe "#make_alternation_rule" do
-    it "succeeds" do
+    it "has correct properties" do
       rules = rule_seq.make_alternation_rule(:new_rule, [:rule_1, :rule_2])
+      new_rule = rules.get_rule(:new_rule)
       rules.must_be_instance_of Eson::Language::RuleSeq
-      rules.get_rule(:new_rule).must_be_instance_of Eson::Language::RuleSeq::Rule
-      rules.get_rule(:new_rule).nonterminal?.must_equal true
+      new_rule.must_be_instance_of Eson::Language::RuleSeq::Rule
+      new_rule.nonterminal?.must_equal true
+      new_rule.first_set.must_include :rule_1
+      new_rule.first_set.must_include :rule_2
+      new_rule.partial_first_set?.must_equal false
+    end
+    describe "with recursive terms" do
+      before do
+        @rules = rule_seq.make_alternation_rule(:new_rule, [:rule_2], [:rule_1])
+        @new_rule = @rules.get_rule(:new_rule)
+        @new_rule_terms = @new_rule.sequence
+        @term_names = @new_rule_terms.map{|x| x.rule_name}
+      end
+      it "has recursive term" do
+        @new_rule_terms.find{|x| x.rule_name == :rule_1}.recursive.must_equal true
+      end
+      it "contains all terms" do
+        @term_names.must_include :rule_1
+        @term_names.must_include :rule_2
+      end
+      it "has partial first set" do
+        @new_rule.partial_first_set?.must_equal true
+        @new_rule.first_set.must_include :rule_2
+      end
     end
     it "fails" do
       proc {rule_seq.make_alternation_rule(:new_rule, [:not_here, :rule_1])}
@@ -190,18 +255,144 @@ describe Eson::Language::RuleSeq do
   describe "#make_concatenation_rule" do
     it "succeeds" do
       rules = rule_seq.make_concatenation_rule(:new_rule, [:rule_1, :rule_2])
+      new_rule = rules.get_rule(:new_rule)
       rules.must_be_instance_of Eson::Language::RuleSeq
-      rules.get_rule(:new_rule).must_be_instance_of Eson::Language::RuleSeq::Rule
-      rules.get_rule(:new_rule).nonterminal?.must_equal true
+      new_rule.must_be_instance_of Eson::Language::RuleSeq::Rule
+      new_rule.nonterminal?.must_equal true
+      new_rule.first_set.must_include :rule_1
+      new_rule.partial_first_set?.must_equal false
+    end
+    describe "starts with recursive terms" do
+      before do
+        @rules = rule_seq.
+                 make_concatenation_rule(:rule_3, [:rule_1, :rule_2], [:rule_1]).
+                 make_concatenation_rule(:new_rule, [:rule_3, :rule_2], [:rule_3])
+        @new_rule = @rules.get_rule(:new_rule)
+        @new_rule_terms = @new_rule.sequence
+        @term_names = @new_rule_terms.map{|x| x.rule_name}
+      end
+      it "has correct properties" do
+        @rules.must_be_instance_of Eson::Language::RuleSeq
+        @rules.get_rule(:new_rule).must_be_instance_of Eson::Language::RuleSeq::Rule
+        @rules.get_rule(:new_rule).nonterminal?.must_equal true
+      end
+      it "has recursive term" do
+        @new_rule_terms.find{|x| x.rule_name == :rule_3}.recursive.must_equal true
+      end
+      it "retains ordering" do
+        @term_names.must_equal [:rule_3, :rule_2]
+      end
+      it "has partial first set" do
+        @new_rule.partial_first_set?.must_equal true
+      end
+      it "empty first set" do
+        @new_rule.first_set.must_be_empty
+      end
+      it "inherits partial first set status" do
+        @new_rule.partial_first_set?.must_equal true
+      end
+    end
+    describe "with illegal left recursion" do
     end
   end
 
   describe "#make_repetition_rule" do
-    it "succeeds" do
+    it "has correct properties" do
       rules = rule_seq.make_repetition_rule(:new_rule, :rule_1)
       rules.must_be_instance_of Eson::Language::RuleSeq
       rules.get_rule(:new_rule).must_be_instance_of Eson::Language::RuleSeq::Rule
       rules.get_rule(:new_rule).nonterminal?.must_equal true
+      rules.get_rule(:new_rule).first_set.must_include :rule_1
+      rules.get_rule(:new_rule).first_set.must_include :nullable
+    end
+    describe "has recursive descendants" do
+      before do
+        @rules = rule_seq.
+                 make_alternation_rule(:rule_3, [:rule_1, :rule_2], [:rule_2]).
+                 make_concatenation_rule(:rule_recur, [:rule_3, :rule_1], [:rule_3]).
+                 make_repetition_rule(:new_rule, :rule_recur)
+        @new_rule = @rules.get_rule(:new_rule)
+        @new_rule_terms = @new_rule.sequence
+      end
+      it "has correct properties" do
+        @rules.must_be_instance_of Eson::Language::RuleSeq
+        @new_rule.must_be_instance_of Eson::Language::RuleSeq::Rule
+        @new_rule.nonterminal?.must_equal true
+      end
+      it "inherits partial first set" do
+        @new_rule.partial_first_set?.must_equal true
+        @new_rule.first_set.must_include :nullable
+      end
+    end
+  end
+
+  describe "#make_option_rule" do
+    it "has correct properties" do
+      rules = rule_seq.make_option_rule(:new_rule, :rule_1)
+      rules.must_be_instance_of Eson::Language::RuleSeq
+      rules.get_rule(:new_rule).must_be_instance_of Eson::Language::RuleSeq::Rule
+      rules.get_rule(:new_rule).nonterminal?.must_equal true
+      rules.get_rule(:new_rule).first_set.must_include :rule_1
+      rules.get_rule(:new_rule).first_set.must_include :nullable
+    end
+    describe "has recursive descendants" do
+      before do
+        @rules = rule_seq.
+                 make_alternation_rule(:rule_3, [:rule_1, :rule_2], [:rule_2]).
+                 make_concatenation_rule(:rule_recur, [:rule_3, :rule_1], [:rule_3]).
+                 make_option_rule(:new_rule, :rule_recur)
+        @new_rule = @rules.get_rule(:new_rule)
+        @new_rule_terms = @new_rule.sequence
+      end
+      it "has correct properties" do
+        @rules.must_be_instance_of Eson::Language::RuleSeq
+        @new_rule.must_be_instance_of Eson::Language::RuleSeq::Rule
+        @new_rule.nonterminal?.must_equal true
+      end
+      it "inherits partial first set" do
+        @new_rule.partial_first_set?.must_equal true
+        @new_rule.first_set.must_include :nullable
+      end
+    end
+  end
+
+  describe "Rule#first_set" do
+    it "is terminal rule" do
+      Eson::Language::e0.number.partial_first_set?.must_equal false
+      result = Eson::Language::e0.number.first_set
+      result.must_be_instance_of Array
+      result.length.must_equal 1
+      result.must_equal [:number]
+    end
+    it "has non-terminals" do
+      Eson::Language::e5.value.partial_first_set?.must_equal false
+      result = Eson::Language::e5.value.first_set
+      result.must_be_instance_of Array
+      result.length.must_equal 8
+      result.must_include :variable_identifier
+      result.must_include :true
+      result.must_include :false
+      result.must_include :null
+      result.must_include :string_delimiter
+      result.must_include :number
+      result.must_include :array_start
+      result.must_include :program_start
+    end
+    describe "starts with nonterminal" do
+      it "is option rule" do
+        Eson::Language::e5.element_set.partial_first_set?.must_equal false
+        result = Eson::Language::e5.element_set.first_set
+        result.must_be_instance_of Array
+        result.length.must_equal 9
+        result.must_include :variable_identifier
+        result.must_include :true
+        result.must_include :false
+        result.must_include :null
+        result.must_include :string_delimiter
+        result.must_include :number
+        result.must_include :array_start
+        result.must_include :program_start
+      end
     end
   end
 end

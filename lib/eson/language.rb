@@ -57,7 +57,7 @@ module Eson
       #EBNF production rule representation for terminals and non-terminals
       class Rule
 
-        attr_accessor :name, :sequence, :start_rxp, :first_set, :partial_first
+        attr_accessor :name, :sequence, :start_rxp, :first_set, :partial_first, :nullable
 
         #@param name [Symbol] name of the production rule
         #@param sequence [Array<Terminal, NonTerminal>] list of terms this
@@ -72,12 +72,15 @@ module Eson
         #  rule.
         #@param partial_first [Boolean] false if first_set is incomplete, this occurs
         #   when sequence contains recursive terms either directly or indirectly.
-        def initialize(name, sequence, start_rxp=nil, first_set=nil, partial_first=nil)
+        #@param nullable [Boolean] false for terminals and initially, true when
+        #  rule is repetition or option.
+        def initialize(name, sequence, start_rxp=nil, first_set=nil, partial_first=nil, nullable=nil)
           @name = name
           @sequence = sequence
           @start_rxp = start_rxp
           @first_set = terminal? ? [name] : first_set
           @partial_first = terminal? ? false : partial_first
+          @nullable = terminal? ? false : nullable
         end
 
         def all_terminals?(term_seq)
@@ -281,7 +284,8 @@ module Eson
                            term_seq,
                            self.make_concatenation_rxp(rule_names),
                            first_set_concat(term_seq, recursive_names),
-                           partial_status))
+                           partial_status,
+                           false))
       end
 
       def first_set_concat(term_seq, recursive_names)
@@ -350,7 +354,8 @@ module Eson
                            term_seq,
                            self.make_alternation_rxp(rule_names),
                            first_set_alt(term_seq),
-                           partial_status))
+                           partial_status,
+                           false))
       end
 
       def rule_term_alternation(rule_names, recursive_names)
@@ -395,7 +400,8 @@ module Eson
                            term_seq,
                            self.make_repetition_rxp(rule_name),
                            first_set_rep(term_seq),
-                           partial_status))
+                           partial_status,
+                           true))
       end
 
       def rule_term_repetition(rule_name)
@@ -431,7 +437,8 @@ module Eson
                            term_seq,
                            self.make_option_rxp(rule_name),
                            first_set_opt(term_seq),
-                           partial_status))
+                           partial_status,
+                           true))
       end
 
       def rule_term_option(rule_name)

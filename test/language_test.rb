@@ -176,6 +176,7 @@ describe Eson::Language::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.terminal?.must_equal true
       @first_set.must_include @new_rule.name
+      @new_rule.nullable.must_equal false
     end
   end
 
@@ -212,14 +213,15 @@ describe Eson::Language::RuleSeq do
   
   describe "#make_alternation_rule" do
     it "has correct properties" do
-      rules = rule_seq.make_alternation_rule(:new_rule, [:rule_1, :rule_2])
-      new_rule = rules.get_rule(:new_rule)
-      rules.must_be_instance_of subject
-      new_rule.must_be_instance_of rule
-      new_rule.nonterminal?.must_equal true
-      new_rule.first_set.must_include :rule_1
-      new_rule.first_set.must_include :rule_2
-      new_rule.partial_first_set?.must_equal false
+      @rules = rule_seq.make_alternation_rule(:new_rule, [:rule_1, :rule_2])
+      @new_rule = @rules.get_rule(:new_rule)
+      @rules.must_be_instance_of subject
+      @new_rule.must_be_instance_of rule
+      @new_rule.nonterminal?.must_equal true
+      @new_rule.nullable.must_equal false
+      @new_rule.first_set.must_include :rule_1
+      @new_rule.first_set.must_include :rule_2
+      @new_rule.partial_first_set?.must_equal false
     end
     describe "with recursive terms" do
       before do
@@ -248,13 +250,14 @@ describe Eson::Language::RuleSeq do
 
   describe "#make_concatenation_rule" do
     it "succeeds" do
-      rules = rule_seq.make_concatenation_rule(:new_rule, [:rule_1, :rule_2])
-      new_rule = rules.get_rule(:new_rule)
-      rules.must_be_instance_of subject
-      new_rule.must_be_instance_of rule
-      new_rule.nonterminal?.must_equal true
-      new_rule.first_set.must_include :rule_1
-      new_rule.partial_first_set?.must_equal false
+      @rules = rule_seq.make_concatenation_rule(:new_rule, [:rule_1, :rule_2])
+      @new_rule = @rules.get_rule(:new_rule)
+      @rules.must_be_instance_of subject
+      @new_rule.must_be_instance_of rule
+      @new_rule.nonterminal?.must_equal true
+      @new_rule.nullable.must_equal false
+      @new_rule.first_set.must_include :rule_1
+      @new_rule.partial_first_set?.must_equal false
     end
     describe "starts with recursive terms" do
       before do
@@ -292,12 +295,14 @@ describe Eson::Language::RuleSeq do
 
   describe "#make_repetition_rule" do
     it "has correct properties" do
-      rules = rule_seq.make_repetition_rule(:new_rule, :rule_1)
-      rules.must_be_instance_of subject
-      rules.get_rule(:new_rule).must_be_instance_of rule
-      rules.get_rule(:new_rule).nonterminal?.must_equal true
-      rules.get_rule(:new_rule).first_set.must_include :rule_1
-      rules.get_rule(:new_rule).first_set.must_include :nullable
+      @rules = rule_seq.make_repetition_rule(:new_rule, :rule_1)
+      @new_rule = @rules.get_rule(:new_rule)     
+      @rules.must_be_instance_of subject
+      @new_rule.must_be_instance_of rule
+      @new_rule.nonterminal?.must_equal true
+      @new_rule.nullable.must_equal true
+      @new_rule.first_set.must_include :rule_1
+      @new_rule.first_set.must_include :nullable
     end
     describe "has recursive descendants" do
       before do
@@ -322,12 +327,14 @@ describe Eson::Language::RuleSeq do
 
   describe "#make_option_rule" do
     it "has correct properties" do
-      rules = rule_seq.make_option_rule(:new_rule, :rule_1)
-      rules.must_be_instance_of subject
-      rules.get_rule(:new_rule).must_be_instance_of rule
-      rules.get_rule(:new_rule).nonterminal?.must_equal true
-      rules.get_rule(:new_rule).first_set.must_include :rule_1
-      rules.get_rule(:new_rule).first_set.must_include :nullable
+      @rules = rule_seq.make_option_rule(:new_rule, :rule_1)
+      @new_rule = @rules.get_rule(:new_rule)
+      @rules.must_be_instance_of subject
+      @new_rule.must_be_instance_of rule
+      @new_rule.nonterminal?.must_equal true
+      @new_rule.nullable.must_equal true
+      @new_rule.first_set.must_include :rule_1
+      @new_rule.first_set.must_include :nullable
     end
     describe "has recursive descendants" do
       before do

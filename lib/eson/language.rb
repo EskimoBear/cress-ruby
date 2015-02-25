@@ -47,12 +47,10 @@ module Eson
       #      : :control is the set of EBNF controls applied to a
       #          Terminal or NonTerminal. Consisting of :choice,
       #          :option and/or :repetition.
-      #      : :nullable is a boolean, true when the non-terminal is
-      #         nullable
       #      : :recursive is a boolean, true when the non-terminal
       #         references it's containing rule in it's associated
       #         rule definition
-      NonTerminal = Struct.new(:rule_name, :control, :nullable, :recursive)
+      NonTerminal = Struct.new(:rule_name, :control, :recursive)
       
       #EBNF production rule representation for terminals and non-terminals
       class Rule
@@ -174,14 +172,14 @@ module Eson
           !terminal?
         end
 
-        def rule_symbol(control=:none, nullable=false)
+        def rule_symbol(control=:none)
           unless valid_control?(control)
             raise ControlError, wrong_control_option_error_message(control)
           end
           if terminal?
             Terminal[self.name, control]
           else
-            NonTerminal[self.name, control, nullable]
+            NonTerminal[self.name, control]
           end
         end
 
@@ -327,7 +325,7 @@ module Eson
       def rule_term_concatenation(rule_names, recursive_names)
         rule_names.map do |i|
           if recursive_names.include? i
-            NonTerminal[i, :none, false, true]
+            NonTerminal[i, :none, true]
           else
             get_rule(i).rule_symbol
           end
@@ -363,7 +361,7 @@ module Eson
           get_rule(i).rule_symbol(:choice)
         end
         recursive_terms = recursive_names.map do |i|
-          NonTerminal[i, :choice, false, true]
+          NonTerminal[i, :choice, true]
         end
         terms.concat(recursive_terms)
       end
@@ -405,7 +403,7 @@ module Eson
       end
 
       def rule_term_repetition(rule_name)
-        [get_rule(rule_name).rule_symbol(:repetition, true)]
+        [get_rule(rule_name).rule_symbol(:repetition)]
       end
       
       def first_set_rep(term_seq)
@@ -442,7 +440,7 @@ module Eson
       end
 
       def rule_term_option(rule_name)
-        [].push(get_rule(rule_name).rule_symbol(:option, true))
+        [].push(get_rule(rule_name).rule_symbol(:option))
       end
 
       def first_set_opt(term_seq)

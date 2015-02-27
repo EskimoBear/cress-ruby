@@ -77,6 +77,10 @@ module Eson
           @nullable = terminal? ? false : nullable
           @partial_status = terminal? ? false : partial_status
         end
+
+        def self.new_terminal_rule(name, start_rxp)
+          self.new(name, [], start_rxp) 
+        end
         
         ControlError = Class.new(StandardError)
 
@@ -539,9 +543,7 @@ module Eson
 
     # null := "nil";
     def null_rule
-      RuleSeq::Rule.new(:null,
-                        [],
-                        null_rxp)
+      RuleSeq::Rule.new_terminal_rule(:null, null_rxp)
     end
 
     def null_rxp
@@ -550,9 +552,7 @@ module Eson
     
     # variable_prefix := "$";
     def variable_prefix_rule
-      RuleSeq::Rule.new(:variable_prefix,
-               [],
-               variable_prefix_rxp)
+      RuleSeq::Rule.new_terminal_rule(:variable_prefix, variable_prefix_rxp)
     end
 
     def variable_prefix_rxp
@@ -561,9 +561,7 @@ module Eson
     
     # word := {JSON_char}; (*letters, numbers, '-', '_', '.'*)
     def word_rule
-      RuleSeq::Rule.new(:word,
-               [],
-               word_rxp)
+      RuleSeq::Rule.new_terminal_rule(:word, word_rxp)
     end
 
     def word_rxp
@@ -572,9 +570,7 @@ module Eson
       
     # whitespace := {" "};
     def whitespace_rule
-      RuleSeq::Rule.new(:whitespace,
-               [],
-               whitespace_rxp)
+      RuleSeq::Rule.new_terminal_rule(:whitespace, whitespace_rxp)
     end
 
     def whitespace_rxp
@@ -584,9 +580,7 @@ module Eson
     # other_chars := {JSON_char}; (*characters excluding those found
     #   in variable_prefix, word and whitespace*)
     def other_chars_rule
-      RuleSeq::Rule.new(:other_chars,
-               [],
-               other_chars_rxp)
+      RuleSeq::Rule.new_terminal_rule(:other_chars, other_chars_rxp)
     end
     
     def other_chars_rxp
@@ -598,9 +592,7 @@ module Eson
 
     # true := "true";
     def true_rule
-      RuleSeq::Rule.new(:true,
-               [],
-               true_rxp)
+      RuleSeq::Rule.new_terminal_rule(:true, true_rxp)
     end
     
     def true_rxp
@@ -609,9 +601,7 @@ module Eson
     
     # false := "false";
     def false_rule
-      RuleSeq::Rule.new(:false,
-               [],
-               false_rxp)
+      RuleSeq::Rule.new_terminal_rule(:false, false_rxp)
     end
     
     def false_rxp
@@ -620,9 +610,7 @@ module Eson
 
     # number := JSON_number;
     def number_rule
-      RuleSeq::Rule.new(:number,
-               [],
-               number_rxp)
+      RuleSeq::Rule.new_terminal_rule(:number, number_rxp)
     end
 
     def number_rxp
@@ -631,9 +619,7 @@ module Eson
 
     # array_start := "[";
     def array_start_rule
-      RuleSeq::Rule.new(:array_start,
-               [],
-               array_start_rxp)
+      RuleSeq::Rule.new_terminal_rule(:array_start, array_start_rxp)
     end
 
     def array_start_rxp
@@ -642,9 +628,7 @@ module Eson
     
     # array_end := "]";
     def array_end_rule
-      RuleSeq::Rule.new(:array_end,
-               [],
-               array_end_rxp)
+      RuleSeq::Rule.new_terminal_rule(:array_end, array_end_rxp)
     end
 
     def array_end_rxp
@@ -653,9 +637,7 @@ module Eson
     
     # comma := ",";
     def comma_rule
-      RuleSeq::Rule.new(:comma,
-               [],
-               comma_rxp)
+      RuleSeq::Rule.new_terminal_rule(:comma, comma_rxp)
     end
 
     def comma_rxp
@@ -664,16 +646,12 @@ module Eson
 
     # end_of_line := ",";
     def end_of_line_rule
-      RuleSeq::Rule.new(:end_of_line,
-                        [],
-                        comma_rxp)
+      RuleSeq::Rule.new_terminal_rule(:end_of_line, comma_rxp)
     end
     
     # let := "let";
     def let_rule
-      RuleSeq::Rule.new(:let,
-               [],
-               let_rxp)
+      RuleSeq::Rule.new_terminal_rule(:let, let_rxp)
     end
 
     def let_rxp
@@ -682,9 +660,7 @@ module Eson
     
     # ref := "ref";
     def ref_rule
-      RuleSeq::Rule.new(:ref,
-               [],
-               ref_rxp)
+      RuleSeq::Rule.new_terminal_rule(:ref, ref_rxp)
     end
 
     def ref_rxp
@@ -693,9 +669,7 @@ module Eson
     
     # doc := "doc";
     def doc_rule
-      RuleSeq::Rule.new(:doc,
-               [],
-               doc_rxp)
+      RuleSeq::Rule.new_terminal_rule(:doc, doc_rxp)
     end
 
     def doc_rxp
@@ -704,9 +678,7 @@ module Eson
 
     # unknown_special_form := {JSON_char};
     def unknown_special_form_rule
-      RuleSeq::Rule.new(:unknown_special_form,
-               [],
-               all_chars_rxp)
+      RuleSeq::Rule.new_terminal_rule(:unknown_special_form, all_chars_rxp)
     end
 
     def all_chars_rxp
@@ -715,9 +687,7 @@ module Eson
     
     # proc_prefix := "&";
     def proc_prefix_rule
-      RuleSeq::Rule.new(:proc_prefix,
-               [],
-               proc_prefix_rxp)
+      RuleSeq::Rule.new_terminal_rule(:proc_prefix, proc_prefix_rxp)
     end
 
     def proc_prefix_rxp
@@ -726,9 +696,7 @@ module Eson
     
     # colon := ":";
     def colon_rule
-      RuleSeq::Rule.new(:colon,
-               [],
-               colon_rxp)
+      RuleSeq::Rule.new_terminal_rule(:colon, colon_rxp)
     end
 
     def colon_rxp
@@ -737,9 +705,7 @@ module Eson
     
     # program_start := "{";
     def program_start_rule
-      RuleSeq::Rule.new(:program_start,
-               [],
-               program_start_rxp)
+      RuleSeq::Rule.new_terminal_rule(:program_start, program_start_rxp)
     end
 
     def program_start_rxp
@@ -748,9 +714,7 @@ module Eson
     
     # program_end := "}";
     def program_end_rule
-      RuleSeq::Rule.new(:program_end,
-               [],
-               program_end_rxp)
+      RuleSeq::Rule.new_terminal_rule(:program_end, program_end_rxp)
     end
 
     def program_end_rxp
@@ -759,9 +723,7 @@ module Eson
     
     # key_string := {JSON_char}; (*all characters excluding proc_prefix*)
     def key_string_rule
-      RuleSeq::Rule.new(:key_string,
-               [],
-               all_chars_rxp)
+      RuleSeq::Rule.new_terminal_rule(:key_string, all_chars_rxp)
     end
 
     #eson formal language with tokens only

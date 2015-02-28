@@ -175,6 +175,7 @@ describe Eson::Language::RuleSeq do
     it "has correct properties" do
       @rules.must_be_instance_of subject
       @new_rule.terminal?.must_equal true
+      @new_rule.ebnf.must_be_nil
       @first_set.must_include @new_rule.name
       @new_rule.nullable.must_equal false
     end
@@ -210,6 +211,15 @@ describe Eson::Language::RuleSeq do
       Eson::Language::e0.to_s.must_match /has the following production rules/
     end
   end
+
+  describe "#make_terminal_rule" do
+    it "has correct properties" do
+      @rule = subject::Rule.new_terminal_rule(:rule, /k/)
+      @rule.must_be_instance_of rule
+      @rule.terminal?.must_equal true
+      @rule.ebnf.must_be_nil true
+    end
+  end
   
   describe "#make_alternation_rule" do
     it "has correct properties" do
@@ -218,6 +228,7 @@ describe Eson::Language::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
+      @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::AlternationRule
       @new_rule.nullable.must_equal false
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :rule_2
@@ -251,6 +262,7 @@ describe Eson::Language::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
+      @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::ConcatenationRule
       @new_rule.nullable.must_equal false
       @new_rule.first_set.must_include :rule_1
       @new_rule.partial_status.must_equal false
@@ -281,6 +293,7 @@ describe Eson::Language::RuleSeq do
       @rules = rule_seq.make_repetition_rule(:new_rule, :rule_1)
       @new_rule = @rules.get_rule(:new_rule)     
       @rules.must_be_instance_of subject
+      @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::RepetitionRule
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
       @new_rule.nullable.must_equal true
@@ -311,6 +324,7 @@ describe Eson::Language::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
+      @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::OptionRule
       @new_rule.nullable.must_equal true
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :nullable

@@ -25,6 +25,18 @@ module Eson
       end              
     end
 
+    module EBNF
+
+      Terminal = Struct.new(:rule_name)
+      NonTerminal = Struct.new(:rule_name)
+            
+      ConcatenationRule = Struct.new(:term_list)
+      AlternationRule = Struct.new(:term_set)
+      RepetitionRule = Struct.new(:term)
+      OptionRule = Struct.new(:term)
+      
+    end
+
     class RuleSeq < Array
 
       ItemError = Class.new(StandardError)
@@ -52,7 +64,9 @@ module Eson
       #EBNF production rule representation for terminals and non-terminals
       class Rule
 
-        attr_accessor :name, :sequence, :start_rxp, :first_set, :nullable, :partial_status
+        include EBNF
+
+        attr_accessor :name, :sequence, :start_rxp, :first_set, :nullable, :partial_status, :ebnf
 
         #@param name [Symbol] name of the production rule
         #@param sequence [Array<Terminal, NonTerminal>] list of terms this
@@ -65,13 +79,14 @@ module Eson
         #  has terms marked as recursive generates a partial first set; the
         #  full first set is computed when a formal language is built using the
         #  rule.
-        #@param partial_first [Boolean] false if first_set is incomplete, this occurs
-        #   when sequence contains recursive terms either directly or indirectly.
+        #@param partial_status [Boolean] true if any terms are undefined or descend
+        #   from an undefined term
         #@param nullable [Boolean] false for terminals and initially, true when
         #  rule is repetition or option.
-        def initialize(name, sequence, start_rxp=nil, first_set=nil, nullable=nil, partial_status=nil)
+        def initialize(name, sequence, start_rxp=nil, first_set=nil, nullable=nil, partial_status=nil, ebnf=nil)
           @name = name
           @sequence = sequence
+          @ebnf = ebnf
           @start_rxp = start_rxp
           @first_set = terminal? ? [name] : first_set
           @nullable = terminal? ? false : nullable
@@ -160,7 +175,7 @@ module Eson
         end      
 
         def terminal?
-          self.sequence.nil? || self.sequence.empty?
+          self.ebnf.nil?
         end
         
         def nonterminal?
@@ -231,9 +246,7 @@ module Eson
         end
         self.map! do |rule|
           if rule_name == rule.name
-            Rule.new(rule.name,
-                     [],
-                     rule.start_rxp)
+            Rule.new_terminal_rule(rule.name, rule.start_rxp)
           else
             rule
           end
@@ -241,9 +254,7 @@ module Eson
       end
 
       def make_terminal_rule(new_rule_name, rxp)
-        self.push(Rule.new(new_rule_name,
-                           [],
-                           rxp))
+        self.push(Rule.new_terminal_rule(new_rule_name, rxp))
       end
 
       #Create a non-terminal production rule with concatenation
@@ -269,9 +280,30 @@ module Eson
                            self.make_concatenation_rxp(rule_names),
                            first_set_concat(term_seq, partial_status),
                            false,
-                           partial_status))
+                           partial_status,
+                           ebnf_concat(rule_names)))
       end
 
+      def ebnf_concat(rule_names)
+        term_list = rule_names.map do |i|
+          rule_to_term(i)
+        end
+        EBNF::ConcatenationRule.new(term_list)
+      end
+
+      def rule_to_term(rule_name)
+        if self.include_rule? rule_name
+          rule = get_rule(rule_name)
+          if rule.terminal?
+            EBNF::Terminal.new(rule_name)
+          else
+            EBNF::NonTerminal.new(rule_name)
+          end
+        else
+          EBNF::NonTerminal.new(rule_name)
+        end
+      end
+      
       def first_set_concat(term_seq, partial_status)
         first = term_seq.first
         if partial_status
@@ -315,7 +347,15 @@ module Eson
                            make_alternation_rxp(rule_names),
                            first_set_alt,
                            false,
-                           partial_status))
+                           partial_status,
+                           ebnf_alt(rule_names)))
+      end
+
+      def ebnf_alt(rule_names)
+        term_list = rule_names.map do |i|
+          rule_to_term(i)
+        end
+        EBNF::AlternationRule.new(term_list)
       end
 
       def rule_term_alternation(rule_names)
@@ -348,9 +388,14 @@ module Eson
                            self.make_repetition_rxp(rule_name),
                            first_set_rep(term_seq, partial_status),
                            true,
-                           partial_status))
+                           partial_status,
+                           ebnf_rep(rule_name)))
       end
 
+      def ebnf_rep(rule_name)
+        EBNF::RepetitionRule.new(rule_to_term(rule_name)) 
+      end
+      
       def rule_term_repetition(rule_name)
         if include_rule?(rule_name)
           [get_rule(rule_name).rule_symbol(:repetition)]
@@ -388,9 +433,14 @@ module Eson
                            self.make_option_rxp(rule_name),
                            first_set_opt(term_seq, partial_status),
                            true,
-                           partial_status))
+                           partial_status,
+                           ebnf_opt(rule_name)))
       end
 
+      def ebnf_opt(rule_name)
+        EBNF::OptionRule.new(rule_to_term(rule_name))
+      end
+      
       def rule_term_option(rule_name)
         if include_rule?(rule_name)
           [].push(get_rule(rule_name).rule_symbol(:option))

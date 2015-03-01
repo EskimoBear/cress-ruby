@@ -149,11 +149,8 @@ describe Eson::Language::RuleSeq do
 
   subject {Eson::Language::RuleSeq}
   let(:rule) {Eson::Language::RuleSeq::Rule}
-  let(:terminal) {Eson::Language::RuleSeq::Terminal}
-  let(:rule_terminal_seq) {[terminal[:rule_1],
-                            terminal[:rule_2]]}
-  let(:rule_seq) {subject.new([rule.new(:rule_1, [], /RU/),
-                               rule.new(:rule_2, [], /LE/)])}
+  let(:rule_seq) {subject.new([rule.new(:rule_1, /RU/),
+                               rule.new(:rule_2, /LE/)])}
   
   describe ".new" do
     it "item is a Rule" do
@@ -177,7 +174,7 @@ describe Eson::Language::RuleSeq do
       @new_rule.terminal?.must_equal true
       @new_rule.ebnf.must_be_nil
       @first_set.must_include @new_rule.name
-      @new_rule.nullable.must_equal false
+      @new_rule.nullable?.must_equal false
     end
   end
 
@@ -204,7 +201,7 @@ describe Eson::Language::RuleSeq do
     it "has no partial first sets" do
       @rules.build_language("LANG").rule_3.partial_status.must_equal false
     end
-  end
+    end
 
   describe "to_s" do
     it "success" do
@@ -229,7 +226,7 @@ describe Eson::Language::RuleSeq do
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
       @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::AlternationRule
-      @new_rule.nullable.must_equal false
+      @new_rule.nullable?.must_equal false
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :rule_2
       @new_rule.partial_status.must_equal false
@@ -238,8 +235,7 @@ describe Eson::Language::RuleSeq do
       before do
         @rules = rule_seq.make_alternation_rule(:new_rule, [:rule_2, :undefined])
         @new_rule = @rules.get_rule(:new_rule)
-        @new_rule_terms = @new_rule.sequence
-        @term_names = @new_rule_terms.map{|x| x.rule_name}
+        @term_names = @new_rule.ebnf.term_set.map{|i| i.rule_name}
       end
       it "is partial" do
         @new_rule.partial_status.must_equal true
@@ -263,7 +259,7 @@ describe Eson::Language::RuleSeq do
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
       @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::ConcatenationRule
-      @new_rule.nullable.must_equal false
+      @new_rule.nullable?.must_equal false
       @new_rule.first_set.must_include :rule_1
       @new_rule.partial_status.must_equal false
     end
@@ -296,7 +292,7 @@ describe Eson::Language::RuleSeq do
       @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::RepetitionRule
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
-      @new_rule.nullable.must_equal true
+      @new_rule.nullable?.must_equal true
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :nullable
     end
@@ -309,7 +305,7 @@ describe Eson::Language::RuleSeq do
         @rules.must_be_instance_of subject
         @new_rule.must_be_instance_of rule
         @new_rule.nonterminal?.must_equal true
-      end
+        end
       it "inherits partial first set" do
         @new_rule.partial_status.must_equal true
         @new_rule.first_set.must_include :nullable
@@ -325,7 +321,7 @@ describe Eson::Language::RuleSeq do
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
       @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::OptionRule
-      @new_rule.nullable.must_equal true
+      @new_rule.nullable?.must_equal true
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :nullable
     end

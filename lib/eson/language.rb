@@ -40,6 +40,7 @@ module Eson
     class RuleSeq < Array
 
       ItemError = Class.new(StandardError)
+      ConversionError = Class.new(StandardError)
 
       #EBNF terminal representation
       #@eskimobear.specification
@@ -66,7 +67,7 @@ module Eson
 
         include EBNF
 
-        attr_accessor :name, :start_rxp, :first_set, :partial_status, :ebnf
+        attr_accessor :name, :first_set, :partial_status, :ebnf
 
         #@param name [Symbol] name of the production rule
         #@param sequence [Array<Terminal, NonTerminal>] list of terms this
@@ -93,12 +94,6 @@ module Eson
 
         def self.new_terminal_rule(name, start_rxp)
           self.new(name, start_rxp) 
-        end
-        
-        ControlError = Class.new(StandardError)
-
-        def get_rule(rule_name)
-          Language.send(pedigree).send(rule_name)
         end
 
         def nullable?
@@ -130,7 +125,7 @@ module Eson
 
         def ebnf_to_s
           if terminal?
-            "\"#{start_rxp.source.gsub(/\\/, "")}\""
+            "\"#{rxp.source.gsub(/\\/, "")}\""
           elsif alternation_rule?
             terms = ebnf.term_set
             join_rule_names(terms, " | ")
@@ -171,11 +166,7 @@ module Eson
         end
 
         def rxp
-          if self.terminal?
-            apply_at_start(self.start_rxp)
-          else
-            nil
-          end
+          @start_rxp
         end
         
         def match_rxp?(string)
@@ -184,7 +175,7 @@ module Eson
 
         def match_start(string)
           if self.nonterminal?
-            string.match(self.start_rxp)
+            string.match(@start_rxp)
           else
             nil
           end
@@ -205,6 +196,58 @@ module Eson
 
         def apply_at_start(regex)
           /\A#{regex.source}/
+        end
+
+        #Compute the start rxp of non terminal rule
+        #@param rules [Eson::Language::RuleSeq]
+        def compute_start_rxp(rules)
+          @start_rxp = if alternation_rule?
+                         make_alternation_rxp(rules, term_names)
+                       elsif concatenation_rule?
+                         make_concatenation_rxp(rules, term_names)
+                       elsif repetition_rule?
+                         make_repetition_rxp(rules, term_names)
+                       elsif option_rule?
+                         make_option_rxp(rules, term_names)
+                       end
+          self
+        end
+        
+        def make_option_rxp(rules, rule_names)
+          make_repetition_rxp(rules, rule_names)
+        end
+
+        def make_repetition_rxp(rules, rule_names)
+          rules.get_rule(rule_names.first).rxp
+        end
+        
+        def make_concatenation_rxp(rules, rule_names)
+          rxp_strings = get_rxp_sources(rules, rule_names)
+          combination = rxp_strings.reduce("") do |memo, i|
+            memo.concat(i)
+          end
+          apply_at_start(Regexp.new(combination))
+        end
+
+        def make_alternation_rxp(rules, rule_names)
+          rxp_strings = get_rxp_sources(rules, rule_names)
+          initial = rxp_strings.first
+          rest = rxp_strings.drop(1)
+          combination = rest.reduce(initial) do |memo, i|
+            memo.concat("|").concat(i)
+          end
+          apply_at_start(Regexp.new(combination))
+        end
+
+        def get_rxp_sources(rules, rule_array)
+          rule_array.map do |i|
+            if rules.get_rule(i).rxp.nil?
+              pp rules.get_rule(i).name
+              pp rules.get_rule(i).terminal?
+              pp rules.get_rule(i).rxp
+            end
+            rules.get_rule(i).rxp.source
+          end
         end
       end    
       # end of rule
@@ -230,24 +273,39 @@ module Eson
       end
 
       def convert_to_terminal(rule_name)
-        unless include_rule?(rule_name)
+        if partial_rule?(rule_name)
+          raise ConversionError, conversion_error_message(rule_name)
+        elsif !include_rule?(rule_name)
           raise ItemError, missing_item_error_message(rule_name)
         end
         self.map! do |rule|
-          if rule_name == rule.name
-            Rule.new_terminal_rule(rule.name, rule.start_rxp)
-          else
-            rule
-          end
+          new_rule = if rule_name == rule.name
+                       if partial_rule?(rule.name)
+                         Rule.new_terminal_rule(rule.name, /undefined/).compute_start_rxp(self)
+                       else
+                         Rule.new_terminal_rule(rule.name, rule.rxp)
+                       end
+                     else
+                       rule
+                     end
+          new_rule
         end
       end
 
+      def conversion_error_message(rule_name)
+        "The Rule #{rule_name} has partial status and thus has an undefined regular expression. This Rule cannot be converted to a terminal Rule."
+      end
+        
+      def partial_rule?(rule_name)
+        self.get_rule(rule_name).partial_status
+      end
+        
       def make_terminal_rule(new_rule_name, rxp)
         self.push(Rule.new_terminal_rule(new_rule_name, rxp))
       end
 
-      #Create a non-terminal production rule with concatenation
-      #  controls
+      #Create a non-terminal production rule that is a concatenation
+      #of terminals and non-terminals
       #@param new_rule_name [Symbol] name of the production rule
       #@param rule_names [Array<Symbol>] sequence of the terms in
       #  the rule given in order
@@ -264,11 +322,16 @@ module Eson
                                    end
         partial_status = inherited_partial_status || partial_status
         ebnf = ebnf_concat(rule_names)
-        self.push(Rule.new(new_rule_name,
-                           self.make_concatenation_rxp(rule_names),
-                           first_set_concat(ebnf, partial_status),
-                           partial_status,
-                           ebnf))
+        rule = Rule.new(new_rule_name,
+                        /undefined/,
+                        first_set_concat(ebnf, partial_status),
+                        partial_status,
+                        ebnf)
+        if partial_status
+          self.push rule
+        else
+          self.push rule.compute_start_rxp(self)
+        end
       end
 
       def ebnf_concat(rule_names)
@@ -300,8 +363,8 @@ module Eson
         end
       end
 
-      #Create a non-terminal production rule with alternation
-      #  controls
+      #Create a non-terminal production rule that is an alternation
+      # of terminals and non-terminals
       #@param new_rule_name [Symbol] name of the production rule
       #@param rule_names [Array<Symbol>] the terms in the rule
       #@eskimobear.specification
@@ -318,11 +381,16 @@ module Eson
           include_rule?(i) ? get_rule(i).partial_status : true
         end
         partial_status = inherited_partial_status || partial_status
-        self.push(Rule.new(new_rule_name,
-                           make_alternation_rxp(rule_names),
-                           first_set_alt,
-                           partial_status,
-                           ebnf_alt(rule_names)))
+        rule = Rule.new(new_rule_name,
+                        /undefined/,
+                        first_set_alt,
+                        partial_status,
+                        ebnf_alt(rule_names))
+        if partial_status
+          self.push rule
+        else
+          self.push rule.compute_start_rxp(self)
+        end
       end
 
       def ebnf_alt(rule_names)
@@ -347,11 +415,16 @@ module Eson
                         true
                          end
         ebnf = ebnf_rep(rule_name)
-        self.push(Rule.new(new_rule_name,
-                           self.make_repetition_rxp(rule_name),
-                           first_set_rep(ebnf, partial_status),
-                           partial_status,
-                           ebnf))
+        rule = Rule.new(new_rule_name,
+                        /undefined/,
+                        first_set_rep(ebnf, partial_status),
+                        partial_status,
+                        ebnf)
+        if partial_status
+          self.push rule
+        else
+          self.push rule.compute_start_rxp(self)
+        end
       end
 
       def ebnf_rep(rule_name)
@@ -381,11 +454,16 @@ module Eson
                            true
                          end
         ebnf = ebnf_opt(rule_name)
-        self.push(Rule.new(new_rule_name,
-                           self.make_option_rxp(rule_name),
-                           first_set_opt(ebnf, partial_status),
-                           partial_status,
-                           ebnf))
+        rule = Rule.new(new_rule_name,
+                        /undefined/,
+                        first_set_opt(ebnf, partial_status),
+                        partial_status,
+                        ebnf)
+        if partial_status
+          self.push rule
+        else
+          self.push rule.compute_start_rxp(self)
+        end
       end
 
       def ebnf_opt(rule_name)
@@ -399,44 +477,6 @@ module Eson
       def missing_items_error_message(rule_names)
         names = rule_names.map{|i| ":".concat(i.to_s)}
         "One or more of the following Eson::Language::Rule.name's are not present in the sequence: #{names.join(", ")}."
-      end
-
-      def make_option_rxp(rule_name)
-        make_repetition_rxp(rule_name)
-      end
-
-      def make_repetition_rxp(rule_name)
-        if include_rule?(rule_name)
-          get_rule(rule_name).start_rxp
-        else
-          /P/
-        end
-      end
-      
-      def make_concatenation_rxp(rule_names)
-        if include_rules?(rule_names)
-          rxp_strings = get_rxp_sources(rule_names)
-          combination = rxp_strings.reduce("") do |memo, i|
-            memo.concat(i)
-          end
-          apply_at_start(combination)
-        else
-          /P/
-        end
-      end
-
-      def make_alternation_rxp(rule_names)
-        if include_rules?(rule_names)
-          rxp_strings = get_rxp_sources(rule_names)
-          initial = rxp_strings.first
-          rest = rxp_strings.drop(1)
-          combination = rest.reduce(initial) do |memo, i|
-            memo.concat("|").concat(i)
-          end
-          apply_at_start(combination)
-        else
-          /P/
-        end
       end
 
       def include_rules?(rule_names)
@@ -467,17 +507,7 @@ module Eson
       def missing_item_error_message(rule_name)
         "The Eson::Language::Rule.name ':#{rule_name}' is not present in the sequence."
       end
-
-      def get_rxp_sources(rule_array)
-        rule_array.map do |i|
-          get_rule(i).start_rxp.source
-        end
-      end
       
-      def apply_at_start(rxp_string)
-        /\A(#{rxp_string})/
-      end
-
       def remove_rules(rule_names)
         if include_rules?(rule_names)
           initialize(self.reject{|i| rule_names.include?(i.name)})
@@ -504,6 +534,7 @@ module Eson
         rules.each do |i|
           if i.partial_status
             compute_first_set(rules, i.name)
+            i.partial_status = false
           end
         end
         rules
@@ -523,7 +554,6 @@ module Eson
                 rules.get_rule(rule.term_names.first).first_set
               end
         rule.first_set.concat set
-        rule.partial_status = false
       end
             
       protected

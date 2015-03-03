@@ -121,7 +121,7 @@ module Eson
       
       def rule_to_token(rule)
         if rule.terminal?
-          lexeme = rule.start_rxp.source.intern
+          lexeme = rule.rxp.source.intern
           Token.new(lexeme,
                     rule.name,
                     [])
@@ -139,7 +139,7 @@ module Eson
       #
       #@param rule [Eson::Language::RuleSeq::Rule] alternation rule
       def assign_alternation_names(rule)
-        token_names = rule.sequence.map{|i| i.rule_name}
+        token_names = rule.term_names
         new_token_name = rule.name
         self.map! do |old_token|
           if token_names.include?(old_token.name)
@@ -172,9 +172,9 @@ module Eson
       end
 
       def tokenize_rule(rule)
-        if rule.alternation?
+        if rule.alternation_rule?
           tokenize_alternation_rule(rule)
-        elsif rule.concatenation?
+        elsif rule.concatenation_rule?
           tokenize_concatenation_rule(rule)
         end
       end
@@ -210,7 +210,7 @@ module Eson
       def tokenize_alternation_rule_recur(rule, input_sequence,
                                               output_sequence = Eson::Tokenizer::TokenSeq.new)
         new_token_name = rule.name
-        token_names = rule.sequence.map{|i| i.rule_name}
+        token_names = rule.term_names
 
         if input_sequence.include_alt_name?(rule)
           scanned, unscanned = input_sequence.split_before_alt_name(rule)
@@ -303,7 +303,7 @@ module Eson
 
       def tokenize_concatenation_rule_recur(rule, input_sequence,
                                             output_sequence =  Eson::Tokenizer::TokenSeq.new)
-        token_names = rule.sequence.map{|i| i.rule_name}
+        token_names = rule.term_names
         match_seq_size = token_names.length
         new_token_name = rule.name
         if input_sequence.seq_match?(*token_names)         

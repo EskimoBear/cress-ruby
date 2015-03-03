@@ -143,7 +143,7 @@ describe Eson::Language do
       @lang.values.none?{|x| x.partial_status}.must_equal true
     end
   end    
-end
+  end
 
 describe Eson::Language::RuleSeq do
 
@@ -175,6 +175,10 @@ describe Eson::Language::RuleSeq do
       @new_rule.ebnf.must_be_nil
       @first_set.must_include @new_rule.name
       @new_rule.nullable?.must_equal false
+    end
+    it "is partial rule" do
+      @rules.make_concatenation_rule(:rule_4, [:rule_2, :undefined])
+      proc {@rules.convert_to_terminal(:rule_4)}.must_raise Eson::Language::RuleSeq::ConversionError
     end
   end
 

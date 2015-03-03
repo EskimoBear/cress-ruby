@@ -36,7 +36,7 @@ module Eson
       OptionRule = Struct.new(:term)
       
     end
-
+    
     class RuleSeq < Array
 
       ItemError = Class.new(StandardError)
@@ -61,9 +61,10 @@ module Eson
         #  full first set is computed when a formal language is built using the
         #  rule.
         #@param partial_status [Boolean] true if any terms are undefined or descend
-        #   from an undefined term
-        #@param nullable [Boolean] false for terminals and initially, true when
-        #  rule is repetition or option.
+        #   from an undefined term.
+        #@param ebnf [Eson::EBNF] ebnf definition of the rule, each defintion
+        #  contains only one control, thus a rule can be one of the four control
+        #  types:- concatenation, alternation, repetition and option.
         def initialize(name, start_rxp=nil, first_set=nil, partial_status=nil, ebnf=nil)
           @name = name
           @ebnf = ebnf
@@ -97,7 +98,7 @@ module Eson
         end
         
         #FIXME this no longer works as terminals which have been
-        #converted from nonterminals have a nil start_rxp
+        #converted from nonterminals have an undefined @start_rxp
         def to_s       
           "#{name} := #{ebnf_to_s};"
         end
@@ -180,6 +181,7 @@ module Eson
         #Compute the start rxp of nonterminal rules
         #@param rules [Eson::Language::RuleSeq] the other rules making
         #  up the formal language
+        #@return [Eson::Language::RuleSeq::Rule] the mutated Rule
         def compute_start_rxp(rules)
           @start_rxp = if alternation_rule?
                          make_alternation_rxp(rules, term_names)
@@ -363,8 +365,8 @@ module Eson
         EBNF::AlternationRule.new(term_list)
       end
 
-      #Create a non-terminal production rule with repetition
-      #  controls
+      #Create a non-terminal production rule of either a non-terminal
+      #  or terminal
       #@param new_rule_name [Symbol] name of the production rule
       #@param rule_name [Array<Symbol>] the single term in the rule
       #@eskimobear.specification
@@ -402,8 +404,8 @@ module Eson
         end
       end
 
-      #Create a non-terminal production rule with option
-      #  controls
+      #Create a non-terminal production rule of either a non-terminal
+      #  or terminal
       #@param new_rule_name [Symbol] name of the production rule
       #@param rule_name [Array<Symbol>] the single term in the rule 
       #@eskimobear.specification

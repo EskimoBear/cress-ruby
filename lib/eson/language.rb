@@ -41,26 +41,6 @@ module Eson
 
       ItemError = Class.new(StandardError)
       ConversionError = Class.new(StandardError)
-
-      #EBNF terminal representation
-      #@eskimobear.specification
-      # Prop : Terminals have a :rule_name and :control.
-      #      : :rule_name is the Rule.name of the matching production
-      #        rule for a terminal.
-      #      : :control is the set of EBNF controls applied to a
-      #          Terminal or NonTerminal consisting of :choice,
-      #          :option and/or :repetition.
-      Terminal = Struct.new(:rule_name, :control)
-
-      #EBNF non-terminal representation
-      #@eskimobear.specification
-      # Prop : NonTerminals have a :rule_name and :control
-      #      : :rule_name is the Rule.name of the matching production
-      #        rule for a non-terminal.
-      #      : :control is the set of EBNF controls applied to a
-      #          Terminal or NonTerminal. Consisting of :choice,
-      #          :option and/or :repetition.
-      NonTerminal = Struct.new(:rule_name, :control)
       
       #EBNF production rule representation for terminals and non-terminals
       class Rule
@@ -116,7 +96,6 @@ module Eson
           end
         end
         
-        #TODO switch to ebnf
         #FIXME this no longer works as terminals which have been
         #converted from nonterminals have a nil start_rxp
         def to_s       
@@ -198,8 +177,9 @@ module Eson
           /\A#{regex.source}/
         end
 
-        #Compute the start rxp of non terminal rule
-        #@param rules [Eson::Language::RuleSeq]
+        #Compute the start rxp of nonterminal rules
+        #@param rules [Eson::Language::RuleSeq] the other rules making
+        #  up the formal language
         def compute_start_rxp(rules)
           @start_rxp = if alternation_rule?
                          make_alternation_rxp(rules, term_names)
@@ -241,11 +221,6 @@ module Eson
 
         def get_rxp_sources(rules, rule_array)
           rule_array.map do |i|
-            if rules.get_rule(i).rxp.nil?
-              pp rules.get_rule(i).name
-              pp rules.get_rule(i).terminal?
-              pp rules.get_rule(i).rxp
-            end
             rules.get_rule(i).rxp.source
           end
         end
@@ -264,27 +239,19 @@ module Eson
         "One or more of the given array elements are not of the type Eson::Language::RuleSeq::Rule"
       end
 
-      def combine_rules(rule_names, new_rule_name)
-        if include_rules?(rule_names)
-          self.push(Rule.new(new_rule_name, make_concatenation_rxp(rule_names)))
-        else
-          nil
-        end
+      def make_terminal_rule(new_rule_name, rxp)
+        self.push(Rule.new_terminal_rule(new_rule_name, rxp))
       end
 
       def convert_to_terminal(rule_name)
         if partial_rule?(rule_name)
-          raise ConversionError, conversion_error_message(rule_name)
+          raise ConversionError, rule_conversion_error_message(rule_name)
         elsif !include_rule?(rule_name)
           raise ItemError, missing_item_error_message(rule_name)
         end
         self.map! do |rule|
           new_rule = if rule_name == rule.name
-                       if partial_rule?(rule.name)
-                         Rule.new_terminal_rule(rule.name, /undefined/).compute_start_rxp(self)
-                       else
                          Rule.new_terminal_rule(rule.name, rule.rxp)
-                       end
                      else
                        rule
                      end
@@ -292,16 +259,12 @@ module Eson
         end
       end
 
-      def conversion_error_message(rule_name)
+      def rule_conversion_error_message(rule_name)
         "The Rule #{rule_name} has partial status and thus has an undefined regular expression. This Rule cannot be converted to a terminal Rule."
       end
         
       def partial_rule?(rule_name)
         self.get_rule(rule_name).partial_status
-      end
-        
-      def make_terminal_rule(new_rule_name, rxp)
-        self.push(Rule.new_terminal_rule(new_rule_name, rxp))
       end
 
       #Create a non-terminal production rule that is a concatenation

@@ -25,9 +25,22 @@ module Eson
       end              
     end
 
+    module EBNF
+
+      Terminal = Struct.new(:rule_name)
+      NonTerminal = Struct.new(:rule_name)
+            
+      ConcatenationRule = Struct.new(:term_list)
+      AlternationRule = Struct.new(:term_set)
+      RepetitionRule = Struct.new(:term)
+      OptionRule = Struct.new(:term)
+      
+    end
+
     class RuleSeq < Array
 
       ItemError = Class.new(StandardError)
+      ConversionError = Class.new(StandardError)
 
       #EBNF terminal representation
       #@eskimobear.specification
@@ -47,61 +60,104 @@ module Eson
       #      : :control is the set of EBNF controls applied to a
       #          Terminal or NonTerminal. Consisting of :choice,
       #          :option and/or :repetition.
-      #      : :nullable is a boolean, true when the non-terminal is
-      #         nullable
-      NonTerminal = Struct.new(:rule_name, :control, :nullable, :recursive)
+      NonTerminal = Struct.new(:rule_name, :control)
       
-      #EBNF production rule representation
-      #@eskimobear.specification
-      # Prop : Rule has a :name, :sequence and
-      #        regex patterns for legal tokens that can start or 
-      #        follow the rule.
-      #      : :sequence is the EBNF control for concatenation. It is
-      #        an array and concatenaton is implicit in the ordering of 
-      #        When Rule represents a non-terminal it is an array of
-      #        NonTerminals and Terminals. When Rule represents a
-      #        terminal it is the empty array. 
-      Rule = Struct.new(:name, :sequence, :start_rxp, :follow_rxp) do
+      #EBNF production rule representation for terminals and non-terminals
+      class Rule
 
-        ControlError = Class.new(StandardError)
+        include EBNF
 
-        def to_s       
-          "#{name} := #{sequence_to_s};"
+        attr_accessor :name, :first_set, :partial_status, :ebnf
+
+        #@param name [Symbol] name of the production rule
+        #@param sequence [Array<Terminal, NonTerminal>] list of terms this
+        #  rule references, this list is empty when the rule is a terminal
+        #@param start_rxp [Regexp] regexp that accepts valid symbols for this
+        #  rule
+        #@param first_set [Array<Symbol>] the set of terminals that can legally
+        #  appear at the start of the sequences of symbols derivable from
+        #  this rule. The first set of a terminal is the rule name. Any rule that
+        #  has terms marked as recursive generates a partial first set; the
+        #  full first set is computed when a formal language is built using the
+        #  rule.
+        #@param partial_status [Boolean] true if any terms are undefined or descend
+        #   from an undefined term
+        #@param nullable [Boolean] false for terminals and initially, true when
+        #  rule is repetition or option.
+        def initialize(name, start_rxp=nil, first_set=nil, partial_status=nil, ebnf=nil)
+          @name = name
+          @ebnf = ebnf
+          @start_rxp = start_rxp
+          @first_set = terminal? ? [name] : first_set
+          @partial_status = terminal? ? false : partial_status
         end
 
-        def sequence_to_s
+        def self.new_terminal_rule(name, start_rxp)
+          self.new(name, start_rxp) 
+        end
+
+        def nullable?
+          if option_rule? || repetition_rule?
+            true
+          else
+            false
+          end
+        end
+
+        def term_names
           if terminal?
-            "\"#{start_rxp.source.gsub(/\\/, "")}\""
-          elsif alternation?
-            join_rule_name(" | ")
-          elsif concatenation?
-            join_rule_name(", ")
-          elsif repetition?
-            "{#{join_rule_name}}"
-          elsif option?
-            "[#{join_rule_name}]"
+            nil
+          elsif alternation_rule?
+            ebnf.term_set.map{|i| i.rule_name}
+          elsif concatenation_rule?
+            ebnf.term_list.map{|i| i.rule_name}
+          elsif repetition_rule? || option_rule?
+            [ebnf.term.rule_name]
           end
         end
         
-        def concatenation?
-          self.sequence.all?{|i| i.control == :none}
+        #TODO switch to ebnf
+        #FIXME this no longer works as terminals which have been
+        #converted from nonterminals have a nil start_rxp
+        def to_s       
+          "#{name} := #{ebnf_to_s};"
         end
 
-        def alternation?
-          self.sequence.all?{|i| i.control == :choice}
-        end
-        
-        def repetition?
-          sequence.length.eql?(1) && sequence.first.control == :repetition
+        def ebnf_to_s
+          if terminal?
+            "\"#{rxp.source.gsub(/\\/, "")}\""
+          elsif alternation_rule?
+            terms = ebnf.term_set
+            join_rule_names(terms, " | ")
+          elsif concatenation_rule?
+            terms = ebnf.term_list
+            join_rule_names(terms, ", ")
+          elsif repetition_rule?
+            "{#{ebnf.term.rule_name}}"
+          elsif option_rule?
+            "[#{ebnf.term.rule_name}]"
+          end
         end
 
-        def option?
-          sequence.length.eql?(1) && sequence.first.control == :option
+        def alternation_rule?
+          ebnf.instance_of? EBNF::AlternationRule
         end
-      
-        def join_rule_name(infix="")
-          initial = sequence.first.rule_name.to_s
-          rest = sequence.drop(1)
+
+        def concatenation_rule?
+          ebnf.instance_of? EBNF::ConcatenationRule
+        end
+
+        def repetition_rule?
+          ebnf.instance_of? EBNF::RepetitionRule
+        end
+
+        def option_rule?
+          ebnf.instance_of? EBNF::OptionRule
+        end
+
+        def join_rule_names(terms, infix="")
+          initial = terms.first.rule_name.to_s
+          rest = terms.drop(1)
           rest.each_with_object(initial){|i, memo| memo.concat(infix).concat(i.rule_name.to_s)}
         end
         
@@ -110,11 +166,7 @@ module Eson
         end
 
         def rxp
-          if self.terminal?
-            apply_at_start(self.start_rxp)
-          else
-            nil
-          end
+          @start_rxp
         end
         
         def match_rxp?(string)
@@ -123,7 +175,7 @@ module Eson
 
         def match_start(string)
           if self.nonterminal?
-            string.match(self.start_rxp)
+            string.match(@start_rxp)
           else
             nil
           end
@@ -135,48 +187,70 @@ module Eson
         end      
 
         def terminal?
-          self.sequence.empty?
+          self.ebnf.nil?
         end
         
         def nonterminal?
           !terminal?
         end
-        
-        def rule_symbol(control=:none, nullable=false)
-          unless valid_control?(control)
-            raise ControlError, wrong_control_option_error_message(control)
-          end
-          if terminal?
-            Terminal[self.name, control]
-          else
-            NonTerminal[self.name, control, nullable]
-          end
-        end
-
-        def valid_control?(control)
-          control_options.include? control
-        end
-
-        def control_options
-          [:choice, :repetition, :option, :none]
-        end
-
-        def wrong_control_option_error_message(control)
-          "#{control} is not a valid control option. Try one of the following #{control_options.join(", ")}"
-        end
-
-        def valid_start?(string)
-          regex_match?(self.start_regex, string)
-        end
-        
-        def valid_follow?(string)
-          regex_match?(self.follow_regex, string)
-        end
 
         def apply_at_start(regex)
           /\A#{regex.source}/
         end
+
+        #Compute the start rxp of non terminal rule
+        #@param rules [Eson::Language::RuleSeq]
+        def compute_start_rxp(rules)
+          @start_rxp = if alternation_rule?
+                         make_alternation_rxp(rules, term_names)
+                       elsif concatenation_rule?
+                         make_concatenation_rxp(rules, term_names)
+                       elsif repetition_rule?
+                         make_repetition_rxp(rules, term_names)
+                       elsif option_rule?
+                         make_option_rxp(rules, term_names)
+                       end
+          self
+        end
+        
+        def make_option_rxp(rules, rule_names)
+          make_repetition_rxp(rules, rule_names)
+        end
+
+        def make_repetition_rxp(rules, rule_names)
+          rules.get_rule(rule_names.first).rxp
+        end
+        
+        def make_concatenation_rxp(rules, rule_names)
+          rxp_strings = get_rxp_sources(rules, rule_names)
+          combination = rxp_strings.reduce("") do |memo, i|
+            memo.concat(i)
+          end
+          apply_at_start(Regexp.new(combination))
+        end
+
+        def make_alternation_rxp(rules, rule_names)
+          rxp_strings = get_rxp_sources(rules, rule_names)
+          initial = rxp_strings.first
+          rest = rxp_strings.drop(1)
+          combination = rest.reduce(initial) do |memo, i|
+            memo.concat("|").concat(i)
+          end
+          apply_at_start(Regexp.new(combination))
+        end
+
+        def get_rxp_sources(rules, rule_array)
+          rule_array.map do |i|
+            if rules.get_rule(i).rxp.nil?
+              pp rules.get_rule(i).name
+              pp rules.get_rule(i).terminal?
+              pp rules.get_rule(i).rxp
+            end
+            rules.get_rule(i).rxp.source
+          end
+        end
       end    
+      # end of rule
       
       def self.new(obj)
         array = super
@@ -192,135 +266,217 @@ module Eson
 
       def combine_rules(rule_names, new_rule_name)
         if include_rules?(rule_names)
-          self.push(Rule.new(new_rule_name,
-                             [],
-                             make_concatenation_rxp(rule_names)))
+          self.push(Rule.new(new_rule_name, make_concatenation_rxp(rule_names)))
         else
           nil
         end
       end
 
       def convert_to_terminal(rule_name)
-        unless include_rule?(rule_name)
+        if partial_rule?(rule_name)
+          raise ConversionError, conversion_error_message(rule_name)
+        elsif !include_rule?(rule_name)
           raise ItemError, missing_item_error_message(rule_name)
         end
         self.map! do |rule|
-          if rule_name == rule.name
-            rule.sequence = []
-            rule
-          else
-            rule
-          end
+          new_rule = if rule_name == rule.name
+                       if partial_rule?(rule.name)
+                         Rule.new_terminal_rule(rule.name, /undefined/).compute_start_rxp(self)
+                       else
+                         Rule.new_terminal_rule(rule.name, rule.rxp)
+                       end
+                     else
+                       rule
+                     end
+          new_rule
         end
       end
 
-      def make_terminal_rule(new_rule_name, rxp)
-        self.push(Rule.new(new_rule_name,
-                           [],
-                           rxp))
-      end
-      
-      def make_concatenation_rule(new_rule_name, rule_names, recursive_names=[])
-        unless include_rules?(rule_names)
-          raise ItemError, missing_items_error_message(rule_names)
-        end
-        symbol_seq = recursive_names.map do |i|
-          NonTerminal[i, :none, false, true]
-        end
-        symbol_seq.push(rule_symbol_concatenation(rule_names)).flatten!
-        self.push(Rule.new(new_rule_name,
-                           symbol_seq,
-                           self.make_concatenation_rxp(rule_names)))
+      def conversion_error_message(rule_name)
+        "The Rule #{rule_name} has partial status and thus has an undefined regular expression. This Rule cannot be converted to a terminal Rule."
       end
         
-      def make_alternation_rule(new_rule_name, rule_names, recursive_names=[])      
-        unless include_rules?(rule_names)
-          raise ItemError, missing_items_error_message(rule_names)
-        end
-        symbol_seq = recursive_names.map do |i|
-            NonTerminal[i, :choice, false, true]
-        end
-        symbol_seq.push(rule_symbol_alternation(rule_names)).flatten!
-        self.push(Rule.new(new_rule_name,
-                           symbol_seq,
-                           self.make_alternation_rxp(rule_names)))
+      def partial_rule?(rule_name)
+        self.get_rule(rule_name).partial_status
       end
-      
-      def make_repetition_rule(new_rule_name, rule_name)
-        unless include_rule?(rule_name)
-          raise ItemError, missing_item_error_message(rule_name)
-        end
-        self.push(Rule.new(new_rule_name,
-                           rule_symbol_repetition(rule_name),
-                           self.make_repetition_rxp(rule_name)))
+        
+      def make_terminal_rule(new_rule_name, rxp)
+        self.push(Rule.new_terminal_rule(new_rule_name, rxp))
       end
 
-      def make_option_rule(new_rule_name, rule_name)
-        unless include_rule?(rule_name)
-          raise ItemError, missing_item_error_message(rule_name)
+      #Create a non-terminal production rule that is a concatenation
+      #of terminals and non-terminals
+      #@param new_rule_name [Symbol] name of the production rule
+      #@param rule_names [Array<Symbol>] sequence of the terms in
+      #  the rule given in order
+      #@eskimobear.specification
+      # Prop: The first set of is the first set of the first term
+      #       of the rule definition
+      def make_concatenation_rule(new_rule_name, rule_names)
+        partial_status = include_rules?(rule_names) ? false : true
+        first_rule_name = rule_names.first
+        inherited_partial_status = if include_rule?(first_rule_name)
+                                     get_rule(first_rule_name).partial_status
+                                   else
+                                     true
+                                   end
+        partial_status = inherited_partial_status || partial_status
+        ebnf = ebnf_concat(rule_names)
+        rule = Rule.new(new_rule_name,
+                        /undefined/,
+                        first_set_concat(ebnf, partial_status),
+                        partial_status,
+                        ebnf)
+        if partial_status
+          self.push rule
+        else
+          self.push rule.compute_start_rxp(self)
         end
-        self.push(Rule.new(new_rule_name,
-                           rule_symbol_option(rule_name),
-                           self.make_option_rxp(rule_name)))
+      end
+
+      def ebnf_concat(rule_names)
+        term_list = rule_names.map do |i|
+          rule_to_term(i)
+        end
+        EBNF::ConcatenationRule.new(term_list)
+      end
+
+      def rule_to_term(rule_name)
+        if self.include_rule? rule_name
+          rule = get_rule(rule_name)
+          if rule.terminal?
+            EBNF::Terminal.new(rule_name)
+          else
+            EBNF::NonTerminal.new(rule_name)
+          end
+        else
+          EBNF::NonTerminal.new(rule_name)
+        end
+      end
+
+      def first_set_concat(ebnf, partial_status)
+        first = ebnf.term_list.first
+        if partial_status
+          []
+        else
+          get_rule(first.rule_name).first_set
+        end
+      end
+
+      #Create a non-terminal production rule that is an alternation
+      # of terminals and non-terminals
+      #@param new_rule_name [Symbol] name of the production rule
+      #@param rule_names [Array<Symbol>] the terms in the rule
+      #@eskimobear.specification
+      # Prop: The first set is the union of the first set of each
+      #       term in the rule definition
+      def make_alternation_rule(new_rule_name, rule_names)
+        partial_status = include_rules?(rule_names) ? false : true
+        first_set_alt = if partial_status
+                          []
+                        else
+                          rule_names.map{|i| get_rule(i).first_set}.flatten.uniq
+                        end
+        inherited_partial_status = rule_names.any? do |i|
+          include_rule?(i) ? get_rule(i).partial_status : true
+        end
+        partial_status = inherited_partial_status || partial_status
+        rule = Rule.new(new_rule_name,
+                        /undefined/,
+                        first_set_alt,
+                        partial_status,
+                        ebnf_alt(rule_names))
+        if partial_status
+          self.push rule
+        else
+          self.push rule.compute_start_rxp(self)
+        end
+      end
+
+      def ebnf_alt(rule_names)
+        term_list = rule_names.map do |i|
+          rule_to_term(i)
+        end
+        EBNF::AlternationRule.new(term_list)
+      end
+
+      #Create a non-terminal production rule with repetition
+      #  controls
+      #@param new_rule_name [Symbol] name of the production rule
+      #@param rule_name [Array<Symbol>] the single term in the rule
+      #@eskimobear.specification
+      # Prop: The first set is the union of the first set of the single
+      #       term in the rule definition and the special terminal
+      #       'nullable'
+      def make_repetition_rule(new_rule_name, rule_name)
+        partial_status = if include_rule?(rule_name)
+                        get_rule(rule_name).partial_status
+                      else
+                        true
+                         end
+        ebnf = ebnf_rep(rule_name)
+        rule = Rule.new(new_rule_name,
+                        /undefined/,
+                        first_set_rep(ebnf, partial_status),
+                        partial_status,
+                        ebnf)
+        if partial_status
+          self.push rule
+        else
+          self.push rule.compute_start_rxp(self)
+        end
+      end
+
+      def ebnf_rep(rule_name)
+        EBNF::RepetitionRule.new(rule_to_term(rule_name)) 
+      end
+
+      def first_set_rep(ebnf, partial_status)
+        if partial_status
+          [:nullable]
+        else
+          Array.new(get_rule(ebnf.term.rule_name).first_set).push(:nullable)
+        end
+      end
+
+      #Create a non-terminal production rule with option
+      #  controls
+      #@param new_rule_name [Symbol] name of the production rule
+      #@param rule_name [Array<Symbol>] the single term in the rule 
+      #@eskimobear.specification
+      # Prop: The first set is the union of first set of the single
+      #       term in the rule definition and the special terminal
+      #       'nullable'
+      def make_option_rule(new_rule_name, rule_name)
+        partial_status = if include_rule?(rule_name)
+                           get_rule(rule_name).partial_status
+                         else
+                           true
+                         end
+        ebnf = ebnf_opt(rule_name)
+        rule = Rule.new(new_rule_name,
+                        /undefined/,
+                        first_set_opt(ebnf, partial_status),
+                        partial_status,
+                        ebnf)
+        if partial_status
+          self.push rule
+        else
+          self.push rule.compute_start_rxp(self)
+        end
+      end
+
+      def ebnf_opt(rule_name)
+        EBNF::OptionRule.new(rule_to_term(rule_name))
+      end
+
+      def first_set_opt(ebnf, partial_status)
+        first_set_rep(ebnf, partial_status)
       end
                   
       def missing_items_error_message(rule_names)
         names = rule_names.map{|i| ":".concat(i.to_s)}
         "One or more of the following Eson::Language::Rule.name's are not present in the sequence: #{names.join(", ")}."
-      end
-
-      def rule_symbol_option(rule_name)
-        [].push(get_rule(rule_name).rule_symbol(:option, true))
-      end
-      
-      def rule_symbol_repetition(rule_name)
-        [].push(get_rule(rule_name).rule_symbol(:repetition, true))
-      end
-
-      def rule_symbol_alternation(rule_names)
-        rule_names.map do |i|
-          get_rule(i).rule_symbol(:choice)
-        end
-      end
-      
-      def rule_symbol_concatenation(rule_names)
-       rule_names.map do |i|
-          get_rule(i).rule_symbol
-        end
-      end
-
-      def make_option_rxp(rule_name)
-        get_rule(rule_name).start_rxp
-      end
-
-      def make_repetition_rxp(rule_name)
-        get_rule(rule_name).start_rxp
-      end
-      
-      def make_concatenation_rxp(rule_names)
-        if include_rules?(rule_names)
-          rxp_strings = get_rxp_sources(rule_names)
-          combination = rxp_strings.reduce("") do |memo, i|
-            memo.concat(i)
-          end
-          apply_at_start(combination)
-        else
-          nil
-        end
-      end
-
-      def make_alternation_rxp(rule_names)
-        if include_rules?(rule_names)
-          rxp_strings = get_rxp_sources(rule_names)
-          initial = rxp_strings.first
-          rest = rxp_strings.drop(1)
-          combination = rest.reduce(initial) do |memo, i|
-            memo.concat("|").concat(i)
-          end
-          apply_at_start(combination)
-        else
-          nil #TODO throw an exception or catch TypeError exception higher up
-        end
       end
 
       def include_rules?(rule_names)
@@ -340,7 +496,7 @@ module Eson
       def names
         self.map{|i| i.name}
       end
-
+      
       def get_rule(rule_name)
         unless include_rule?(rule_name)
           raise ItemError, missing_item_error_message(rule_name)
@@ -351,17 +507,7 @@ module Eson
       def missing_item_error_message(rule_name)
         "The Eson::Language::Rule.name ':#{rule_name}' is not present in the sequence."
       end
-
-      def get_rxp_sources(rule_array)
-        rule_array.map do |i|
-          get_rule(i).start_rxp.source
-        end
-      end
       
-      def apply_at_start(rxp_string)
-        /\A(#{rxp_string})/
-      end
-
       def remove_rules(rule_names)
         if include_rules?(rule_names)
           initialize(self.reject{|i| rule_names.include?(i.name)})
@@ -371,29 +517,55 @@ module Eson
       end
 
       def build_language(lang_name, top_rule_name=nil)
-        result_lang = Struct.new lang_name, *names do
+        rules = self.clone
+        result_lang = Struct.new lang_name, *rules.names do
           include LanguageOperations
         end
-        lang = result_lang.new *self
+        apply_first_set(rules)
+        lang = result_lang.new *rules
         if top_rule_name.nil?
           lang
         else
           lang.make_top_rule(top_rule_name)
         end
       end
+
+      def apply_first_set(rules)
+        rules.each do |i|
+          if i.partial_status
+            compute_first_set(rules, i.name)
+            i.partial_status = false
+          end
+        end
+        rules
+      end
+
+      #Compute the first_set of rules with partial status
+      #@param rules [Eson::Language::RuleSeq::Rules] An array of rules
+      #@param rule_name [Symbol] name of rule with partil status
+      def compute_first_set(rules, rule_name)
+        rule = rules.get_rule(rule_name)
+        set = if rule.alternation_rule?
+                rule.term_names.each_with_object([]) do |i, a|
+                  first_set = rules.get_rule(i).first_set
+                  a.concat(first_set)
+                end
+              else
+                rules.get_rule(rule.term_names.first).first_set
+              end
+        rule.first_set.concat set
+      end
             
       protected
       
-      def self.all_rules?(sequence)
-        sequence.all? {|i| i.class == Rule }
+      def self.all_rules?(seq)
+        seq.all? {|i| i.class == Rule }
       end
     end
 
     # null := "nil";
     def null_rule
-      RuleSeq::Rule.new(:null,
-                        [],
-                        null_rxp)
+      RuleSeq::Rule.new_terminal_rule(:null, null_rxp)
     end
 
     def null_rxp
@@ -402,9 +574,7 @@ module Eson
     
     # variable_prefix := "$";
     def variable_prefix_rule
-      RuleSeq::Rule.new(:variable_prefix,
-               [],
-               variable_prefix_rxp)
+      RuleSeq::Rule.new_terminal_rule(:variable_prefix, variable_prefix_rxp)
     end
 
     def variable_prefix_rxp
@@ -413,9 +583,7 @@ module Eson
     
     # word := {JSON_char}; (*letters, numbers, '-', '_', '.'*)
     def word_rule
-      RuleSeq::Rule.new(:word,
-               [],
-               word_rxp)
+      RuleSeq::Rule.new_terminal_rule(:word, word_rxp)
     end
 
     def word_rxp
@@ -424,9 +592,7 @@ module Eson
       
     # whitespace := {" "};
     def whitespace_rule
-      RuleSeq::Rule.new(:whitespace,
-               [],
-               whitespace_rxp)
+      RuleSeq::Rule.new_terminal_rule(:whitespace, whitespace_rxp)
     end
 
     def whitespace_rxp
@@ -436,9 +602,7 @@ module Eson
     # other_chars := {JSON_char}; (*characters excluding those found
     #   in variable_prefix, word and whitespace*)
     def other_chars_rule
-      RuleSeq::Rule.new(:other_chars,
-               [],
-               other_chars_rxp)
+      RuleSeq::Rule.new_terminal_rule(:other_chars, other_chars_rxp)
     end
     
     def other_chars_rxp
@@ -450,9 +614,7 @@ module Eson
 
     # true := "true";
     def true_rule
-      RuleSeq::Rule.new(:true,
-               [],
-               true_rxp)
+      RuleSeq::Rule.new_terminal_rule(:true, true_rxp)
     end
     
     def true_rxp
@@ -461,9 +623,7 @@ module Eson
     
     # false := "false";
     def false_rule
-      RuleSeq::Rule.new(:false,
-               [],
-               false_rxp)
+      RuleSeq::Rule.new_terminal_rule(:false, false_rxp)
     end
     
     def false_rxp
@@ -472,9 +632,7 @@ module Eson
 
     # number := JSON_number;
     def number_rule
-      RuleSeq::Rule.new(:number,
-               [],
-               number_rxp)
+      RuleSeq::Rule.new_terminal_rule(:number, number_rxp)
     end
 
     def number_rxp
@@ -483,9 +641,7 @@ module Eson
 
     # array_start := "[";
     def array_start_rule
-      RuleSeq::Rule.new(:array_start,
-               [],
-               array_start_rxp)
+      RuleSeq::Rule.new_terminal_rule(:array_start, array_start_rxp)
     end
 
     def array_start_rxp
@@ -494,9 +650,7 @@ module Eson
     
     # array_end := "]";
     def array_end_rule
-      RuleSeq::Rule.new(:array_end,
-               [],
-               array_end_rxp)
+      RuleSeq::Rule.new_terminal_rule(:array_end, array_end_rxp)
     end
 
     def array_end_rxp
@@ -505,9 +659,7 @@ module Eson
     
     # comma := ",";
     def comma_rule
-      RuleSeq::Rule.new(:comma,
-               [],
-               comma_rxp)
+      RuleSeq::Rule.new_terminal_rule(:comma, comma_rxp)
     end
 
     def comma_rxp
@@ -516,16 +668,12 @@ module Eson
 
     # end_of_line := ",";
     def end_of_line_rule
-      RuleSeq::Rule.new(:end_of_line,
-                        [],
-                        comma_rxp)
+      RuleSeq::Rule.new_terminal_rule(:end_of_line, comma_rxp)
     end
     
     # let := "let";
     def let_rule
-      RuleSeq::Rule.new(:let,
-               [],
-               let_rxp)
+      RuleSeq::Rule.new_terminal_rule(:let, let_rxp)
     end
 
     def let_rxp
@@ -534,9 +682,7 @@ module Eson
     
     # ref := "ref";
     def ref_rule
-      RuleSeq::Rule.new(:ref,
-               [],
-               ref_rxp)
+      RuleSeq::Rule.new_terminal_rule(:ref, ref_rxp)
     end
 
     def ref_rxp
@@ -545,9 +691,7 @@ module Eson
     
     # doc := "doc";
     def doc_rule
-      RuleSeq::Rule.new(:doc,
-               [],
-               doc_rxp)
+      RuleSeq::Rule.new_terminal_rule(:doc, doc_rxp)
     end
 
     def doc_rxp
@@ -556,9 +700,7 @@ module Eson
 
     # unknown_special_form := {JSON_char};
     def unknown_special_form_rule
-      RuleSeq::Rule.new(:unknown_special_form,
-               [],
-               all_chars_rxp)
+      RuleSeq::Rule.new_terminal_rule(:unknown_special_form, all_chars_rxp)
     end
 
     def all_chars_rxp
@@ -567,9 +709,7 @@ module Eson
     
     # proc_prefix := "&";
     def proc_prefix_rule
-      RuleSeq::Rule.new(:proc_prefix,
-               [],
-               proc_prefix_rxp)
+      RuleSeq::Rule.new_terminal_rule(:proc_prefix, proc_prefix_rxp)
     end
 
     def proc_prefix_rxp
@@ -578,9 +718,7 @@ module Eson
     
     # colon := ":";
     def colon_rule
-      RuleSeq::Rule.new(:colon,
-               [],
-               colon_rxp)
+      RuleSeq::Rule.new_terminal_rule(:colon, colon_rxp)
     end
 
     def colon_rxp
@@ -589,9 +727,7 @@ module Eson
     
     # program_start := "{";
     def program_start_rule
-      RuleSeq::Rule.new(:program_start,
-               [],
-               program_start_rxp)
+      RuleSeq::Rule.new_terminal_rule(:program_start, program_start_rxp)
     end
 
     def program_start_rxp
@@ -600,9 +736,7 @@ module Eson
     
     # program_end := "}";
     def program_end_rule
-      RuleSeq::Rule.new(:program_end,
-               [],
-               program_end_rxp)
+      RuleSeq::Rule.new_terminal_rule(:program_end, program_end_rxp)
     end
 
     def program_end_rxp
@@ -611,9 +745,7 @@ module Eson
     
     # key_string := {JSON_char}; (*all characters excluding proc_prefix*)
     def key_string_rule
-      RuleSeq::Rule.new(:key_string,
-               [],
-               all_chars_rxp)
+      RuleSeq::Rule.new_terminal_rule(:key_string, all_chars_rxp)
     end
 
     #eson formal language with tokens only
@@ -733,13 +865,13 @@ module Eson
     def e5
       e4.rule_seq
         .make_alternation_rule(:value, [:variable_identifier, :true, :false,
-                                        :null, :string, :number], [:array, :program])
+                                        :null, :string, :number, :array, :program])
         .make_concatenation_rule(:element_more_once, [:comma, :value])
         .make_repetition_rule(:element_more, :element_more_once)
         .make_concatenation_rule(:element_list, [:value, :element_more])
         .make_option_rule(:element_set, :element_list)
         .make_concatenation_rule(:array, [:array_start, :element_set, :array_end])
-        .make_concatenation_rule(:declaration, [:key, :value, :colon])
+        .make_concatenation_rule(:declaration, [:key, :colon, :value])
         .make_concatenation_rule(:declaration_more_once, [:comma, :declaration])
         .make_repetition_rule(:declaration_more, :declaration_more_once)
         .make_concatenation_rule(:declaration_list, [:declaration, :declaration_more])

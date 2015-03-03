@@ -1,6 +1,6 @@
 require 'vert'
 require_relative 'eson/tokenizer'
-require_relative 'eson/language'
+require_relative 'eson/formal_languages'
 require_relative 'eson/error_pass'
 
 module Eson

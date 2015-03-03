@@ -1,13 +1,15 @@
 require 'oj'
 require 'pry'
-require_relative 'language'
+require_relative 'formal_languages'
 
 module Eson
 
   module Tokenizer
-
+    
     extend self
 
+    LANG = Eson::FormalLanguages.tokenizer_lang
+    
     JsonSymbol = Struct.new :lexeme, :name
 
     class TokenSeq < Array
@@ -98,7 +100,7 @@ module Eson
       #        T' = []
       #        O' = O + T
       def insert_string_delimiters
-        self.replace insert_string_delimiters_recur(Eson::Language::e4.sub_string, self.clone)  
+        self.replace insert_string_delimiters_recur(Eson::FormalLanguages.e4.sub_string, self.clone)  
       end
 
       def insert_string_delimiters_recur(rule, input_sequence,
@@ -106,7 +108,7 @@ module Eson
         if input_sequence.include_alt_name?(rule)
           scanned, unscanned = input_sequence.split_before_alt_name(rule)
           
-          delimiter = rule_to_token(Eson::Language::e4.string_delimiter)
+          delimiter = rule_to_token(Eson::FormalLanguages.e4.string_delimiter)
           delimiter.line_number = scanned.get_next_line_number
           output_sequence.push(scanned).push(delimiter).flatten!
           head = unscanned.take_while{|i| i.alternation_names.to_a.include?(rule.name)}
@@ -131,7 +133,7 @@ module Eson
       end
       
       def label_sub_strings
-        assign_alternation_names(Eson::Language::e4.sub_string)
+        assign_alternation_names(Eson::FormalLanguages.e4.sub_string)
       end
       
       #Given an alternation rule add rule.name to each referenced
@@ -454,8 +456,6 @@ module Eson
         self.push(new_tail).flatten
       end
     end
-    
-    LANG = Language.tokenizer_lang
     
     #Converts an eson program into a sequence of eson tokens
     #@param eson_program [String] string provided to Eson#read

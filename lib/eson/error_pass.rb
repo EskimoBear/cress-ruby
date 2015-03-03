@@ -6,7 +6,7 @@ module Eson
 
     extend self
 
-    LANG = Eson::Language.tokenizer_lang
+    LANG = Eson::FormalLanguages.tokenizer_lang
     SpecialFormError = Class.new(StandardError)
     
     #Throw SpecialFormError when unknown_special_forms Token is present

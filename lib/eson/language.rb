@@ -150,6 +150,60 @@ module Eson
           self.new(name, start_rxp) 
         end
 
+        #Return a Token sequence that is a legal instance of
+        #  the rule
+        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@return [Eson::Tokenizer::TokenSeq] sub-sequence of tokens beginning
+        #  at the start of the sequence which is legal according to the
+        #  NonTerminal's ebnf definition
+        #@raise [ParseError] if no legal sub-sequence can be found
+        #@eskimobear.specification
+        # T, input token sequence
+        # S, sub-sequence matching rule
+        # E, sequence of error tokens
+        # r_def, definition of rule
+        # et, token at the head of T
+        #
+        # Init : length(T) > 0
+        #        length(S) = 0
+        #        length(E) = 0
+        # Next : T' = T - et
+        #        when r_def.terminal?
+        #          when match(r_def.name, et)
+        #            S' = S + et
+        #          otherwise
+        #            E' = E + et
+        #        when r_def.alternation?
+        #          when match_any(r_def, T
+        #            S' = match_any(r_def, T)
+        #          otherwise
+        #            E' = E + et
+        #        when r_def.concatenation?
+        #          when match_and_then(r_def, T)
+        #            S' = match_and_then(r_def, T)
+        #          otherwise
+        #            E' = E + et
+        #        when r_def.option?
+        #          when match_one(r_def, T)
+        #            S' = match_one(r_def, T)
+        #          otherwise
+        #            S' = match_none(r_def, T)
+        #          otherwise
+        #            E' = E + et
+        #        when r_def.repetition?
+        #          when match_many(r_def, T)
+        #            S' = match_many(r_def, T)
+        #          otherwise
+        #            S' = match_none(r_def, T)
+        #          otherwise
+        #            E' = E + et
+        def parse(tokens)
+          lookahead = tokens.first
+          if terminal?
+            if @name == lookahead.name
+              Eson::Tokenizer::TokenSeq.new [lookahead]
+            end
+          end
         end
         
         def match(string)

@@ -2,6 +2,7 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
 require_relative '../lib/eson/language.rb'
+require_relative '../lib/eson/tokenizer'
 
 describe Eson::Language::RuleSeq do
 
@@ -201,6 +202,30 @@ describe Eson::Language::RuleSeq do
         @new_rule.partial_status.must_equal true
         @new_rule.first_set.must_include :nullable
       end
+    end
+  end
+end
+
+describe Eson::Language::RuleSeq::Rule do
+
+  subject {Eson::Language::RuleSeq::Rule}
+  let(:token) {Eson::Tokenizer::TokenSeq::Token}
+  let(:tokenseq) {Eson::Tokenizer::TokenSeq}
+  let(:rule) {Eson::Language::RuleSeq::Rule}
+  let(:rule_seq) {subject.new([rule.new(:rule_1, /RU/),
+                               rule.new(:rule_2, /LE/)])}
+
+  describe "#parse" do
+    before do
+      @token = Eson::Tokenizer::TokenSeq::Token.new(:lexeme, :token_name)
+      @tokens = Eson::Tokenizer::TokenSeq.new([@token])
+    end
+    it "with terminal" do
+      seq = rule.new_terminal_rule(:token_name, /RULE/).parse(@tokens)
+      seq.first.name.must_equal :token_name
+      seq.first.must_be_instance_of token
+      seq.length.must_equal 1
+      seq.must_be_instance_of tokenseq
     end
   end
 end

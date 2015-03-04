@@ -65,6 +65,19 @@ module Eson
         end
       end
 
+      #Test if a Token is an instance of a Terminal
+      #@param terminal [Terminal]
+      #@param token [Eson::Tokenizer::TokenSeq::Token] a token
+      #@return [Boolean] true if the Terminal's rule_name matches
+      #  the token name
+      def accept_terminal?(terminal, token)
+        if terminal.instance_of? Terminal
+          terminal.rule_name == token.name
+        else
+          false
+        end
+      end
+
       #FIXME this no longer works as terminals which have been
       #converted from nonterminals have an undefined @start_rxp
       def to_s       
@@ -205,13 +218,34 @@ module Eson
             if @name == lookahead.name
               Eson::Tokenizer::TokenSeq.new [lookahead]
             else
-              raise ParseError, parse_error_message(@name, lookahead.name)
+              raise ParseError, parse_terminal_error_message(@name, lookahead.name)
             end
+          elsif alternation_rule?
+            Eson::Tokenizer::TokenSeq.new(parse_any(tokens))
           end
         end
 
-        def parse_error_message(expected_token, actual_token)
+        def parse_terminal_error_message(expected_token, actual_token)
           "Expected a symbol of type :#{expected_token} but got a :#{actual_token} instead."
+        end
+
+        #Return a Token sequence that is a legal instance of
+        #  an alternation rule
+        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@return [Eson::Tokenizer::TokenSeq] legal sub-sequence of tokens
+        #  beginning at the start of the sequence.
+        #@raise [ParseError] if no legal sub-sequence can be found
+        def parse_any(tokens)
+          lookahead = tokens.first
+          terminals, nonterminals = @ebnf.term_set.partition do |i|
+            i.instance_of? Terminal
+          end
+          terminal_match = terminals.detect{|i| accept_terminal?(i, lookahead)}
+          if terminal_match
+            [lookahead]
+          else
+            raise ParseError, parse_terminal_error_message(@name, lookahead.name)
+          end
         end
         
         def match(string)

@@ -236,15 +236,23 @@ describe Eson::Language::RuleSeq::Rule do
     end
     describe "alternation_rule" do
       before do
-        @rules = rule_seq.make_alternation_rule(:rule, [:rule_1, :rule_2])
+        @rules = rule_seq.make_alternation_rule(:rule, [:undefined, :rule_1])
         @rule = @rules.get_rule(:rule)
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
         @valid_token_seq = token_seq.new(@sequence)
+        @invalid_token_seq = @valid_token_seq.reverse
       end
-      it "with valid sub seq" do
-        seq = @rule.parse(@valid_token_seq)
-        seq.must_be_instance_of token_seq
-        seq.must_equal @sequence
+      describe "match terminals" do 
+        it "with valid token" do
+          seq = @rule.parse(@valid_token_seq)
+          seq.must_be_instance_of token_seq
+          seq.first.name.must_equal :rule_1
+          seq.length.must_equal 1
+        end
+        it "with invalid token" do
+          proc {@rule.parse(@invalid_token_seq)}
+            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+        end
       end
     end
   end

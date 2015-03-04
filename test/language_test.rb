@@ -210,32 +210,41 @@ describe Eson::Language::RuleSeq::Rule do
 
   subject {Eson::Language::RuleSeq::Rule}
   let(:token) {Eson::Tokenizer::TokenSeq::Token}
-  let(:tokenseq) {Eson::Tokenizer::TokenSeq}
-  let(:rule) {Eson::Language::RuleSeq::Rule}
-  let(:rule_seq) {subject.new([rule.new(:rule_1, /RU/),
-                               rule.new(:rule_2, /LE/)])}
-
+  let(:token_seq) {Eson::Tokenizer::TokenSeq}
+  let(:rule_seq) {Eson::Language::RuleSeq.new([subject.new(:rule_1, /RU/),
+                                               subject.new(:rule_2, /LE/)])}
+  
   describe "#parse" do
-    before do
-    end
     describe "terminal_rule" do
       before do
-        @rule = rule.new_terminal_rule(:token_name, /RULE/)
-        @valid_token = Eson::Tokenizer::TokenSeq::Token.new(:lexeme, :token_name)
-        @valid_token_seq = Eson::Tokenizer::TokenSeq.new([@valid_token])
-        @invalid_token = Eson::Tokenizer::TokenSeq::Token.new(:lexeme, :invalid_token_name)
+        @rule = subject.new_terminal_rule(:token_name, /RULE/)
+        @valid_token = token.new(:lexeme, :token_name)
+        @valid_token_seq = token_seq.new([@valid_token])
+        @invalid_token = token.new(:lexeme, :invalid_token_name)
         @invalid_token_seq = @valid_token_seq.clone.unshift(@invalid_token)
       end
       it "with valid token" do
         seq = @rule.parse(@valid_token_seq)
+        seq.must_be_instance_of token_seq
         seq.first.name.must_equal :token_name
-        seq.first.must_be_instance_of token
         seq.length.must_equal 1
-        seq.must_be_instance_of tokenseq
       end
       it "with invalid token" do
         proc {@rule.parse(@invalid_token_seq)}
           .must_raise Eson::Language::RuleSeq::Rule::ParseError
+      end
+    end
+    describe "alternation_rule" do
+      before do
+        @rules = rule_seq.make_alternation_rule(:rule, [:rule_1, :rule_2])
+        @rule = @rules.get_rule(:rule)
+        @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
+        @valid_token_seq = token_seq.new(@sequence)
+      end
+      it "with valid sub seq" do
+        seq = @rule.parse(@valid_token_seq)
+        seq.must_be_instance_of token_seq
+        seq.must_equal @sequence
       end
     end
   end

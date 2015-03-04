@@ -120,6 +120,8 @@ module Eson
 
         include EBNF
 
+        ParseError = Class.new(StandardError)
+
         attr_accessor :name, :first_set, :partial_status, :ebnf
 
         #@param name [Symbol] name of the production rule
@@ -202,8 +204,14 @@ module Eson
           if terminal?
             if @name == lookahead.name
               Eson::Tokenizer::TokenSeq.new [lookahead]
+            else
+              raise ParseError, parse_error_message(@name, lookahead.name)
             end
           end
+        end
+
+        def parse_error_message(expected_token, actual_token)
+          "Expected a symbol of type :#{expected_token} but got a :#{actual_token} instead."
         end
         
         def match(string)

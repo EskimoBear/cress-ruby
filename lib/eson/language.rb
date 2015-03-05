@@ -134,6 +134,8 @@ module Eson
         include EBNF
 
         ParseError = Class.new(StandardError)
+        UnmatchedFirstSetError = Class.new(StandardError)
+        JointFirstSetError = Class.new(StandardError)
 
         attr_accessor :name, :first_set, :partial_status, :ebnf
 
@@ -269,6 +271,7 @@ module Eson
         #            E + et
         #          otherwise
         #            S
+        #        r_term = match_first(r_def, et)
         #        when r_term.terminal?
         #          when match(et, r_term)
         #            S' = S + et
@@ -285,19 +288,56 @@ module Eson
         #            r_def' = r_def - r_term
         def parse_any(tokens, rules)
           lookahead = tokens.first
-          @ebnf.term_set.each do |i|
-            if i.instance_of? Terminal
-              if accept_terminal?(i, lookahead)
+          if matched_any_first_sets?(lookahead, rules)
+            term = first_set_match(lookahead, rules)
+            if term.instance_of? Terminal
+              if accept_terminal?(term, lookahead)
                 return build_parse_result([lookahead], tokens.drop(1))
               end
             else
-              rule = rules.get_rule(i.rule_name)
+              rule = rules.get_rule(term.rule_name)
               return rule.parse(tokens, rules)
             end
           end
           raise ParseError, parse_terminal_error_message(@name, lookahead.name)
         end
+
+        #@param token [Eson::Tokenizer::Token] token
+        #@param rules [Eson::Language::RuleSeq] list of possible rules
+        #@return [Boolean] true if token is part of the first set of any
+        #  of the rule's terms.
+        def matched_any_first_sets?(token, rules)
+          terms = get_matching_first_sets(token, rules)
+          terms.length.eql?(1)
+        end
         
+        def get_matching_first_sets(token, rules)
+          @ebnf.term_set.find_all do |i|
+            rule = rules.get_rule(i.rule_name)
+            rule.first_set.include? token.name
+          end
+        end
+        
+        #@param token [Eson::Tokenizer::Token] token
+        #@param rules [Eson::Language::RuleSeq] list of possible rules
+        #@return [Terminal, NonTerminal] term that has a first_set
+        #  which includes the given token. Works with alternation rules only.
+        #@raise [JointFirstSetError] if more than one term found
+        #@raise [UnmatchedFirstSetError] if no terms found
+        def first_set_match(token, rules)
+          terms = get_matching_first_sets(token, rules)
+          case terms.length
+          when 1
+            terms.first
+          when 0
+            raise UnmatchedFirstSetError,
+                  "None of the first_sets of #{@name} contain #{token.name}"
+          else
+            raise JointFirstSetError,
+                  "The first_sets of #{@name} are not disjoint."
+          end
+        end
+
         def match(string)
           string.match(self.rxp)
         end

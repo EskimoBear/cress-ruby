@@ -185,11 +185,11 @@ module Eson
         # Next : T' = T - et
         #        when r_def.terminal?
         #          when match(r_def.name, et)
-        #            S' = S + et
+        #            S = match(r_def, et)
         #          otherwise
         #            E' = E + et
         #        when r_def.alternation?
-        #          when match_any(r_def, T
+        #          when match_any(r_def, T)
         #            S' = match_any(r_def, T)
         #          otherwise
         #            E' = E + et
@@ -214,14 +214,24 @@ module Eson
         #            E' = E + et
         def parse(tokens, rules)
           if terminal?
-            lookahead = tokens.first
-            if @name == lookahead.name
-              return build_parse_result([lookahead], tokens.drop(1))
-            else
-              raise ParseError, parse_terminal_error_message(@name, lookahead.name)
-            end
+            parse_terminal(tokens)
           elsif alternation_rule?
             parse_any(tokens, rules)
+          end
+        end
+
+        #Return a Token sequence with one Token that is an instance of
+        #  a terminal rule
+        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
+        #  tokens as :parsed_seq and the rest of the Token sequence as :rest
+        #@raise [ParseError] if no legal sub-sequence can be found
+        def parse_terminal(tokens)
+          lookahead = tokens.first
+          if @name == lookahead.name
+            return build_parse_result([lookahead], tokens.drop(1))
+          else
+            raise ParseError, parse_terminal_error_message(@name, lookahead.name)
           end
         end
 
@@ -280,6 +290,9 @@ module Eson
               if accept_terminal?(i, lookahead)
                 return build_parse_result([lookahead], tokens.drop(1))
               end
+            else
+              rule = rules.get_rule(i.rule_name)
+              return rule.parse(tokens, rules)
             end
           end
           raise ParseError, parse_terminal_error_message(@name, lookahead.name)

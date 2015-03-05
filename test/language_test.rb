@@ -249,13 +249,28 @@ describe Eson::Language::RuleSeq::Rule do
           seq = @rule.parse(@valid_token_seq, @rules)
           seq.must_be_instance_of Hash
           seq[:parsed_seq].must_be_instance_of token_seq
-          seq[:parsed_seq].detect{|i| i.name == :rule_1}.wont_be_nil
           seq[:parsed_seq].length.must_equal 1
-          seq[:rest].length.must_equal 1
+          seq[:parsed_seq].first.must_equal @valid_token_seq.first
+          seq[:rest].first.must_equal @valid_token_seq.last 
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
             .must_raise Eson::Language::RuleSeq::Rule::ParseError
+        end
+      end
+      describe "with nonterminals" do
+        before do
+          @rules = @rules.make_alternation_rule(:nonterminal_rule, [:terminal_rule, :rule_3])
+          @rule = @rules.get_rule(:nonterminal_rule)
+          @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_4)]
+          @valid_token_seq = token_seq.new @sequence
+        end
+        it "with valid token" do
+          seq = @rule.parse(@valid_token_seq, @rules)
+          seq.must_be_instance_of Hash
+          seq[:parsed_seq].length.must_equal 1
+          seq[:parsed_seq].first.must_equal @valid_token_seq.first
+          seq[:rest].first.must_equal @valid_token_seq.last
         end
       end
     end

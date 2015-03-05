@@ -212,7 +212,8 @@ describe Eson::Language::RuleSeq::Rule do
   let(:token) {Eson::Tokenizer::TokenSeq::Token}
   let(:token_seq) {Eson::Tokenizer::TokenSeq}
   let(:rule_seq) {Eson::Language::RuleSeq.new([subject.new(:rule_1, /RU/),
-                                               subject.new(:rule_2, /LE/)])}
+                                               subject.new(:rule_2, /LE/),
+                                               subject.new(:rule_3, /RL/)])}
   
   describe "#parse" do
     describe "terminal_rule" do
@@ -224,33 +225,36 @@ describe Eson::Language::RuleSeq::Rule do
         @invalid_token_seq = @valid_token_seq.clone.unshift(@invalid_token)
       end
       it "with valid token" do
-        seq = @rule.parse(@valid_token_seq)
-        seq.must_be_instance_of token_seq
-        seq.first.name.must_equal :token_name
-        seq.length.must_equal 1
+        seq = @rule.parse(@valid_token_seq, rule_seq)
+        seq.must_be_instance_of Hash
+        seq[:parsed_seq].must_be_instance_of token_seq
+        seq[:parsed_seq].detect{|i| i.name == :token_name}.wont_be_nil true
+        seq[:rest].must_be_instance_of token_seq
       end
       it "with invalid token" do
-        proc {@rule.parse(@invalid_token_seq)}
+        proc {@rule.parse(@invalid_token_seq, rule_seq)}
           .must_raise Eson::Language::RuleSeq::Rule::ParseError
       end
     end
     describe "alternation_rule" do
       before do
-        @rules = rule_seq.make_alternation_rule(:rule, [:undefined, :rule_1])
-        @rule = @rules.get_rule(:rule)
-        @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
+        @rules = rule_seq.make_alternation_rule(:terminal_rule, [:rule_2, :rule_1])
+        @rule = @rules.get_rule(:terminal_rule)
+        @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_3)]
         @valid_token_seq = token_seq.new(@sequence)
         @invalid_token_seq = @valid_token_seq.reverse
       end
-      describe "match terminals" do 
-        it "with valid token" do
-          seq = @rule.parse(@valid_token_seq)
-          seq.must_be_instance_of token_seq
-          seq.first.name.must_equal :rule_1
-          seq.length.must_equal 1
+      describe "only terminals" do 
+        it "with valid tokens" do
+          seq = @rule.parse(@valid_token_seq, @rules)
+          seq.must_be_instance_of Hash
+          seq[:parsed_seq].must_be_instance_of token_seq
+          seq[:parsed_seq].detect{|i| i.name == :rule_1}.wont_be_nil
+          seq[:parsed_seq].length.must_equal 1
+          seq[:rest].length.must_equal 1
         end
-        it "with invalid token" do
-          proc {@rule.parse(@invalid_token_seq)}
+        it "with invalid tokens" do
+          proc {@rule.parse(@invalid_token_seq, @rules)}
             .must_raise Eson::Language::RuleSeq::Rule::ParseError
         end
       end

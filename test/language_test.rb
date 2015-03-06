@@ -111,6 +111,11 @@ describe Eson::Language::RuleSeq do
         @new_rule.partial_status.must_equal true
         @new_rule.first_set.must_be_empty
       end
+      it "inherits nullable state" do
+        rules = rule_seq.make_option_rule(:o_rule, :rule_1)
+                .make_alternation_rule(:rule, [:rule_2, :o_rule])
+        rules.get_rule(:rule).nullable?.must_equal true
+      end
     end
   end
 

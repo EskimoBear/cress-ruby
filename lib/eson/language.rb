@@ -48,6 +48,8 @@ module Eson
       def nullable?
         if self.option_rule? || self.repetition_rule?
           true
+        elsif @first_set.include? :nullable
+          true
         else
           false
         end

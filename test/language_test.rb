@@ -280,5 +280,50 @@ describe Eson::Language::RuleSeq::Rule do
         end
       end
     end
+    describe "concatenation rule" do
+      before do
+        @rules = rule_seq.make_concatenation_rule(:terminal_rule, [:rule_1, :rule_2])
+        @rule = @rules.get_rule(:terminal_rule)
+        @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
+        @valid_token_seq = token_seq.new(@sequence)
+        @invalid_token_seq = @valid_token_seq.reverse
+      end
+      describe "with only terminals" do
+        it "with valid tokens" do
+          seq = @rule.parse(@valid_token_seq, @rules)
+          seq.must_be_instance_of Hash
+          seq[:parsed_seq].must_be_instance_of token_seq
+          seq[:parsed_seq].length.must_equal 2
+          seq[:parsed_seq].must_equal @sequence
+          seq[:rest].must_be_empty
+        end
+        it "with invalid token" do
+          proc {@rule.parse(@invalid_token_seq, @rules)}
+            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+        end
+      end
+      describe "with7 nonterminals" do
+        before do
+          @rules = rule_seq
+                   .make_concatenation_rule(:nonterminal_rule, [:terminal_rule, :rule_3])
+          @rule = @rules.get_rule(:nonterminal_rule)
+          @sequence = @sequence.push(token.new(:lexeme, :rule_3))
+          @valid_token_seq = token_seq.new(@sequence)
+          @invalid_token_seq = @valid_token_seq.take(2).push(token.new(:lexeme, :rule_1))
+        end
+        it "with valid tokens" do
+          seq = @rule.parse(@valid_token_seq, @rules)
+          seq.must_be_instance_of Hash
+          seq[:parsed_seq].must_be_instance_of token_seq
+          seq[:parsed_seq].length.must_equal 3
+          seq[:parsed_seq].must_equal @sequence
+          seq[:rest].must_be_empty
+        end
+        it "with invalid tokens" do
+          proc {@rule.parse(@invalid_token_seq, @rules)}
+            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+        end
+      end
+    end
   end
 end

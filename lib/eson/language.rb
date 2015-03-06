@@ -219,6 +219,8 @@ module Eson
             parse_terminal(tokens)
           elsif alternation_rule?
             parse_any(tokens, rules)
+          elsif concatenation_rule?
+            parse_and_then(tokens, rules)
           end
         end
 
@@ -240,6 +242,8 @@ module Eson
         def build_parse_result(parsed_seq, rest)
           if parsed_seq.instance_of? Array
             parsed_seq = Eson::Tokenizer::TokenSeq.new(parsed_seq)
+          elsif rest.instance_of? Array
+            rest = Eson::Tokenizer::TokenSeq.new(rest)
           end
           result = {:parsed_seq => parsed_seq, :rest => rest}
         end
@@ -270,8 +274,8 @@ module Eson
         #            S' = S + et
         #            T' = T - et
         #        when r_term.nonterminal?
-        #          when r_term.can_parse?(T)
-        #            S' = r_term.parse(T)
+        #          when r_term.can_parse?(r_def, T)
+        #            S' = r_term.parse(r_def, T)
         #            T' = T - S'
         #            r_def' = []
         #        otherwise
@@ -323,6 +327,60 @@ module Eson
           else
             raise JointFirstSetError,
                   "The first_sets of #{@name} are not disjoint."
+          end
+        end
+
+        #Return a Token sequence that is a legal instance of
+        #  a concatenation rule
+        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@param rules [Eson::Language::RuleSeq] list of possible rules
+        #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
+        #  tokens as :parsed_seq and the rest of the Token sequence as :rest
+        #@raise [ParseError] if no legal sub-sequence can be found
+        #@eskimobear.specification
+        # T, input token sequence
+        # et, token at the head of T
+        # r_def, list of terms in rule
+        # r_term, term at the head of r_def      
+        # S, sub-sequence matching rule
+        # E, sequence of error tokens
+        #
+        # Init : length(T) > 0
+        #        length(E) = 0
+        #        length(S) = 0
+        # Next : r_def, et
+        #        when r_def = []
+        #          S
+        #        when r_term.terminal?
+        #          when match_terminal(r_term, et)
+        #            S' = S + et
+        #            T' = T - et
+        #            r_def' = r_def - r_term
+        #          otherwise
+        #            E + et
+        #        when r_term.nonterminal?
+        #          when can_parse?(r_def, T)
+        #            S' = parse(r_def, T)
+        #            T' = T - S'
+        #          otherwise
+        #            E + et
+        def parse_and_then(tokens, rules)
+          result = build_parse_result([], tokens)
+          @ebnf.term_list.each_with_object(result) do |i, a|
+            if i.instance_of? Terminal
+              lookahead = a[:rest].first
+              if accept_terminal?(i, lookahead)
+                a[:parsed_seq].push(lookahead)
+                a[:rest] = a[:rest].drop(1)
+              else
+                raise ParseError, parse_terminal_error_message(i.rule_name, lookahead.name)
+              end
+            elsif i.instance_of? NonTerminal
+              rule = rules.get_rule(i.rule_name)
+              parsed_seq = rule.parse(a[:rest], rules)[:parsed_seq]
+              a[:parsed_seq].concat(parsed_seq)
+              a[:rest] = a[:rest].drop(parsed_seq.length)
+            end
           end
         end
 

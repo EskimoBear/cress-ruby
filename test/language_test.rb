@@ -250,8 +250,8 @@ describe Eson::Language::RuleSeq::Rule do
           seq.must_be_instance_of Hash
           seq[:parsed_seq].must_be_instance_of token_seq
           seq[:parsed_seq].length.must_equal 1
-          seq[:parsed_seq].first.must_equal @valid_token_seq.first
-          seq[:rest].first.must_equal @valid_token_seq.last 
+          seq[:parsed_seq].must_equal @valid_token_seq.first(1)
+          seq[:rest].must_equal @valid_token_seq.last(1)
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
@@ -271,8 +271,8 @@ describe Eson::Language::RuleSeq::Rule do
           seq.must_be_instance_of Hash
           seq[:parsed_seq].must_be_instance_of token_seq
           seq[:parsed_seq].length.must_equal 1
-          seq[:parsed_seq].first.must_equal @valid_token_seq.first
-          seq[:rest].first.must_equal @valid_token_seq.last
+          seq[:parsed_seq].must_equal @valid_token_seq.first(1)
+          seq[:rest].must_equal @valid_token_seq.last(1)
         end
         it "with invalid token" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
@@ -302,7 +302,7 @@ describe Eson::Language::RuleSeq::Rule do
             .must_raise Eson::Language::RuleSeq::Rule::ParseError
         end
       end
-      describe "with7 nonterminals" do
+      describe "with nonterminals" do
         before do
           @rules = rule_seq
                    .make_concatenation_rule(:nonterminal_rule, [:terminal_rule, :rule_3])
@@ -322,6 +322,41 @@ describe Eson::Language::RuleSeq::Rule do
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
             .must_raise Eson::Language::RuleSeq::Rule::ParseError
+        end
+      end
+    end
+    describe "option rule" do
+      before do
+        @rules = rule_seq.make_option_rule(:terminal_rule, :rule_1)
+        @rule = @rules.get_rule(:terminal_rule)
+        @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
+        @valid_token_seq = token_seq.new(@sequence)
+        @invalid_token_seq = @valid_token_seq.reverse
+      end
+      describe "with terminals only" do
+        it "with valid tokens" do
+          seq = @rule.parse(@valid_token_seq, @rules)
+          seq.must_be_instance_of Hash
+          seq[:parsed_seq].must_be_instance_of token_seq
+          seq[:parsed_seq].length.must_equal 1
+          seq[:parsed_seq].must_equal @sequence.first(1)
+          seq[:rest].must_equal @sequence.last(1)
+        end
+      end
+      describe "with nonterminal" do
+        before do
+          @rules = rule_seq
+                   .make_concatenation_rule(:c_rule, [:rule_1, :rule_2])
+                   .make_option_rule(:nonterminal_rule, :c_rule)
+          @rule = @rules.get_rule(:nonterminal_rule)
+        end
+        it "with valid tokens" do
+          seq = @rule.parse(@valid_token_seq, @rules)
+          seq.must_be_instance_of Hash
+          seq[:parsed_seq].must_be_instance_of token_seq
+          seq[:parsed_seq].length.must_equal 2
+          seq[:parsed_seq].must_equal @sequence
+          seq[:rest].must_be_empty
         end
       end
     end

@@ -221,6 +221,8 @@ module Eson
             parse_any(tokens, rules)
           elsif concatenation_rule?
             parse_and_then(tokens, rules)
+          elsif option_rule?
+            parse_maybe(tokens, rules)
           end
         end
 
@@ -381,6 +383,50 @@ module Eson
               a[:parsed_seq].concat(parsed_seq)
               a[:rest] = a[:rest].drop(parsed_seq.length)
             end
+          end
+        end
+
+        #Return a Token sequence that is a legal instance of
+        #  an option rule
+        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@param rules [Eson::Language::RuleSeq] list of possible rules
+        #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
+        #  tokens as :parsed_seq and the rest of the Token sequence as :rest
+        #@raise [ParseError] if no legal sub-sequence can be found
+        #@eskimobear.specification
+        # T, input token sequence
+        # et, token at the head of T
+        # r, the option rule
+        # r_term, single term of the rule
+        # S, sub-sequence matching rule
+        # E, sequence of error tokens
+        #
+        # Init : length(T) > 0
+        #        length(E) = 0
+        #        length(S) = 0
+        # Next : r_term, et
+        #        when r_term.terminal?
+        #          when match(r_term, et)
+        #            S = et
+        #            T - et
+        #        when r_term.nonterminal?
+        #           S = parse(r, T)
+        #           T - S
+        #        when match_follow_set?(r, et)
+        #           S = []
+        #           T
+        #        otherwise
+        #          E + et
+        def parse_maybe(tokens, rules)
+          term = @ebnf.term
+          if term.instance_of? Terminal
+            lookahead = tokens.first
+            if accept_terminal?(term, lookahead)
+              return build_parse_result([lookahead], tokens.drop(1))
+            end
+          elsif term.instance_of? NonTerminal
+            rule = rules.get_rule(term.rule_name)
+            rule.parse(tokens, rules)
           end
         end
 

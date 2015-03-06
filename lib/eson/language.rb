@@ -258,42 +258,30 @@ module Eson
         #@eskimobear.specification
         # T, input token sequence
         # et, token at the head of T
-        # r_def, list of terms in rule
-        # r_term, term at the head of r_def      
+        # r_def, list of terms in rule   
         # S, sub-sequence matching rule
         # E, sequence of error tokens
         #
         # Init : length(T) > 0
         #        length(E) = 0
         #        length(S) = 0
-        # Next : when r_def = []
-        #          when S.empty?
-        #            E + et
-        #          otherwise
-        #            S
-        #        r_term = match_first(r_def, et)
+        # Next : r_term = match_first(r_def, et)
         #        when r_term.terminal?
-        #          when match(et, r_term)
         #            S' = S + et
         #            T' = T - et
-        #            r_def' = []
-        #          otherwise
-        #            r_def' = r_def - r_term
         #        when r_term.nonterminal?
         #          when r_term.can_parse?(T)
         #            S' = r_term.parse(T)
         #            T' = T - S'
         #            r_def' = []
-        #          otherwise
-        #            r_def' = r_def - r_term
+        #        otherwise
+        #          E + et 
         def parse_any(tokens, rules)
           lookahead = tokens.first
           if matched_any_first_sets?(lookahead, rules)
             term = first_set_match(lookahead, rules)
             if term.instance_of? Terminal
-              if accept_terminal?(term, lookahead)
-                return build_parse_result([lookahead], tokens.drop(1))
-              end
+              return build_parse_result([lookahead], tokens.drop(1))
             else
               rule = rules.get_rule(term.rule_name)
               return rule.parse(tokens, rules)

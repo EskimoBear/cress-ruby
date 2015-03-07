@@ -148,6 +148,42 @@ describe Eson::Language::RuleSeq do
         @new_rule.first_set.must_be_empty
       end
     end
+    describe "start with nullable terms" do
+      before do
+        @rules = rule_seq.make_option_rule(:o_rule_1, :rule_1)
+                 .make_option_rule(:o_rule_2, :rule_2)
+                 .make_concatenation_rule(:rule, [:o_rule_1, :o_rule_2, :rule_2])
+        @rule = @rules.get_rule(:rule)
+      end
+      it "has correct first set" do
+        lang = @rules.build_language("LANG")
+        rule = lang.rule
+        rule.first_set.must_include :rule_1
+        rule.first_set.must_include :rule_2
+      end
+      it "no duplicates in first set" do
+        lang = @rules.build_language("LANG")
+        lang.rule.first_set.uniq!.must_be_nil
+      end
+    end
+    describe "with only nullable terms" do
+      before do
+        @rules = rule_seq.make_option_rule(:o_rule_1, :rule_1)
+                 .make_option_rule(:o_rule_2, :rule_2)
+                 .make_concatenation_rule(:rule, [:o_rule_1, :o_rule_2])
+        @rule = @rules.get_rule(:rule)
+      end
+      it "inherit nullable status" do
+        @rule.nullable?.must_equal true
+      end
+      it "has correct first set" do
+        lang = @rules.build_language("LANG")
+        rule = lang.rule
+        rule.first_set.must_include :rule_1
+        rule.first_set.must_include :rule_2
+        rule.first_set.must_include :nullable
+      end
+    end
     describe "with illegal left recursion" do
     end
   end

@@ -146,22 +146,18 @@ module Eson
         #  rule references, this list is empty when the rule is a terminal
         #@param start_rxp [Regexp] regexp that accepts valid symbols for this
         #  rule
-        #@param first_set [Array<Symbol>] the set of terminals that can legally
-        #  appear at the start of the sequences of symbols derivable from
-        #  this rule. The first set of a terminal is the rule name. Any rule that
-        #  has terms marked as recursive generates a partial first set; the
-        #  full first set is computed when a formal language is built using the
-        #  rule.
-        #@param partial_status [Boolean] true if any terms are undefined or descend
-        #   from an undefined term.
+        #@param partial_status [Boolean] true if any terms are not defined as a
+        #  rule or descend from terms with partial_status in their associated rule.
+        #  If a rule has a partial_status then it's full first_set is only
+        #  computed when a formal language is derived from said rule.
         #@param ebnf [Eson::EBNF] ebnf definition of the rule, each defintion
         #  contains only one control, thus a rule can be one of the four control
         #  types:- concatenation, alternation, repetition and option.
-        def initialize(name, start_rxp=nil, first_set=nil, partial_status=nil, ebnf=nil)
+        def initialize(name, start_rxp=nil, partial_status=nil, ebnf=nil)
           @name = name
           @ebnf = ebnf
           @start_rxp = start_rxp
-          @first_set = terminal? ? [name] : first_set
+          @first_set = terminal? ? [name] : []
           @partial_status = terminal? ? false : partial_status
         end
 
@@ -557,9 +553,6 @@ module Eson
       #@param new_rule_name [Symbol] name of the production rule
       #@param rule_names [Array<Symbol>] sequence of the terms in
       #  the rule given in order
-      #@eskimobear.specification
-      # Prop: The first set of is the first set of the first term
-      #       of the rule definition
       def make_concatenation_rule(new_rule_name, rule_names)
         partial_status = include_rules?(rule_names) ? false : true
         first_rule_name = rule_names.first
@@ -569,12 +562,11 @@ module Eson
                                      true
                                    end
         partial_status = inherited_partial_status || partial_status
-        ebnf = ebnf_concat(rule_names)
         rule = Rule.new(new_rule_name,
                         /undefined/,
-                        first_set_concat(ebnf, partial_status),
                         partial_status,
-                        ebnf)
+                        ebnf_concat(rule_names))
+        prepare_first_set(rule)
         if partial_status
           self.push rule
         else
@@ -602,12 +594,13 @@ module Eson
         end
       end
 
-      def first_set_concat(ebnf, partial_status)
-        first = ebnf.term_list.first
-        if partial_status
-          []
-        else
-          get_rule(first.rule_name).first_set
+      #@param rule [Eson::Language::RuleSeq::Rule] Given rule
+      def prepare_first_set(rule)
+        unless rule.partial_status
+          build_first_set(rule)
+        end
+        if rule.option_rule? || rule.repetition_rule?
+          rule.first_set.push :nullable
         end
       end
 
@@ -615,25 +608,17 @@ module Eson
       # of terminals and non-terminals
       #@param new_rule_name [Symbol] name of the production rule
       #@param rule_names [Array<Symbol>] the terms in the rule
-      #@eskimobear.specification
-      # Prop: The first set is the union of the first set of each
-      #       term in the rule definition
       def make_alternation_rule(new_rule_name, rule_names)
         partial_status = include_rules?(rule_names) ? false : true
-        first_set_alt = if partial_status
-                          []
-                        else
-                          rule_names.map{|i| get_rule(i).first_set}.flatten.uniq
-                        end
         inherited_partial_status = rule_names.any? do |i|
           include_rule?(i) ? get_rule(i).partial_status : true
         end
         partial_status = inherited_partial_status || partial_status
         rule = Rule.new(new_rule_name,
                         /undefined/,
-                        first_set_alt,
                         partial_status,
                         ebnf_alt(rule_names))
+        prepare_first_set(rule)
         if partial_status
           self.push rule
         else
@@ -652,22 +637,17 @@ module Eson
       #  or terminal
       #@param new_rule_name [Symbol] name of the production rule
       #@param rule_name [Array<Symbol>] the single term in the rule
-      #@eskimobear.specification
-      # Prop: The first set is the union of the first set of the single
-      #       term in the rule definition and the special terminal
-      #       'nullable'
       def make_repetition_rule(new_rule_name, rule_name)
         partial_status = if include_rule?(rule_name)
-                        get_rule(rule_name).partial_status
-                      else
-                        true
+                           get_rule(rule_name).partial_status
+                         else
+                           true
                          end
-        ebnf = ebnf_rep(rule_name)
         rule = Rule.new(new_rule_name,
                         /undefined/,
-                        first_set_rep(ebnf, partial_status),
                         partial_status,
-                        ebnf)
+                        ebnf_rep(rule_name))
+        prepare_first_set(rule)
         if partial_status
           self.push rule
         else
@@ -679,34 +659,21 @@ module Eson
         EBNF::RepetitionRule.new(rule_to_term(rule_name)) 
       end
 
-      def first_set_rep(ebnf, partial_status)
-        if partial_status
-          [:nullable]
-        else
-          Array.new(get_rule(ebnf.term.rule_name).first_set).push(:nullable)
-        end
-      end
-
       #Create a non-terminal production rule of either a non-terminal
       #  or terminal
       #@param new_rule_name [Symbol] name of the production rule
       #@param rule_name [Array<Symbol>] the single term in the rule 
-      #@eskimobear.specification
-      # Prop: The first set is the union of first set of the single
-      #       term in the rule definition and the special terminal
-      #       'nullable'
       def make_option_rule(new_rule_name, rule_name)
         partial_status = if include_rule?(rule_name)
                            get_rule(rule_name).partial_status
                          else
                            true
                          end
-        ebnf = ebnf_opt(rule_name)
         rule = Rule.new(new_rule_name,
                         /undefined/,
-                        first_set_opt(ebnf, partial_status),
                         partial_status,
-                        ebnf)
+                        ebnf_opt(rule_name))
+        prepare_first_set(rule)
         if partial_status
           self.push rule
         else
@@ -717,11 +684,7 @@ module Eson
       def ebnf_opt(rule_name)
         EBNF::OptionRule.new(rule_to_term(rule_name))
       end
-
-      def first_set_opt(ebnf, partial_status)
-        first_set_rep(ebnf, partial_status)
-      end
-                  
+      
       def missing_items_error_message(rule_names)
         names = rule_names.map{|i| ":".concat(i.to_s)}
         "One or more of the following Eson::Language::Rule.name's are not present in the sequence: #{names.join(", ")}."
@@ -769,7 +732,7 @@ module Eson
         result_lang = Struct.new lang_name, *rules.names do
           include LanguageOperations
         end
-        apply_first_set(rules)
+        complete_partial_first_sets(rules)
         lang = result_lang.new *rules
         if top_rule_name.nil?
           lang
@@ -778,30 +741,81 @@ module Eson
         end
       end
 
-      def apply_first_set(rules)
-        rules.each do |i|
-          if i.partial_status
-            compute_first_set(rules, i.name)
-            i.partial_status = false
+      def complete_partial_first_sets(rules)
+        rules.each do |rule|
+          if rule.partial_status
+            build_first_set(rule)
+            rule.partial_status = false
           end
         end
         rules
       end
 
-      #Compute the first_set of rules with partial status
-      #@param rules [Eson::Language::RuleSeq::Rules] An array of rules
-      #@param rule_name [Symbol] name of rule with partil status
-      def compute_first_set(rules, rule_name)
-        rule = rules.get_rule(rule_name)
-        set = if rule.alternation_rule?
-                rule.term_names.each_with_object([]) do |i, a|
-                  first_set = rules.get_rule(i).first_set
-                  a.concat(first_set)
+      #Compute and set the first_set for a rule. The first_set is the
+      #set of terminal names that can legally  appear at the start of
+      #the sequences of symbols derivable from a rule. The first_set
+      #of a terminal rule is the rule name.
+      #@param rule [Eson::Language::RuleSeq::Rule] Given rule
+      #@eskimobear.specification
+      #
+      #Prop : The first set of a concatenation is the first set of the
+      #       first terms of the rule which are nullable. If all the terms
+      #       are nullable then the first set should include :nullable.
+      #     : The first set of an alternation is the first set of all of it's
+      #       terms combined.
+      #     : The first set of an option or repetition is the first set of
+      #       it's single term with :nullable included.
+      def build_first_set(rule)
+        terms = rule.term_names
+        set = if rule.concatenation_rule?
+                first_nullable_terms = terms.take_while do |term|
+                  get_rule(term).nullable?
                 end
-              else
-                rules.get_rule(rule.term_names.first).first_set
+                if first_nullable_terms.empty?
+                  get_first_set(get_rule(terms.first))
+                else
+                  first_set = first_nullable_terms.each_with_object([]) do |term, acc|
+                    acc.concat(get_first_set(get_rule(term)))
+                  end
+                  first_set.delete(:nullable)
+                  if first_nullable_terms.length < terms.length
+                    additional_term = terms[first_nullable_terms.length]
+                    additional_first_set = get_first_set(get_rule(additional_term))
+                    first_set.concat(additional_first_set)
+                  elsif first_nullable_terms.length == terms.length
+                    first_set.push(:nullable)
+                  end
+                  first_set.uniq
+                end
+              elsif rule.alternation_rule?
+                terms.each_with_object([]) do |term, acc|
+                  first_set = get_first_set(get_rule(term))
+                  acc.concat(first_set)
+                end
+              elsif rule.repetition_rule?
+                get_first_set(get_rule(terms.first))
+              elsif rule.option_rule?
+                get_first_set(get_rule(terms.first))
               end
         rule.first_set.concat set
+      end
+
+      #Ensure a first_set is completed before returning. Prevents
+      #  complications due to ordering of Rules in the RuleSeq. 
+      #@param rule [Eson::Language::RuleSeq::Rule] Given rule
+      #@return [Array<Symbol>] first set
+      def get_first_set(rule)
+        if rule.partial_status
+          build_first_set(rule)
+        end
+        rule.first_set
+      end
+      
+      #Compute the follow_set of rules
+      #@param rules [Eson::Language::RuleSeq::Rules] An array of rules
+      #@param rule_name [Symbol] name of rule with partil status
+      def compute_follow_set(rules, rule_name)
+
       end
             
       protected

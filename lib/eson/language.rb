@@ -418,14 +418,28 @@ module Eson
         #          E + et
         def parse_maybe(tokens, rules)
           term = @ebnf.term
+          term_rule = rules.get_rule(term.rule_name)
           if term.instance_of? Terminal
-            lookahead = tokens.first
-            if accept_terminal?(term, lookahead)
-              return build_parse_result([lookahead], tokens.drop(1))
+            begin 
+              term_rule.parse_terminal(tokens)
+            rescue ParseError => pe
+              parse_none(tokens, pe)
             end
           elsif term.instance_of? NonTerminal
-            rule = rules.get_rule(term.rule_name)
-            rule.parse(tokens, rules)
+            begin 
+              term_rule.parse(tokens, rules)
+            rescue ParseError => pe
+              parse_none(tokens, pe)
+            end
+          end
+        end
+
+        def parse_none(tokens, exception)
+          lookahead = tokens.first
+          if @follow_set.include? lookahead.name
+            return build_parse_result([], tokens)
+          else
+            raise exception
           end
         end
 

@@ -389,10 +389,14 @@ describe Eson::Language::RuleSeq::Rule do
     end
     describe "option rule" do
       before do
-        @rules = rule_seq.make_option_rule(:terminal_rule, :rule_1)
-        @rule = @rules.get_rule(:terminal_rule)
+        @rules = rule_seq
+                 .make_option_rule(:terminal_rule, :rule_1)
+        @lang = @rules.build_language("LANG")
+        @rule = @lang.terminal_rule
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
         @valid_token_seq = token_seq.new(@sequence)
+        @follow_sequence = [token.new(:lexeme, :rule_3), token.new(:lexeme, :rule_1)]
+        @valid_follow_seq = token_seq.new(@follow_sequence)
         @invalid_token_seq = @valid_token_seq.reverse
       end
       describe "with terminals only" do
@@ -409,8 +413,10 @@ describe Eson::Language::RuleSeq::Rule do
         before do
           @rules = rule_seq
                    .make_concatenation_rule(:c_rule, [:rule_1, :rule_2])
-                   .make_option_rule(:nonterminal_rule, :c_rule)
-          @rule = @rules.get_rule(:nonterminal_rule)
+                   .make_option_rule(:non_terminal_rule, :c_rule)
+                   .make_concatenation_rule(:top, [:non_terminal_rule, :rule_3])
+          @lang = @rules.build_language("LANG", :top)
+          @rule = @lang.non_terminal_rule
         end
         it "with valid tokens" do
           seq = @rule.parse(@valid_token_seq, @rules)
@@ -419,6 +425,16 @@ describe Eson::Language::RuleSeq::Rule do
           seq[:parsed_seq].length.must_equal 2
           seq[:parsed_seq].must_equal @sequence
           seq[:rest].must_be_empty
+        end
+        it "with valid follow tokens" do
+          seq = @rule.parse(@valid_follow_seq, @rules)
+          seq.must_be_instance_of Hash
+          seq[:parsed_seq].must_be_empty
+          seq[:rest].must_equal @valid_follow_seq
+        end
+        it "with invalid tokens" do
+          proc {@rule.parse(@invalid_token_seq, @rules)}
+            .must_raise Eson::Language::RuleSeq::Rule::ParseError
         end
       end
     end

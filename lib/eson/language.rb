@@ -139,7 +139,7 @@ module Eson
         UnmatchedFirstSetError = Class.new(StandardError)
         JointFirstSetError = Class.new(StandardError)
 
-        attr_accessor :name, :first_set, :partial_status, :ebnf
+        attr_accessor :name, :first_set, :partial_status, :ebnf, :follow_set
 
         #@param name [Symbol] name of the production rule
         #@param sequence [Array<Terminal, NonTerminal>] list of terms this
@@ -159,6 +159,7 @@ module Eson
           @start_rxp = start_rxp
           @first_set = terminal? ? [name] : []
           @partial_status = terminal? ? false : partial_status
+          @follow_set = []
         end
 
         def self.new_terminal_rule(name, start_rxp)
@@ -733,6 +734,7 @@ module Eson
           include LanguageOperations
         end
         complete_partial_first_sets(rules)
+        compute_follow_sets(rules, top_rule_name)
         lang = result_lang.new *rules
         if top_rule_name.nil?
           lang
@@ -811,13 +813,106 @@ module Eson
         rule.first_set
       end
       
-      #Compute the follow_set of rules
-      #@param rules [Eson::Language::RuleSeq::Rules] An array of rules
-      #@param rule_name [Symbol] name of rule with partil status
-      def compute_follow_set(rules, rule_name)
-
+      #Compute the follow_set of rules. The follow_set is
+      #the set of terminals that can appear to the right of the rule.
+      #@param rules [Eson::Language::RuleSeq] list of possible rules
+      #@param top_rule_name [Symbol] name of the top rule in the language
+      #  from which @rules derives.
+      def compute_follow_sets(rules, top_rule_name=nil)
+        unless top_rule_name.nil?
+          top_rule = rules.get_rule(top_rule_name)
+          add_to_follow_set(top_rule, :eof)
+        end
+        map = build_follow_dep_graph(rules)
+        map[1..-1].each do |stage|
+          stage.each do |tuple|
+            rule = rules.get_rule(tuple[:term])
+            #add first_set from first_set rules
+            tuple[:first_set_rules].each do |r|
+              add_to_follow_set(rule, r.first_set-[:nullable])
+            end
+            #add follow_set from follow_set rules
+            tuple[:follow_set_rules].each do |r|
+              add_to_follow_set(rule, r.follow_set)
+            end
+          end
+        end
       end
-            
+
+      #Builds a dependency graph for computing follow sets. This
+      #ensures that follow sets are computed in the correct order.      
+      #@return [Array] Array of array of tuples. Each tuple has a :term,
+      #  and optional :first_set_rules and :follow_set_rules arrays
+      def build_follow_dep_graph(rules)
+        dep_graph = rules.map do |rule|
+          tuple = {:term => rule.name}
+          concat_rules = rules.select{|i| i.concatenation_rule?}
+                         .select{|i| i.term_names.include? rule.name}
+          if concat_rules
+            tuple[:dep_rules] = concat_rules
+          end
+          tuple                             
+        end.partition do |t|
+          t[:dep_rules].nil?
+        end
+        #transform :dep_rules to :first_set_rules and :follow_set_rules
+        #:first_set_rules are those rules which must have their first_set
+        #added to the term's follow_set
+        #:follow_set_rules are those rules which must have their follow_set
+        #added to the term's follow_set
+        dep_graph.last.each do |t|
+          t[:first_set_rules] = []
+          t[:follow_set_rules] = []
+          t[:dep_rules].each do |rule|
+            term_seq = rule.term_names
+            last_position = term_seq.size - 1 
+            term_position = term_seq.index(t[:term])
+            last_nullable_terms = term_seq.reverse.take_while do |i|
+              rules.get_rule(i).nullable?
+            end
+            if last_nullable_terms.empty?
+              #no nullable terms at end of sequence         
+              if last_position == term_position
+                #add rule to follow set if term is last term
+                #protect against left recursive references
+                unless rule.name == t[:term]
+                  t[:follow_set_rules].push(rule)
+                end
+              else
+                #get term after the term and add this first set   
+                term_after = term_seq[term_position + 1]
+                t[:first_set_rules].push(rules.get_rule(term_after))
+              end
+            else
+              if last_nullable_terms.include? t[:term]
+                #add rule to follow set
+                #protect against left recursive references
+                unless rule.name == t[:term]
+                  t[:follow_set_rules].push(rule)
+                end
+              else
+                term_after = term_seq[term_position + 1]
+                t[:first_set_rules].push(rules.get_rule(term_after))
+              end
+            end
+            t.delete(:dep_rules)
+          end
+        end
+
+        last_stage = dep_graph.last.partition do |t|
+          t[:follow_set_rules].empty?
+        end
+        dep_graph[0...-1].concat last_stage
+      end
+ 
+      def add_to_follow_set(rule, term_name)
+        if term_name.instance_of? Array
+          rule.follow_set.concat(term_name)
+        else
+          rule.follow_set.push(term_name)
+        end
+      end
+      
       protected
       
       def self.all_rules?(seq)

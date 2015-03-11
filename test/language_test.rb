@@ -184,6 +184,27 @@ describe Eson::Language::RuleSeq do
         rule.first_set.must_include :nullable
       end
     end
+    describe "follow sets" do
+      before do
+        @rules = rule_seq.make_option_rule(:o_rule_1, :rule_1)
+                 .make_concatenation_rule(:rule, [:rule_2, :o_rule_1])
+        @lang = @rules.build_language("LANG", :rule)
+      end
+      it ":top_rule correct" do
+        @lang.top_rule.follow_set.must_include :eof
+        @lang.top_rule.follow_set.length.must_equal 1
+      end
+      it ":o_rule_1 correct" do
+        @lang.o_rule_1.follow_set.must_include :eof
+      end
+      it ":rule_1 correct" do
+        @lang.rule_1.follow_set.must_be_empty
+      end
+      it ":rule_2 correct" do
+        @lang.rule_2.follow_set.must_include :rule_1
+        @lang.rule_2.follow_set.wont_include :nullable
+      end
+    end
     describe "with illegal left recursion" do
     end
   end

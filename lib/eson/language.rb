@@ -222,6 +222,8 @@ module Eson
             parse_and_then(tokens, rules)
           elsif option_rule?
             parse_maybe(tokens, rules)
+          elsif repetition_rule?
+            parse_many(tokens, rules)
           end
         end
 
@@ -419,18 +421,10 @@ module Eson
         def parse_maybe(tokens, rules)
           term = @ebnf.term
           term_rule = rules.get_rule(term.rule_name)
-          if term.instance_of? Terminal
-            begin 
-              term_rule.parse_terminal(tokens)
-            rescue ParseError => pe
-              parse_none(tokens, pe)
-            end
-          elsif term.instance_of? NonTerminal
-            begin 
-              term_rule.parse(tokens, rules)
-            rescue ParseError => pe
-              parse_none(tokens, pe)
-            end
+          begin 
+            term_rule.parse(tokens, rules)
+          rescue ParseError => pe
+            parse_none(tokens, pe)
           end
         end
 
@@ -440,6 +434,55 @@ module Eson
             return build_parse_result([], tokens)
           else
             raise exception
+          end
+        end
+
+        #Return a Token sequence that is a legal instance of
+        #  a repetition rule
+        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@param rules [Eson::Language::RuleSeq] list of possible rules
+        #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
+        #  tokens as :parsed_seq and the rest of the Token sequence as :rest
+        #@raise [ParseError] if no legal sub-sequence can be found
+        #@eskimobear.specification
+        # T, input token sequence
+        # et, token at the head of T
+        # r, the option rule
+        # r_term, single term of the rule
+        # S, sub-sequence matching rule
+        # E, sequence of error tokens
+        #
+        # Init : length(T) > 0
+        #        length(E) = 0
+        #        length(S) = 0
+        # Next : r_term, et
+        #        S' = S + match_maybe(r_term, T)
+        #        T' = T - S'
+        #        when S = []
+        #          S, T
+        #        when T = []
+        #          S, T
+        #        otherwise
+        #          E + et
+        def parse_many(tokens, rules)
+          acc = parse_maybe(tokens, rules)
+          is_tokens_empty = acc[:rest].empty?
+          is_rule_nulled = acc[:parsed_seq].empty?
+          if is_tokens_empty || is_rule_nulled
+            acc
+          else
+            begin
+              acc.merge(parse_many(acc[:rest], rules)) do |key, old, new|
+                case key
+                when :parsed_seq
+                  old.concat(new)
+                when :rest
+                  new
+                end
+              end
+            rescue ParseError => pe
+              acc
+            end
           end
         end
 

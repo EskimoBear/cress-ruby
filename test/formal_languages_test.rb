@@ -139,6 +139,7 @@ describe Eson::FormalLanguages do
     end
     it "should have top rule" do
       @lang.must_respond_to :top_rule
+      @lang.top_rule.follow_set.must_include :eof
     end
     it "has no partial rules" do
       @lang.values.none?{|x| x.partial_status}.must_equal true

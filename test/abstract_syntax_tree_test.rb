@@ -5,14 +5,14 @@ require_relative '../lib/eson/abstract_syntax_tree'
 
 describe Eson::AbstractSyntaxTree do
 
-  describe "create an e5 tree" do
+  describe "create an AST" do
     before do
-      @tree = Eson::AbstractSyntaxTree.new(Eson::Language.e5)
-    end
-    
-    it "root is top rule" do 
+      @root_rule = Eson::FormalLanguages::e5.variable_identifier
+      @tree = Eson::AbstractSyntaxTree.new(@root_rule)
+    end 
+    it "root is rule" do 
       @tree.must_be_instance_of Eson::AbstractSyntaxTree
-      @tree.root_value.name.must_equal Eson::Language.e5.top_rule.name
+      @tree.root_value.must_equal @root_rule
     end
     it "root is open" do
       @tree.open?.must_equal true
@@ -22,26 +22,29 @@ describe Eson::AbstractSyntaxTree do
       @tree.active_node.must_equal @tree.get 
       @tree.active_node.must_be_instance_of Eson::AbstractSyntaxTree::Tree
     end
+    it "incorrect parameter type" do
+      proc {Eson::AbstractSyntaxTree.new("error_type")}.
+        must_raise Eson::AbstractSyntaxTree::TreeInitializationError
+    end
   end
 
-  describe "#insert_node_concatenation_rule" do
+  describe "#insert" do
     before do
-      @ast = Eson::AbstractSyntaxTree.new(Eson::Language.e5)
-      @invalid_token = Eson::Tokenizer::TokenSeq::Token.new(",", :comma)
-      @valid_token = Eson::Tokenizer::TokenSeq::Token.new("{", :program_start)
-      @invalid_rule = Eson::Language::e0.variable_identifier
-    end
-    
+      @root_rule = Eson::FormalLanguages::e5.variable_identifier
+      @ast = Eson::AbstractSyntaxTree.new(@root_rule)
+      @token = Eson::Tokenizer::TokenSeq::Token.new(",", :comma)
+      @rule = Eson::FormalLanguages::e5.variable_identifier
+    end  
     it "node is invalid type" do
       proc {@ast.insert("poo")}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
     end
-    it "node is an invalid Token" do
-      proc {@ast.insert(@invalid_token)}.must_raise Eson::AbstractSyntaxTree::TreeInsertionError
-      @ast.children.must_be_empty
+    it "token is leaf of active node" do
+      @ast.insert(@token)
+      @ast.active_node.children.must_include @token
     end
-    it "node is valid Token" do
-      @ast.insert(@valid_token)
-      @ast.children.wont_be_empty
+    it "rule is new active node" do
+      @ast.insert(@rule)
+      @ast.active_node.rule.must_equal @rule
     end
   end
 end

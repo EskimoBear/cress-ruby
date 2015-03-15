@@ -67,19 +67,6 @@ module Eson
         end
       end
 
-      #Test if a Token is an instance of a Terminal
-      #@param terminal [Terminal]
-      #@param token [Eson::Tokenizer::TokenSeq::Token] a token
-      #@return [Boolean] true if the Terminal's rule_name matches
-      #  the token name
-      def accept_terminal?(terminal, token)
-        if terminal.instance_of? Terminal
-          terminal.rule_name == token.name
-        else
-          false
-        end
-      end
-
       #FIXME this no longer works as terminals which have been
       #converted from nonterminals have an undefined @start_rxp
       def to_s       
@@ -369,21 +356,11 @@ module Eson
         #            E + et
         def parse_and_then(tokens, rules)
           result = build_parse_result([], tokens)
-          @ebnf.term_list.each_with_object(result) do |i, a|
-            if i.instance_of? Terminal
-              lookahead = a[:rest].first
-              if accept_terminal?(i, lookahead)
-                a[:parsed_seq].push(lookahead)
-                a[:rest] = a[:rest].drop(1)
-              else
-                raise ParseError, parse_terminal_error_message(i.rule_name, lookahead.name)
-              end
-            elsif i.instance_of? NonTerminal
-              rule = rules.get_rule(i.rule_name)
-              parsed_seq = rule.parse(a[:rest], rules)[:parsed_seq]
-              a[:parsed_seq].concat(parsed_seq)
-              a[:rest] = a[:rest].drop(parsed_seq.length)
-            end
+          @ebnf.term_list.each_with_object(result) do |i, acc|
+            rule = rules.get_rule(i.rule_name)
+            parse_result = rule.parse(acc[:rest], rules)
+            acc[:parsed_seq].concat(parse_result[:parsed_seq])
+            acc[:rest] = parse_result[:rest]
           end
         end
 

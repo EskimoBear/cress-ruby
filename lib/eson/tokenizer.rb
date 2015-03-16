@@ -41,7 +41,7 @@ module Eson
       program_json_hash = Oj.load(eson_program)
       program_char_seq = get_program_char_sequence(program_json_hash)
       json_symbol_seq = get_json_symbol_sequence(program_json_hash)
-      token_seq = tokenize_json_symbols(json_symbol_seq, program_char_seq)
+      token_seq = json_symbols_to_token(json_symbol_seq, program_char_seq)
       return token_seq, program_char_seq
     end
 
@@ -112,31 +112,31 @@ module Eson
     def symbol_length(json_symbol)
       json_symbol.lexeme.size
     end
-    
-    def tokenize_json_symbols(symbol_seq, char_seq)
-      symbol_seq.each_with_object(TokenSeq.new) do |symbol, seq|
+
+    def json_symbols_to_token(json_symbol_seq, char_seq)
+      json_symbol_seq.each_with_object(TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start
           seq.push(TokenSeq::Token.new(:"{", :program_start))
-          pop_chars(symbol, char_seq) 
+          pop_chars_string(char_seq, symbol.lexeme) 
         when :object_end
           seq.push(TokenSeq::Token.new(:"}", :program_end))
-          pop_chars(symbol, char_seq)
+          pop_chars_string(char_seq, symbol.lexeme) 
         when :array_start
           seq.push(TokenSeq::Token.new(:"[", :array_start))
-          pop_chars(symbol, char_seq)
+          pop_chars_string(char_seq, symbol.lexeme) 
         when :array_end
           seq.push(TokenSeq::Token.new(:"]", :array_end))
-          pop_chars(symbol, char_seq)
+          pop_chars_string(char_seq, symbol.lexeme) 
         when :colon
           seq.push(TokenSeq::Token.new(:":", :colon))
-          pop_chars(symbol, char_seq) 
+           pop_chars_string(char_seq, symbol.lexeme)
         when :array_comma
           seq.push(TokenSeq::Token.new(:",", :comma))
-          pop_chars(symbol, char_seq)
+          pop_chars_string(char_seq, symbol.lexeme)
         when :member_comma
           seq.push(TokenSeq::Token.new(:",", :end_of_line))
-          pop_chars(symbol, char_seq)
+          pop_chars_string(char_seq, symbol.lexeme)
         when :JSON_key
           tokenize_json_key(symbol.lexeme, seq, char_seq)
         when :JSON_value
@@ -145,8 +145,9 @@ module Eson
       end
     end
 
-    def pop_chars(symbol, char_seq)
-      char_seq.slice!(0, symbol_length(symbol))
+    
+    def pop_chars_string(char_seq, matched_string)
+      char_seq.slice!(0, matched_string.size)
     end
 
     def tokenize_json_key(json_key, seq, char_seq)
@@ -169,8 +170,7 @@ module Eson
     end
 
     def tokenize_special_form(json_string, seq, char_seq)
-      special_form = LANG.special_form.match_start(json_string).to_s
-      case special_form
+      case json_string
       when LANG.doc.rxp
         seq.push(TokenSeq::Token.new(json_string, LANG.doc.name))
         pop_chars_string(char_seq, json_string)
@@ -201,39 +201,34 @@ module Eson
         char_seq.slice!(0, :null.to_s.size)
       elsif json_value.is_a? String
         tokenize_json_string(json_value.freeze, seq, char_seq)
-      elsif json_value.is_a? Hash
-        tokenize_json_hash(json_value, seq, char_seq)
       end
     end
     
     def tokenize_json_string(json_string, seq, char_seq)
-      if json_string.empty?
-        seq
-      elsif LANG.whitespace.match_rxp?(json_string)
+      case json_string
+      when LANG.whitespace.rxp
         lexeme = LANG.whitespace.match(json_string).to_s.intern
         seq.push(TokenSeq::Token[lexeme, LANG.whitespace.name])
         pop_chars_string(char_seq, lexeme)
         tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
-      elsif LANG.variable_prefix.match_rxp?(json_string)
+      when LANG.variable_prefix.rxp
         lexeme = LANG.variable_prefix.match(json_string).to_s.intern
         seq.push(TokenSeq::Token[lexeme, LANG.variable_prefix.name])
         pop_chars_string(char_seq, lexeme)
         tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
-      elsif LANG.other_chars.match_rxp?(json_string)
+      when LANG.other_chars.rxp
         lexeme = LANG.other_chars.match(json_string).to_s.intern
         seq.push(TokenSeq::Token[lexeme, LANG.other_chars.name])
         pop_chars_string(char_seq, lexeme)
         tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
-      elsif LANG.word.match_rxp?(json_string)
+      when LANG.word.rxp
         lexeme = LANG.word.match(json_string).to_s.intern
         seq.push(TokenSeq::Token[lexeme, LANG.word.name])
         pop_chars_string(char_seq, lexeme)
         tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+      when /^$/
+        seq
       end
-    end
-
-    def pop_chars_string(char_seq, matched_string)
-      char_seq.slice!(0, matched_string.size)
     end
     
     def get_rest(json_string, matched_string)

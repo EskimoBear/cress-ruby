@@ -2,6 +2,7 @@
   "&let": [
     "var",
     "var1",
+    "",
     {
       "&doc": null
     }

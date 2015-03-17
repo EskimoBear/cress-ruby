@@ -25,6 +25,54 @@ module Eson
       end              
     end
 
+    #Operations and data structures for the lexeme field
+    #  of Eson::Language::RuleSeq::Rule. Token has a
+    #  regexp that matches a fixed lexeme or a set of strings. 
+    module LexemeCapture
+
+      Token = Struct.new :lexeme, :name, :alternation_names, :line_number
+
+      def make_token(lexeme)
+        Token.new(lexeme, @name)
+      end
+
+      def match_token(stirng)
+        #if match_rxp?(string)
+        lexeme = self.match(string).to_s.intern
+        self.make_token(lexeme)
+        #end
+      end
+      
+      def match(string)
+        string.match(rxp)
+      end
+      
+      def rxp
+        apply_at_start(@start_rxp)
+      end
+      
+      def match_rxp?(string)
+        regex_match?(self.rxp, string)
+      end
+
+      def match_start(string)
+        if self.nonterminal?
+          string.match(@start_rxp)
+        else
+          nil
+        end
+      end
+
+      def regex_match?(regex, string)
+        #does not catch zero or more matches that return "", the empty string
+        (string =~ apply_at_start(regex)).nil? ? false : true
+      end      
+
+      def apply_at_start(regex)
+        /\A#{regex.source}/
+      end
+    end
+
     #Operations and data structures for the ebnf field
     #  of the Eson::Language::RuleSeq::Rule
     module EBNF

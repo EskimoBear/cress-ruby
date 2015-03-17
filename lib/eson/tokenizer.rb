@@ -1,7 +1,54 @@
 require 'oj'
 require 'pry'
 require_relative 'formal_languages'
+require_relative 'token_seq'
 
+#FIXME tokenSeq now moved to Language module
+#      All references here are to initialization of Token objects
+#      Should this class have direct access to this method or should
+#      I put a proxy call that has an appropriate level of access to this
+#      information? If I did who should the Tokenizer method ask to create
+#      Tokens? It should ask the language module, but why does language need to know
+#      about tokens again?
+#
+#      Language's use of tokenSeq and tokens seems restricted to the parse functions
+#
+#      AHA!I found the commit where I mentioned this refactoring.
+#     Implemented error path for terminal parsing
+#
+#    Produces a simple error message comparing the expected token name to the actual token name. I would prefer if this could display lexemes instead but the Language module does not have any knowledge of the lexemes. This is strange, since the Tokenizer module magically knows the lexemes of the rules contained in the FormalLanguage module. This relationship needs to be inverted, lexemes should be present in terminal rules and rules should define a method to produce tokens.
+#
+#      Right. THis means my first step is to introduce lexemes into Language. I need the ide of both a fixed lexeme
+#      which is represented by a symbol and a variable lexeme defined by a regex instead of a explicit set of values. This is incorrectly named, the lexeme is the string that the rxp matches, the concept I need included in language is the regexp, which happens to already be there. The problem is that this is really a feature of the token not the language. Maybe it's time to be more explicit about the Rules and Terminals and separate them. NAH.
+#       
+#      Lexeme Types and Operations -> Language module
+#      #new, #make_rule, 
+#      Build hand crafted terminal rules from lexeme types -> FormalLanguages module
+#      Consistent operation to identify token match -> Tokenizer module
+#      Rule#match and Rule#match_rxp? to check rules with both fixed and variable lexeme
+#      Should rules produce Tokens based on matches, that would be cool instead of
+#      Rule#match we can have Rule#get_token(name, json_lexeme) json_lexeme only necessary
+#      when the lexeme is a variable type
+#
+#      So then is Tokenizer's responsibility just supposed to be the mapping of JSON thingys
+#      to eson thingys? What knowledge is required for that? You just need formal languages?
+#      Tokenization process is
+#      1. Create a set of json symbols from input
+#      2. Create a mapping of json symbols to tokens in the formal language
+#      3. Implement the map to convert sequence of json symbols to a sequence of tokens
+#
+#      Operations on lists of tokens which call formal languages -> TokenSeq module
+#      Is the above a problem? If I let Rules generate Tokens then the Token type can
+#      be located in the Rule or Rule Seq class or like EBNF a high level module in Language
+#      which is mixed into Rule.
+#
+#      Tokenseq currently holds all the passes. It shouldn't. I need to figure out how
+#      to organize the multiple pass operations and their relationship to the formal languages.
+#      Each pass has a language of rules that it uses, should the passes be mixed into the
+#      language during build?
+#
+#      This way AST can be a sibling subclass of language which has access to Rule and Token
+#      Language should require the AST file, AST shouldn't require anything.
 module Eson
 
   module Tokenizer
@@ -117,6 +164,7 @@ module Eson
       json_symbol_seq.each_with_object(TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start
+          #seq.push LANG.program_start.make_token
           seq.push(TokenSeq::Token.new(:"{", :program_start))
           pop_chars_string(char_seq, symbol.lexeme) 
         when :object_end
@@ -145,6 +193,10 @@ module Eson
       end
     end
 
+    def update_seqs(token, token_seq, char_seq)
+      token_seq.push(token)
+      pop_chars_string(char_seq, token.lexeme)
+    end
     
     def pop_chars_string(char_seq, matched_string)
       char_seq.slice!(0, matched_string.size)
@@ -172,6 +224,7 @@ module Eson
     def tokenize_special_form(json_string, seq, char_seq)
       case json_string
       when LANG.doc.rxp
+        #seq.push LANG.make_token(json_string)
         seq.push(TokenSeq::Token.new(json_string, LANG.doc.name))
         pop_chars_string(char_seq, json_string)
       when LANG.let.rxp

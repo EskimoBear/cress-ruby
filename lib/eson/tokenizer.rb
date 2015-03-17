@@ -226,8 +226,6 @@ module Eson
         seq.push(TokenSeq::Token[lexeme, LANG.word.name])
         pop_chars_string(char_seq, lexeme)
         tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
-      when /^$/
-        seq
       end
     end
     

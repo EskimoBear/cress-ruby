@@ -121,6 +121,7 @@ module Eson
       class Rule
 
         include EBNF
+        include LexemeCapture
 
         ParseError = Class.new(StandardError)
         UnmatchedFirstSetError = Class.new(StandardError)
@@ -461,35 +462,6 @@ module Eson
               acc
             end
           end
-        end
-
-        def match(string)
-          string.match(self.rxp)
-        end
-
-        def rxp
-          @start_rxp
-        end
-        
-        def match_rxp?(string)
-          regex_match?(self.rxp, string)
-        end
-
-        def match_start(string)
-          if self.nonterminal?
-            string.match(@start_rxp)
-          else
-            nil
-          end
-        end
-
-        def regex_match?(regex, string)
-          #does not catch zero or more matches that return "", the empty string
-          (string =~ apply_at_start(regex)).nil? ? false : true
-        end      
-
-        def apply_at_start(regex)
-          /\A#{regex.source}/
         end
 
         #Compute the start rxp of nonterminal rules

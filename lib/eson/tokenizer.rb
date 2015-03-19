@@ -1,54 +1,7 @@
 require 'oj'
-require 'pry'
 require_relative 'formal_languages'
 require_relative 'token_seq'
 
-#FIXME tokenSeq now moved to Language module
-#      All references here are to initialization of Token objects
-#      Should this class have direct access to this method or should
-#      I put a proxy call that has an appropriate level of access to this
-#      information? If I did who should the Tokenizer method ask to create
-#      Tokens? It should ask the language module, but why does language need to know
-#      about tokens again?
-#
-#      Language's use of tokenSeq and tokens seems restricted to the parse functions
-#
-#      AHA!I found the commit where I mentioned this refactoring.
-#     Implemented error path for terminal parsing
-#
-#    Produces a simple error message comparing the expected token name to the actual token name. I would prefer if this could display lexemes instead but the Language module does not have any knowledge of the lexemes. This is strange, since the Tokenizer module magically knows the lexemes of the rules contained in the FormalLanguage module. This relationship needs to be inverted, lexemes should be present in terminal rules and rules should define a method to produce tokens.
-#
-#      Right. THis means my first step is to introduce lexemes into Language. I need the ide of both a fixed lexeme
-#      which is represented by a symbol and a variable lexeme defined by a regex instead of a explicit set of values. This is incorrectly named, the lexeme is the string that the rxp matches, the concept I need included in language is the regexp, which happens to already be there. The problem is that this is really a feature of the token not the language. Maybe it's time to be more explicit about the Rules and Terminals and separate them. NAH.
-#       
-#      Lexeme Types and Operations -> Language module
-#      #new, #make_rule, 
-#      Build hand crafted terminal rules from lexeme types -> FormalLanguages module
-#      Consistent operation to identify token match -> Tokenizer module
-#      Rule#match and Rule#match_rxp? to check rules with both fixed and variable lexeme
-#      Should rules produce Tokens based on matches, that would be cool instead of
-#      Rule#match we can have Rule#get_token(name, json_lexeme) json_lexeme only necessary
-#      when the lexeme is a variable type
-#
-#      So then is Tokenizer's responsibility just supposed to be the mapping of JSON thingys
-#      to eson thingys? What knowledge is required for that? You just need formal languages?
-#      Tokenization process is
-#      1. Create a set of json symbols from input
-#      2. Create a mapping of json symbols to tokens in the formal language
-#      3. Implement the map to convert sequence of json symbols to a sequence of tokens
-#
-#      Operations on lists of tokens which call formal languages -> TokenSeq module
-#      Is the above a problem? If I let Rules generate Tokens then the Token type can
-#      be located in the Rule or Rule Seq class or like EBNF a high level module in Language
-#      which is mixed into Rule.
-#
-#      Tokenseq currently holds all the passes. It shouldn't. I need to figure out how
-#      to organize the multiple pass operations and their relationship to the formal languages.
-#      Each pass has a language of rules that it uses, should the passes be mixed into the
-#      language during build?
-#
-#      This way AST can be a sibling subclass of language which has access to Rule and Token
-#      Language should require the AST file, AST shouldn't require anything.
 module Eson
 
   module Tokenizer
@@ -164,27 +117,33 @@ module Eson
       json_symbol_seq.each_with_object(TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start
-          #seq.push LANG.program_start.make_token
-          seq.push(TokenSeq::Token.new(:"{", :program_start))
-          pop_chars_string(char_seq, symbol.lexeme) 
+          update_seqs(LANG.program_start.make_token(symbol.lexeme),
+                      seq,
+                      char_seq)
         when :object_end
-          seq.push(TokenSeq::Token.new(:"}", :program_end))
-          pop_chars_string(char_seq, symbol.lexeme) 
+          update_seqs(LANG.program_end.make_token(symbol.lexeme),
+                      seq,
+                      char_seq)
         when :array_start
-          seq.push(TokenSeq::Token.new(:"[", :array_start))
-          pop_chars_string(char_seq, symbol.lexeme) 
+          update_seqs(LANG.array_start.make_token(symbol.lexeme),
+                      seq,
+                      char_seq)
         when :array_end
-          seq.push(TokenSeq::Token.new(:"]", :array_end))
-          pop_chars_string(char_seq, symbol.lexeme) 
+          update_seqs(LANG.array_end.make_token(symbol.lexeme),
+                      seq,
+                      char_seq)
         when :colon
-          seq.push(TokenSeq::Token.new(:":", :colon))
-           pop_chars_string(char_seq, symbol.lexeme)
+          update_seqs(LANG.colon.make_token(symbol.lexeme),
+                      seq,
+                      char_seq)
         when :array_comma
-          seq.push(TokenSeq::Token.new(:",", :comma))
-          pop_chars_string(char_seq, symbol.lexeme)
+          update_seqs(LANG.comma.make_token(symbol.lexeme),
+                      seq,
+                      char_seq)
         when :member_comma
-          seq.push(TokenSeq::Token.new(:",", :end_of_line))
-          pop_chars_string(char_seq, symbol.lexeme)
+          update_seqs(LANG.end_of_line.make_token(symbol.lexeme),
+                      seq,
+                      char_seq)
         when :JSON_key
           tokenize_json_key(symbol.lexeme, seq, char_seq)
         when :JSON_value
@@ -204,12 +163,14 @@ module Eson
 
     def tokenize_json_key(json_key, seq, char_seq)
       if begins_with_proc_prefix?(json_key)
-        seq.push(TokenSeq::Token.new(:"&", :proc_prefix))
-        char_seq.slice!(0, 1)
+        update_seqs(LANG.proc_prefix.match_token(json_key),
+                    seq,
+                    char_seq)
         tokenize_special_form(get_prefixed_string(json_key), seq, char_seq)
       else
-        seq.push(TokenSeq::Token.new("\"#{json_key.freeze}\"", :key_string))
-        char_seq.slice!(0, json_key.length)
+        update_seqs(LANG.key_string.make_token(json_key),
+                    seq,
+                    char_seq)
       end
     end
 
@@ -224,34 +185,41 @@ module Eson
     def tokenize_special_form(json_string, seq, char_seq)
       case json_string
       when LANG.doc.rxp
-        #seq.push LANG.make_token(json_string)
-        seq.push(TokenSeq::Token.new(json_string, LANG.doc.name))
-        pop_chars_string(char_seq, json_string)
+        update_seqs(LANG.doc.match_token(json_string),
+                    seq,
+                    char_seq)
       when LANG.let.rxp
-        seq.push(TokenSeq::Token.new(json_string, LANG.let.name))
-        pop_chars_string(char_seq, json_string)
+        update_seqs(LANG.let.match_token(json_string),
+                    seq,
+                    char_seq)
       when LANG.ref.rxp
-        seq.push(TokenSeq::Token.new(json_string, LANG.ref.name))
-        pop_chars_string(char_seq, json_string)
+        update_seqs(LANG.ref.match_token(json_string),
+                    seq,
+                    char_seq)
       else
-        seq.push(TokenSeq::Token.new(json_string, LANG.unknown_special_form.name))
-        pop_chars_string(char_seq, json_string)
+        update_seqs(LANG.unknown_special_form.make_token(json_string),
+                    seq,
+                    char_seq)
       end      
     end
 
     def tokenize_json_value(json_value, seq, char_seq)
       if json_value.is_a? TrueClass
-        seq.push(TokenSeq::Token.new(json_value, :true))
-        char_seq.slice!(0, json_value.to_s.size)
-      elsif json_value.is_a? Numeric
-        seq.push(TokenSeq::Token.new(json_value, :number))
-        char_seq.slice!(0, json_value.to_s.size)
+        update_seqs(LANG.true.make_token(json_value.to_s),
+                    seq,
+                    char_seq)
       elsif json_value.is_a? FalseClass
-        seq.push(TokenSeq::Token.new(json_value, :false))
-        char_seq.slice!(0, json_value.to_s.size)
+        update_seqs(LANG.false.make_token(json_value.to_s),
+                    seq,
+                    char_seq)
+      elsif json_value.is_a? Numeric
+        update_seqs(LANG.number.make_token(json_value.to_s),
+                    seq,
+                    char_seq)
       elsif json_value.nil?
-        seq.push(TokenSeq::Token.new("null", :null))
-        char_seq.slice!(0, :null.to_s.size)
+        update_seqs(LANG.null.make_token(:null),
+                    seq,
+                    char_seq)
       elsif json_value.is_a? String
         tokenize_json_string(json_value.freeze, seq, char_seq)
       end
@@ -260,25 +228,25 @@ module Eson
     def tokenize_json_string(json_string, seq, char_seq)
       case json_string
       when LANG.whitespace.rxp
-        lexeme = LANG.whitespace.match(json_string).to_s.intern
-        seq.push(TokenSeq::Token[lexeme, LANG.whitespace.name])
-        pop_chars_string(char_seq, lexeme)
-        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+        update_seqs(LANG.whitespace.match_token(json_string),
+                    seq,
+                    char_seq)
+        tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
       when LANG.variable_prefix.rxp
-        lexeme = LANG.variable_prefix.match(json_string).to_s.intern
-        seq.push(TokenSeq::Token[lexeme, LANG.variable_prefix.name])
-        pop_chars_string(char_seq, lexeme)
-        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+        update_seqs(LANG.variable_prefix.match_token(json_string),
+                    seq,
+                    char_seq)
+        tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
       when LANG.other_chars.rxp
-        lexeme = LANG.other_chars.match(json_string).to_s.intern
-        seq.push(TokenSeq::Token[lexeme, LANG.other_chars.name])
-        pop_chars_string(char_seq, lexeme)
-        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+        update_seqs(LANG.other_chars.match_token(json_string),
+                    seq,
+                    char_seq)
+        tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
       when LANG.word.rxp
-        lexeme = LANG.word.match(json_string).to_s.intern
-        seq.push(TokenSeq::Token[lexeme, LANG.word.name])
-        pop_chars_string(char_seq, lexeme)
-        tokenize_json_string(get_rest(json_string, lexeme), seq, char_seq)
+        update_seqs(LANG.word.match_token(json_string),
+                    seq,
+                    char_seq)
+        tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
       end
     end
     

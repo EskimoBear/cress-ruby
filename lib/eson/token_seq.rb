@@ -1,8 +1,12 @@
+require_relative 'formal_languages'
+
 module Eson::Tokenizer
 
+  include Eson::Language::LexemeCapture
+  
     class TokenSeq < Array
-      
-      Token = Struct.new :lexeme, :name, :alternation_names, :line_number
+
+      Token = Eson::Language::LexemeCapture::Token
       
       ItemError = Class.new(StandardError)
 
@@ -23,7 +27,7 @@ module Eson::Tokenizer
       end
 
       def self.new_item_error_message
-        "One or more of the given array elements are not of the type Eson::Tokenizer::TokenSeq::Token"
+        "One or more of the given array elements are not of the type #{Eson::Language::LexemeCapture::Token}"
       end
 
       def get_program_line(line_no)
@@ -444,5 +448,4 @@ module Eson::Tokenizer
         self.push(new_tail).flatten
       end
     end
-    #end of tokenseq
 end

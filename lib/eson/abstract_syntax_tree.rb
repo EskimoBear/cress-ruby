@@ -1,15 +1,14 @@
-require 'pry'
-
 require 'forwardable'
-require_relative './language'
-require_relative './tokenizer'
-require_relative './tree_seq'
+require_relative './formal_languages'
 
 module Eson
 
   module Language
 
+    include Eson::Language::LexemeCapture
+
     extend self
+    
     #Class contains tree operations for stuct based trees that
     #conform to the following properties. 
     #Properties of the tree A, abstract syntax tree 
@@ -25,13 +24,13 @@ module Eson
 
       extend Forwardable
 
-      Token = "Eson::Tokenizer::TokenSeq::Token"
-      Rule = "Eson::Language::RuleSeq::Rule"
+      Token = Eson::Language::LexemeCapture::Token
+      Rule = Eson::Language::RuleSeq::Rule
 
       #Initialize tree with given Rule as root node.
       #@param language [Eson::Language::RuleSeq::Rule] Rule
       def initialize(rule)
-        if rule.class.to_s == Rule
+        if rule.instance_of? Rule
           @root_tree = Tree.new(rule, TreeSeq.new, true)
           @active = @root_tree
         else
@@ -49,10 +48,9 @@ module Eson
       #node. Insertion fails for other types.
       #@param [Token, Rule] eson token or production rule
       def insert(obj)
-        case obj.class.to_s
-        when Token
+        if obj.instance_of? Eson::Language::LexemeCapture::Token
           insert_leaf(obj)
-        when Rule
+        elsif obj.instance_of? Rule
           insert_tree(obj)
         else
           raise TreeInsertionError, not_a_valid_input_error_message(obj)
@@ -87,6 +85,54 @@ module Eson
 
       def_delegators :@root_tree, :root_value, :closed?, :open?, :empty?,
                      :rule, :children
+
+            #Struct class for a tree node
+      Tree = Struct.new :rule, :children, :open_state do
+
+        #The value of the root node
+        #@return [Eson::Language::RuleSeq::Rule]
+        def root_value
+          rule
+        end
+
+        #The open state of the root node. A child node
+        #can only be inserted into an open node.
+        #@return [Boolean]
+        def open?
+          open_state
+        end
+
+        def closed?
+          !open?
+        end
+
+        def empty?
+          children.empty?
+        end 
+      end
+
+            class TreeSeq < Array
+
+        Tree = Eson::Language::AbstractSyntaxTree::Tree
+        
+        pushvalidate = Module.new do
+          def push(obj)
+            if obj.instance_of? Token
+              super
+            elsif obj.instance_of? Tree
+              super
+            else
+              raise TreeSeqInsertionError, not_a_valid_node_error_message(obj)
+            end
+          end
+        end
+
+        prepend pushvalidate
+
+        def not_a_valid_node_error_message(obj)
+          "The class #{obj.class} of '#{obj}' is not a valid node for the #{self.class}. Must be either a #{Token} or a #{Tree}."
+        end
+      end
     end
   end
 end

@@ -33,10 +33,10 @@ describe Eson::Language::AbstractSyntaxTree do
 
   describe "#insert" do
     before do
-      @root_rule = Eson::FormalLanguages::e5.variable_identifier
-      @ast = Eson::Language::AbstractSyntaxTree.new(@root_rule)
-      @token = Eson::Tokenizer::TokenSeq::Token.new(",", :comma)
+      @root_rule = Eson::FormalLanguages::e5.comma
+      @ast = Eson::Language::AbstractSyntaxTree.new(@root_rule) 
       @rule = Eson::FormalLanguages::e5.variable_identifier
+      @token = @rule.make_token(:var)
     end  
     it "node is invalid type" do
       proc {@ast.insert("poo")}.must_raise Eson::Language::AbstractSyntaxTree::TreeInsertionError

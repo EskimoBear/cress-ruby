@@ -26,13 +26,13 @@ describe Eson do
     end
   end
 
-  describe "program with unknown special forms" do
+  describe "program_with_unknown_special_forms" do
     it ".compile" do
       proc {Eson.compile(@unknown_special_form_program)}.must_raise Eson::ErrorPass::SpecialFormError
     end
   end
 
-  describe "compile valid_program" do
+  describe "compile_valid_program" do
     before do
       @result = get_token_sequence
     end

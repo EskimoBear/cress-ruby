@@ -1,18 +1,18 @@
 require 'minitest/autorun'
 require 'minitest/pride'
-require_relative '../lib/eson/tokenizer.rb'
+require_relative '../lib/eson/token_pass.rb'
 require_relative './test_helpers.rb'
 
 class TestTokenSeq < MiniTest::Test
 
   def setup
-    @token_seq = Eson::Tokenizer::TokenSeq.new(5) {Eson::Tokenizer::TokenSeq::Token.new}
+    @token_seq = Eson::TokenPass::TokenSeq.new(5) {Eson::Language::LexemeCapture::Token.new}
   end
 
   def test_take_with_seq_should_succeed
     @token_seq[3].name = "target_1"
     @token_seq.last.name = "target_2"
-    @token_seq.push(Eson::Tokenizer::TokenSeq::Token["lexeme", "name"])
+    @token_seq.push(Eson::Language::LexemeCapture::Token["lexeme", "name"])
     expected_seq =  @token_seq.take(@token_seq.length - 1)
     assert_equal expected_seq, @token_seq.take_with_seq("target_1", "target_2")
   end
@@ -25,7 +25,7 @@ class TestTokenSeq < MiniTest::Test
     @token_seq[1].name = "target_2"
     @token_seq[3].name = "target_1"
     @token_seq.last.name = "target_2"
-    @token_seq.push(Eson::Tokenizer::TokenSeq::Token["lexeme", "target_2"])
+    @token_seq.push(Eson::Language::LexemeCapture::Token["lexeme", "target_2"])
     assert @token_seq.seq_match?("target_1", "target_2")
   end
 
@@ -37,12 +37,12 @@ class TestTokenSeq < MiniTest::Test
  
 end
 
-describe Eson::Tokenizer::TokenSeq do
+describe Eson::TokenPass::TokenSeq do
 
   before do
     @alternation_rule = Eson::FormalLanguages.e1.word_form
     @concatenation_rule = Eson::FormalLanguages.e0.variable_identifier
-    @token_seq = Eson::Tokenizer::TokenSeq.new(4) {Eson::Tokenizer::TokenSeq::Token.new}
+    @token_seq = Eson::TokenPass::TokenSeq.new(4) {Eson::Language::LexemeCapture::Token.new}
   end
   
   describe "#tokenize_rule" do
@@ -66,7 +66,7 @@ describe Eson::Tokenizer::TokenSeq do
       @token_seq[3].name = :word
       @token_seq[3].lexeme = :word_2
       @token_seq.all?{|i| i.name == @concatenation_rule.name}
-      @token_seq.must_be_instance_of Eson::Tokenizer::TokenSeq
+      @token_seq.must_be_instance_of Eson::TokenPass::TokenSeq
     end
   end
   describe "#assign_alternation_names" do

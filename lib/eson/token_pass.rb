@@ -1,12 +1,13 @@
-require_relative 'language'
+require_relative 'formal_languages'
+require_relative 'tokenizer'
 
-module Eson::Tokenizer
-
+module Eson::TokenPass
+  
   include Eson::Language::LexemeCapture
   
     class TokenSeq < Array
-
       Token = Eson::Language::LexemeCapture::Token
+      LANG = Eson::FormalLanguages.tokenizer_lang
       
       ItemError = Class.new(StandardError)
 
@@ -59,7 +60,7 @@ module Eson::Tokenizer
       end
 
       def add_line_numbers_recur(line_no, input_seq,
-                                 output_seq = Eson::Tokenizer::TokenSeq.new)
+                                 output_seq = Eson::TokenPass::TokenSeq.new)
         if input_seq.include_token?(:end_of_line)
           scanned, unscanned = input_seq.split_after_token(:end_of_line)
           scanned.map{|i| i.line_number = line_no}
@@ -96,7 +97,7 @@ module Eson::Tokenizer
       end
 
       def insert_string_delimiters_recur(rule, input_sequence,
-                                         output_sequence = Eson::Tokenizer::TokenSeq.new)
+                                         output_sequence = Eson::TokenPass::TokenSeq.new)
         if input_sequence.include_alt_name?(rule)
           scanned, unscanned = input_sequence.split_before_alt_name(rule)
           
@@ -202,7 +203,7 @@ module Eson::Tokenizer
       end
 
       def tokenize_alternation_rule_recur(rule, input_sequence,
-                                          output_sequence = Eson::Tokenizer::TokenSeq.new)
+                                          output_sequence = Eson::TokenPass::TokenSeq.new)
         new_token_name = rule.name
         token_names = rule.term_names
 
@@ -296,7 +297,7 @@ module Eson::Tokenizer
       end
 
       def tokenize_concatenation_rule_recur(rule, input_sequence,
-                                            output_sequence =  Eson::Tokenizer::TokenSeq.new)
+                                            output_sequence =  Eson::TokenPass::TokenSeq.new)
         token_names = rule.term_names
         match_seq_size = token_names.length
         new_token_name = rule.name
@@ -317,7 +318,7 @@ module Eson::Tokenizer
       end
 
       def reduce_tokens(new_name, *tokens)
-        line_no = Eson::Tokenizer::TokenSeq.new(tokens).get_next_line_number
+        line_no = Eson::TokenPass::TokenSeq.new(tokens).get_next_line_number
         combined_lexeme = tokens.each_with_object("") do |i, string|
           string.concat(i.lexeme.to_s)
         end
@@ -383,7 +384,7 @@ module Eson::Tokenizer
       #        S' = S + T
       #        P = T'
       def take_with_seq_recur(pat_seq, input_sequence,
-                              output_sequence = Eson::Tokenizer::TokenSeq.new)
+                              output_sequence = Eson::TokenPass::TokenSeq.new)
         pat_start = pat_seq.first
         if input_sequence.include_token?(pat_start)
           scanned, unscanned = input_sequence.split_before_token(pat_start)
@@ -448,4 +449,4 @@ module Eson::Tokenizer
         self.push(new_tail).flatten
       end
     end
-end
+    end

@@ -1,14 +1,14 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
-require_relative '../lib/eson/language.rb'
-require_relative '../lib/eson/tokenizer'
+require_relative '../lib/eson/language'
+require_relative '../lib/eson/token_pass'
 
 describe Eson::Language::RuleSeq::Rule do
 
   subject {Eson::Language::RuleSeq::Rule}
-  let(:token) {Eson::Tokenizer::TokenSeq::Token}
-  let(:token_seq) {Eson::Tokenizer::TokenSeq}
+  let(:token) {Eson::Language::LexemeCapture::Token}
+  let(:token_seq) {Eson::TokenPass::TokenSeq}
   let(:rule_seq) {Eson::Language::RuleSeq.new([subject.new(:rule_1, /RU/),
                                                subject.new(:rule_2, /LE/),
                                                subject.new(:rule_3, /RL/)])}

@@ -216,7 +216,7 @@ module Eson
 
         #Return a Token sequence that is a legal instance of
         #  the rule
-        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
@@ -277,7 +277,7 @@ module Eson
 
         #Return a Token sequence with one Token that is an instance of
         #  a terminal rule
-        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
         #@raise [ParseError] if no legal sub-sequence can be found
@@ -292,9 +292,9 @@ module Eson
 
         def build_parse_result(parsed_seq, rest)
           if parsed_seq.instance_of? Array
-            parsed_seq = Eson::Tokenizer::TokenSeq.new(parsed_seq)
+            parsed_seq = Eson::TokenPass::TokenSeq.new(parsed_seq)
           elsif rest.instance_of? Array
-            rest = Eson::Tokenizer::TokenSeq.new(rest)
+            rest = Eson::TokenPass::TokenSeq.new(rest)
           end
           result = {:parsed_seq => parsed_seq, :rest => rest}
         end
@@ -305,7 +305,7 @@ module Eson
 
         #Return a Token sequence that is a legal instance of
         #  an alternation rule
-        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
@@ -345,7 +345,7 @@ module Eson
           raise ParseError, parse_terminal_error_message(@name, lookahead.name)
         end
 
-        #@param token [Eson::Tokenizer::Token] token
+        #@param token [Eson::Language::LexemeCapture::Token] token
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Boolean] true if token is part of the first set of any
         #  of the rule's terms.
@@ -361,7 +361,7 @@ module Eson
           end
         end
         
-        #@param token [Eson::Tokenizer::Token] token
+        #@param token [Eson::Language::LexemeCapture::Token] token
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Terminal, NonTerminal] term that has a first_set
         #  which includes the given token. Works with alternation rules only.
@@ -383,7 +383,7 @@ module Eson
 
         #Return a Token sequence that is a legal instance of
         #  a concatenation rule
-        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
@@ -427,7 +427,7 @@ module Eson
 
         #Return a Token sequence that is a legal instance of
         #  an option rule
-        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
@@ -477,7 +477,7 @@ module Eson
 
         #Return a Token sequence that is a legal instance of
         #  a repetition rule
-        #@param tokens [Eson::Tokenizer::TokenSeq] a token sequence
+        #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest

@@ -1,4 +1,5 @@
 require_relative '../lib/eson'
+
 module TestHelpers
 
   extend self
@@ -24,7 +25,7 @@ module TestHelpers
   end
 
   def get_token_sequence
-    tokenizer_output = Eson::Tokenizer.tokenize_program(get_tokenizer_sample_program).first
+    tokenizer_output = Eson::TokenPass::Tokenizer.tokenize_program(get_tokenizer_sample_program).first
       .add_line_numbers
     Eson::ErrorPass.verify_special_forms(tokenizer_output)
       .tokenize_variable_identifiers

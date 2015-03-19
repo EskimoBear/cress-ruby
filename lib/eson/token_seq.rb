@@ -1,4 +1,4 @@
-require_relative 'formal_languages'
+require_relative 'language'
 
 module Eson::Tokenizer
 

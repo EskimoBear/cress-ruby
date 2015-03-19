@@ -1,11 +1,9 @@
 require 'forwardable'
-require_relative './formal_languages'
+require_relative './language'
 
 module Eson
 
   module Language
-
-    include Eson::Language::LexemeCapture
 
     extend self
     

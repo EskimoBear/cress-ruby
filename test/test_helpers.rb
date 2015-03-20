@@ -25,9 +25,10 @@ module TestHelpers
   end
 
   def get_token_sequence
-    tokenizer_output = Eson::TokenPass::Tokenizer.tokenize_program(get_tokenizer_sample_program).first
+    Eson::TokenPass::Tokenizer.tokenize_program(get_tokenizer_sample_program)
+      .first
       .add_line_numbers
-    Eson::ErrorPass.verify_special_forms(tokenizer_output)
+      .verify_special_forms
       .tokenize_variable_identifiers
       .tokenize_special_forms
       .tokenize_proc_identifiers

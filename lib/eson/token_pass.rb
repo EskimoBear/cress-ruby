@@ -2,12 +2,35 @@ require_relative 'formal_languages'
 require_relative 'tokenizer'
 
 module Eson::TokenPass
+
+  LANG = Eson::FormalLanguages.tokenizer_lang
+
+  module ErrorPasses
+
+    SpecialFormError = Class.new(StandardError)
+    
+    #Throw SpecialFormError when unknown_special_forms Token is present
+    def verify_special_forms
+      error_token = self.find {|i| i.name == LANG.unknown_special_form.name}
+      raise SpecialFormError,
+            build_exception_message(error_token) unless error_token.nil?
+      return self
+    end
+
+    private
+
+    def build_exception_message(token)
+      "'#{token.lexeme}' is not a known special form in line #{token.line_number}:\n #{token.line_number}. #{self.get_program_line(token.line_number)}" 
+    end
+  end
   
   class TokenSeq < Array
-    Token = Eson::Language::LexemeCapture::Token
-    LANG = Eson::FormalLanguages.tokenizer_lang
-    
+
+    include ErrorPasses
+
     ItemError = Class.new(StandardError)
+    
+    Token = Eson::Language::LexemeCapture::Token
 
     def self.new(obj=nil)
       if obj.nil?

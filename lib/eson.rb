@@ -1,6 +1,4 @@
 require 'vert'
-require_relative 'eson/formal_languages'
-require_relative 'eson/error_pass'
 require_relative 'eson/token_pass'
 
 module Eson
@@ -16,15 +14,15 @@ module Eson
 
   def compile(eson_program)
     if validate_json?(eson_program)
-      tokenizer_output = Eson::TokenPass::Tokenizer.tokenize_program(eson_program).first
+      token_sequence = TokenPass::Tokenizer.tokenize_program(eson_program).first
                          .add_line_numbers
-      ErrorPass.verify_special_forms(tokenizer_output)
-        .tokenize_variable_identifiers
-        .tokenize_special_forms
-        .tokenize_proc_identifiers
-        .tokenize_word_forms
-        .label_sub_strings
-        .insert_string_delimiters
+                         .verify_special_forms
+                         .tokenize_variable_identifiers
+                         .tokenize_special_forms
+                         .tokenize_proc_identifiers
+                         .tokenize_word_forms
+                         .label_sub_strings
+                         .insert_string_delimiters
     else
       validation_pass(eson_program)
     end

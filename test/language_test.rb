@@ -1,8 +1,7 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
-require_relative '../lib/eson/language.rb'
-require_relative '../lib/eson/tokenizer'
+require_relative '../lib/eson/token_pass'
 
 describe Eson::Language::RuleSeq do
 

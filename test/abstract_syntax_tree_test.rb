@@ -1,7 +1,6 @@
 require 'minitest'
 require 'minitest/autorun'
 require 'minitest/pride'
-require_relative '../lib/eson/abstract_syntax_tree'
 require_relative '../lib/eson/formal_languages'
 
 describe Eson::Language::AbstractSyntaxTree do

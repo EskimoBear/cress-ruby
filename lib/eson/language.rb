@@ -988,16 +988,9 @@ module Eson
       end
     end
 
-    #Class contains tree operations for stuct based trees that
-    #conform to the following properties. 
-    #Properties of the tree A, abstract syntax tree 
-    # Prop : The tree has a single active node. This is the
-    #        open tree node to the bottom right of the tree. If
-    #        this tree node is closed, the active node is it's
-    #        next open ancestor.
-    class AbstractSyntaxTree
-      
+    class AbstractSyntaxTree    
       TreeInsertionError = Class.new(StandardError)
+      ClosedTreeError = Class.new(StandardError)
       TreeSeqInsertionError = Class.new(StandardError)
       TreeInitializationError = Class.new(StandardError)
 
@@ -1010,7 +1003,7 @@ module Eson
       #@param language [Eson::Language::RuleSeq::Rule] Rule
       def initialize(rule)
         if rule.instance_of? Rule
-          @root_tree = Tree.new(rule, TreeSeq.new, true)
+          @root_tree = Tree.new(rule, TreeSeq.new, nil, true)
           @active = @root_tree
         else
           raise TreeInitializationError,
@@ -1024,9 +1017,12 @@ module Eson
 
       #Insert an object into the active tree node. Tokens are
       #added as leaf nodes and Rules are added as the active tree
-      #node. Insertion fails for other types.
+      #node.
       #@param [Token, Rule] eson token or production rule
+      #@raise [TreeInsertionError] If obj is neither a Token or Rule
+      #@raise [ClosedTreeError] If the tree is closed
       def insert(obj)
+        ensure_open
         if obj.instance_of? Eson::Language::LexemeCapture::Token
           insert_leaf(obj)
         elsif obj.instance_of? Rule
@@ -1035,13 +1031,13 @@ module Eson
           raise TreeInsertionError, not_a_valid_input_error_message(obj)
         end
       end
-
+      
       def insert_leaf(token)
         active_node.children.push(token)
       end
 
       def insert_tree(rule)
-        tree = Tree.new(rule, TreeSeq.new, true)
+        tree = Tree.new(rule, TreeSeq.new, active_node, true)
         active_node.children.push(tree)
         @active = tree
       end
@@ -1051,9 +1047,8 @@ module Eson
       end
       
       #Get the active node of the tree. This is the open tree node to
-      #the bottom right of the tree. If this tree node is closed, the
-      #active node is it's next open ancestor.  
-      #@return [Eson::AbstractSyntaxTree::Tree] the active tree node
+      #the bottom right of the tree i.e. the last inserted tree node.
+      #@return [Eson::Language::AbstractSyntaxTree::Tree] the active tree node
       def active_node
         @active
       end
@@ -1062,20 +1057,35 @@ module Eson
         @root_tree
       end
 
-      def_delegators :@root_tree, :root_value, :closed?, :open?, :empty?,
-                     :rule, :children
+      #Closes the active node of the tree and makes the next
+      #open ancestor the active node.  
+      #@return [Eson::Language::AbstractSyntaxTree::Tree] the active tree node
+      def close_active
+        new_active = @active.parent
+        @active.close
+        unless new_active.nil?
+          @active = new_active
+        end
+      end
 
+      def_delegators :@root_tree, :root_value, :closed?, :open?, :ensure_open, :empty?,
+                     :rule, :children
+      
       #Struct class for a tree node
-      Tree = Struct.new :rule, :children, :open_state do
+      Tree = Struct.new :rule, :children, :parent, :open_state do
 
         #The value of the root node
         #@return [Eson::Language::RuleSeq::Rule]
         def root_value
           rule
         end
-
-        #The open state of the root node. A child node
-        #can only be inserted into an open node.
+        
+        #Close the active node of the tree and make parent active.
+        def close
+          self.open_state = false
+        end
+      
+        #The open state of the tree. 
         #@return [Boolean]
         def open?
           open_state
@@ -1083,6 +1093,16 @@ module Eson
 
         def closed?
           !open?
+        end
+
+        def ensure_open
+          if closed?
+            raise ClosedTreeError, closed_tree_error_message
+          end
+        end
+        
+        def closed_tree_error_message
+          "The method `#{caller_locations(2).first.label}' is not allowed on a closed tree."
         end
 
         def empty?

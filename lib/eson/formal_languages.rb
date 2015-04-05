@@ -44,6 +44,15 @@ module Eson
       /[ ]+/
     end
 
+    # empty_word := "";
+    def empty_word_rule
+      Rule.new_terminal_rule(:empty_word, empty_word_rxp)
+    end
+    
+    def empty_word_rxp
+      /^$/
+    end
+
     # other_chars := {JSON_char}; (*characters excluding those found
     #   in variable_prefix, word and whitespace*)
     def other_chars_rule
@@ -228,6 +237,7 @@ module Eson
       rules = [variable_prefix_rule,
                word_rule,
                whitespace_rule,
+               empty_word_rule,
                other_chars_rule,
                true_rule,
                false_rule,
@@ -248,7 +258,7 @@ module Eson
                key_string_rule]
       RuleSeq.new(rules)
         .make_alternation_rule(:special_form, [:let, :ref, :doc])
-        .make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :other_chars])
+        .make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :empty_word, :other_chars])
         .make_concatenation_rule(:variable_identifier, [:variable_prefix, :word])
         .make_concatenation_rule(:proc_identifier, [:proc_prefix, :special_form])
         .build_language("E0")
@@ -286,7 +296,7 @@ module Eson
     #         'other_chars' removed.    
     def e3
       e2.rule_seq.convert_to_terminal(:word_form)
-        .remove_rules([:other_chars, :variable_prefix, :word, :whitespace])
+        .remove_rules([:other_chars, :variable_prefix, :word, :empty_word, :whitespace])
         .build_language("E3")
     end
 
@@ -317,7 +327,7 @@ module Eson
         .make_option_rule(:element_set, :element_list)
         .make_concatenation_rule(:array, [:array_start, :element_set, :array_end])
         .make_concatenation_rule(:declaration, [:key, :colon, :value])
-        .make_concatenation_rule(:declaration_more_once, [:comma, :declaration])
+        .make_concatenation_rule(:declaration_more_once, [:end_of_line, :declaration])
         .make_repetition_rule(:declaration_more, :declaration_more_once)
         .make_concatenation_rule(:declaration_list, [:declaration, :declaration_more])
         .make_option_rule(:declaration_set, :declaration_list)
@@ -326,6 +336,7 @@ module Eson
     end
 
     alias_method :tokenizer_lang, :e0
+    alias_method :syntax_pass_lang, :e5
     alias_method :verified_special_forms_lang, :e1
     alias_method :tokenize_variable_identifier_lang, :e2
     alias_method :tokenize_word_form_lang, :e3

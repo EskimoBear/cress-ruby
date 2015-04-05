@@ -3,6 +3,8 @@ require_relative 'tokenizer'
 
 module Eson::TokenPass
 
+  extend Tokenizer
+
   LANG = Eson::FormalLanguages.tokenizer_lang
 
   module ErrorPasses
@@ -55,6 +57,14 @@ module Eson::TokenPass
     def get_program_line(line_no)
       take_while{|i| i.line_number == line_no}
         .each_with_object(""){|i, acc| acc.concat(i.lexeme.to_s)}
+    end
+
+    def print_program
+      if self.none?{|i| i.line_number.nil?}
+        self.slice_when{|i, j| i.line_number != j.line_number}
+          .map{|i| i.each_with_object(""){|j, acc| acc.concat(j.lexeme.to_s)}}
+          .each_with_index{|item, i| puts "\t#{i+1}:  #{item}"}
+      end
     end
     
     #Add line number metadata to each token
@@ -122,7 +132,7 @@ module Eson::TokenPass
       if input_sequence.include_alt_name?(rule)
         scanned, unscanned = input_sequence.split_before_alt_name(rule)
         
-        delimiter = rule_to_token(Eson::FormalLanguages.e4.string_delimiter)
+        delimiter = Eson::FormalLanguages.e4.string_delimiter.make_token("\"")
         delimiter.line_number = scanned.get_next_line_number
         output_sequence.push(scanned).push(delimiter).flatten!
         head = unscanned.take_while{|i| i.alternation_names.to_a.include?(rule.name)}
@@ -133,17 +143,6 @@ module Eson::TokenPass
       else
         output_sequence.push(input_sequence).flatten
       end        
-    end
-    
-    def rule_to_token(rule)
-      if rule.terminal?
-        lexeme = rule.rxp.source.intern
-        Token.new(lexeme,
-                  rule.name,
-                  [])
-      else
-        nil
-      end
     end
     
     def label_sub_strings

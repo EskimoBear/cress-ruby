@@ -35,31 +35,33 @@ describe Eson do
 
   describe "compile_valid_program" do
     before do
-      @result = get_token_sequence
-    end
-    
+      @token_sequence = get_token_sequence
+    end 
     it "#add_line_numbers" do
-      @result.last.line_number.must_equal 6
-      @result.find_all {|i| i.line_number == nil}.size.must_equal 0
+      @token_sequence.last.line_number.must_equal 6
+      @token_sequence.find_all {|i| i.line_number == nil}.size.must_equal 0
     end
     it "#tokenize_variable_identifier" do
-      @result.must_be_instance_of Eson::TokenPass::TokenSeq
-      @result.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
+      @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
+      @token_sequence.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
     end
     it "tokenize_proc_identifier" do
-      @result.find_all {|i| i.name == :proc_identifier}.length.must_equal 4
+      @token_sequence.find_all {|i| i.name == :proc_identifier}.length.must_equal 4
     end
     it "#tokenize_word_form" do
-      @result.must_be_instance_of Eson::TokenPass::TokenSeq
-      @result.find_all {|i| i.name == :word_form}.length.must_equal 6
+      @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
+      @token_sequence.find_all {|i| i.name == :word_form}.length.must_equal 7
     end
     it "#label_sub_strings" do
-      @result.must_be_instance_of Eson::TokenPass::TokenSeq
-      @result.find_all {|i| i.alternation_names.to_a.include?(:sub_string)}.length.must_equal 7
+      @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
+      @token_sequence.find_all {|i| i.alternation_names.to_a.include?(:sub_string)}.length.must_equal 8
     end
     it "#insert_string_delimiters" do
-      @result.must_be_instance_of Eson::TokenPass::TokenSeq
-      @result.find_all {|i| i.name == :string_delimiter}.length.must_equal 10
+      @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
+      @token_sequence.find_all {|i| i.name == :string_delimiter}.length.must_equal 12
+    end
+    it "build_tree" do
+      #@tree.must_be_instance_of Eson::Language::AST
     end
   end
 end

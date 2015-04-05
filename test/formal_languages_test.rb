@@ -1,6 +1,5 @@
 require 'minitest/autorun'
 require 'minitest/pride'
-require 'pp'
 require_relative '../lib/eson/formal_languages.rb'
 
 describe Eson::FormalLanguages do
@@ -86,6 +85,7 @@ describe Eson::FormalLanguages do
       @lang.wont_respond_to :variable_prefix
       @lang.wont_respond_to :word
       @lang.wont_respond_to :whitespace
+      @lang.wont_respond_to :empty_word
     end
     it "has no partial rules" do
       @lang.values.none?{|x| x.partial_status}.must_equal true
@@ -122,8 +122,10 @@ describe Eson::FormalLanguages do
       @lang.class.must_equal Struct::E5
     end
     it "should be aliased" do
+      subject.method(:e5).must_equal subject.method(:syntax_pass_lang)
     end
     it "should contain new rules" do
+      @lang.values.each{|i| puts "#{i.name} - has follow_set #{i.follow_set}\n #{i}" }
       @lang.must_respond_to :value
       @lang.must_respond_to :element_more_once
       @lang.must_respond_to :element_more

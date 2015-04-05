@@ -19,6 +19,14 @@ describe Eson::Language::AbstractSyntaxTree do
       proc {subject.new("error_type")}.
         must_raise Eson::Language::AbstractSyntaxTree::InitializationError
     end
+    describe "empty" do
+      before do
+        @tree = subject.new
+      end
+      it "root_is_empty" do
+        @tree.empty?.must_equal true
+      end
+    end
     describe "token" do
       before do
         @tree = subject.new @token
@@ -62,7 +70,7 @@ describe Eson::Language::AbstractSyntaxTree do
   describe "#insert" do
     before do
       @tree = subject.new @nonterminal_rule
-    end  
+    end
     it "node is invalid type" do
       proc {@tree.insert("foo")}
         .must_raise Eson::Language::AbstractSyntaxTree::InsertionError
@@ -87,6 +95,20 @@ describe Eson::Language::AbstractSyntaxTree do
       proc {@tree.insert(@rule)}
         .must_raise Eson::Language::AbstractSyntaxTree::ClosedTreeError
     end
+    describe "empty_tree" do
+      before do
+        @empty_tree = subject.new
+      end
+      it "root inserted" do
+        @empty_tree.insert(@token)
+        @empty_tree.root_value.must_equal @token
+        @empty_tree.height.must_equal 1
+      end
+      it "root insertion failed" do
+        proc {@empty_tree.insert("error_string")}
+          .must_raise Eson::Language::AbstractSyntaxTree::InsertionError
+      end
+    end
   end
 
   describe "#merge" do
@@ -96,7 +118,7 @@ describe Eson::Language::AbstractSyntaxTree do
       @root_tree.merge(@tree)
     end
     it "tree is child node" do
-      @root_tree.is_child?(@tree.root_value.name).must_equal true
+      @root_tree.has_child?(@tree.root_value.name).must_equal true
     end
     it "height is updated" do
       @root_tree.height.must_equal 3

@@ -1,4 +1,5 @@
 require 'forwardable'
+require 'pry'
 
 module Eson
 
@@ -51,10 +52,8 @@ module Eson
       end
 
       def match_token(string)
-        #if match_rxp?(string)
         lexeme = self.match(string).to_s.intern
         self.make_token(lexeme)
-        #end
       end
       
       def match(string)
@@ -137,7 +136,7 @@ module Eson
 
       def ebnf_to_s
         if terminal?
-          "\"#{rxp.source.gsub(/\\/, "")}\""
+          "\"#{@start_rxp.source.gsub(/\\/, "")}\""
         elsif alternation_rule?
           terms = ebnf.term_set
           join_rule_names(terms, " | ")
@@ -268,9 +267,9 @@ module Eson
             acc = parse_terminal(tokens, tree)
           else
             if tree.nil?
-              tree = AbstractSyntaxTree.new(self)
+              tree = AbstractSyntaxTree.new
             end
-            root_dup_safe_ast_insert(tree)
+            tree.insert(self)
             acc = if alternation_rule?
                     parse_any(tokens, rules, tree)
                   elsif concatenation_rule?
@@ -282,13 +281,6 @@ module Eson
                   end
             acc[:tree].close_active
             acc
-          end
-        end
-
-        #@param tree [Eson::Language::AbstractSyntaxTree]
-        def root_dup_safe_ast_insert(tree)
-          unless tree.root_value == self
-            tree.insert(self)
           end
         end
 
@@ -323,7 +315,7 @@ module Eson
         end
 
         def parse_terminal_error_message(expected_token, actual_token, token_seq)
-          "Error While parsing #{@name}. Expected a symbol of type :#{expected_token} but got a :#{actual_token.name} instead in line #{actual_token.line_number}:\n #{actual_token.line_number}. #{token_seq.get_program_line(actual_token.line_number)}\n"
+          "Error while parsing #{@name}. Expected a symbol of type :#{expected_token} but got a :#{actual_token.name} instead in line #{actual_token.line_number}:\n #{actual_token.line_number}. #{token_seq.get_program_line(actual_token.line_number)}\n"
         end
 
         #Return a Token sequence that is a legal instance of
@@ -354,18 +346,17 @@ module Eson
         #            r_def' = []
         #        otherwise
         #          E + et 
-        def parse_any(tokens, rules)
+        def parse_any(tokens, rules, tree)
+          puts "parsing #{@name}"
           lookahead = tokens.first
           if matched_any_first_sets?(lookahead, rules)
             term = first_set_match(lookahead, rules)
-            if term.instance_of? Terminal
-              return build_parse_result([lookahead], tokens.drop(1))
-            else
-              rule = rules.get_rule(term.rule_name)
-              return rule.parse(tokens, rules)
-            end
+            rule = rules.get_rule(term.rule_name)
+            t = rule.parse(tokens, rules, tree)
+            puts "end parsing"
+            return t
           end
-          raise ParseError, parse_terminal_error_message(@name, lookahead.name)
+          raise ParseError, parse_terminal_error_message(@name, lookahead, tokens)
         end
 
         #@param token [Eson::Language::LexemeCapture::Token] token
@@ -438,11 +429,11 @@ module Eson
         #            T' = T - S'
         #          otherwise
         #            E + et
-        def parse_and_then(tokens, rules)
-          result = build_parse_result([], tokens)
+        def parse_and_then(tokens, rules, tree)
+          result = build_parse_result([], tokens, tree)
           @ebnf.term_list.each_with_object(result) do |i, acc|
             rule = rules.get_rule(i.rule_name)
-            parse_result = rule.parse(acc[:rest], rules)
+            parse_result = rule.parse(acc[:rest], rules, acc[:tree])
             acc[:parsed_seq].concat(parse_result[:parsed_seq])
             acc[:rest] = parse_result[:rest]
           end
@@ -479,20 +470,22 @@ module Eson
         #           T
         #        otherwise
         #          E + et
-        def parse_maybe(tokens, rules)
+        def parse_maybe(tokens, rules, tree)
           term = @ebnf.term
           term_rule = rules.get_rule(term.rule_name)
-          begin 
-            term_rule.parse(tokens, rules)
+          begin
+            acc = term_rule.parse(tokens, rules)
+            acc.store(:tree, tree.merge(acc[:tree]))
+            acc
           rescue ParseError => pe
-            parse_none(tokens, pe)
+            parse_none(tokens, pe, tree)
           end
         end
 
-        def parse_none(tokens, exception)
+        def parse_none(tokens, exception, tree)
           lookahead = tokens.first
           if @follow_set.include? lookahead.name
-            return build_parse_result([], tokens)
+            return build_parse_result([], tokens, tree)
           else
             raise exception
           end
@@ -525,19 +518,19 @@ module Eson
         #          S, T
         #        otherwise
         #          E + et
-        def parse_many(tokens, rules)
-          acc = parse_maybe(tokens, rules)
+        def parse_many(tokens, rules, tree)
+          acc = parse_maybe(tokens, rules, tree)
           is_tokens_empty = acc[:rest].empty?
           is_rule_nulled = acc[:parsed_seq].empty?
           if is_tokens_empty || is_rule_nulled
             acc
           else
             begin
-              acc.merge(parse_many(acc[:rest], rules)) do |key, old, new|
+              acc.merge(parse_many(acc[:rest], rules, acc[:tree])) do |key, old, new|
                 case key
                 when :parsed_seq
                   old.concat(new)
-                when :rest
+                when :rest, :tree
                   new
                 end
               end
@@ -891,7 +884,7 @@ module Eson
         rule.first_set.concat set
       end
 
-      #Ensure a first_set is completed before returning. Prevents
+      #Ensure a first_set is completed before returning it. Prevents
       #  complications due to ordering of Rules in the RuleSeq. 
       #@param rule [Eson::Language::RuleSeq::Rule] Given rule
       #@return [Array<Symbol>] first set
@@ -903,7 +896,7 @@ module Eson
       end
       
       #Compute the follow_set of rules. The follow_set is
-      #the set of terminals that can appear to the right of the rule.
+      #the set of terminals that can appear to the right of a nonterminal.
       #@param rules [Eson::Language::RuleSeq] list of possible rules
       #@param top_rule_name [Symbol] name of the top rule in the language
       #  from which @rules derives.
@@ -917,46 +910,57 @@ module Eson
           stage.each do |tuple|
             rule = rules.get_rule(tuple[:term])
             #add first_set from first_set rules
-            tuple[:first_set_rules].each do |r|
+            tuple[:first_set_deps].each do |r|
               add_to_follow_set(rule, r.first_set-[:nullable])
             end
             #add follow_set from follow_set rules
-            tuple[:follow_set_rules].each do |r|
+            tuple[:follow_set_deps].each do |r|
               add_to_follow_set(rule, r.follow_set)
             end
           end
         end
       end
 
-      #Builds a dependency graph for computing follow sets. This
-      #ensures that follow sets are computed in the correct order.      
+      #Builds a dependency graph for computing :follow_set's. This
+      #returns tuples which pairs each term with it's dependencies
+      #for follow_set computation. Dependencies are divided into
+      #:first_set_deps and :follow_set_deps. The tuples are divided
+      #into stages to ensure that follow sets are computed in the
+      #correct order.
+      #Stage 1 contains rules with no dependencies
+      #Stage 2 contains rules with :first_set_deps only
+      #Stage 3 contains rules with :follow_set_deps from stage 1 and
+      #  stage 2 only
+      #Stage 4 and upwards contains rules with :follow_set_deps from
+      #  stages before it only
       #@return [Array] Array of array of tuples. Each tuple has a :term,
-      #  and optional :first_set_rules and :follow_set_rules arrays
+      #  and optional :first_set_deps and :follow_set_deps arrays
       def build_follow_dep_graph(rules)
         dep_graph = rules.map do |rule|
           tuple = {:term => rule.name}
           concat_rules = rules.select{|i| i.concatenation_rule?}
                          .select{|i| i.term_names.include? rule.name}
-          if concat_rules
-            tuple[:dep_rules] = concat_rules
-          end
-          tuple                             
-        end.partition do |t|
-          t[:dep_rules].nil?
+          tuple[:dependencies] = concat_rules
+          tuple
         end
-        #transform :dep_rules to :first_set_rules and :follow_set_rules
-        #:first_set_rules are those rules which must have their first_set
+        
+        dep_graph = dep_graph.partition do |t|
+          t[:dependencies].empty?
+        end
+
+        #transform :dependencies to :first_set_deps and :follow_set_deps
+        #:first_set_deps are those rules which must have their first_set
         #added to the term's follow_set
-        #:follow_set_rules are those rules which must have their follow_set
+        #:follow_set_deps are those rules which must have their follow_set
         #added to the term's follow_set
         dep_graph.last.each do |t|
-          t[:first_set_rules] = []
-          t[:follow_set_rules] = []
-          t[:dep_rules].each do |rule|
-            term_seq = rule.term_names
-            last_position = term_seq.size - 1 
-            term_position = term_seq.index(t[:term])
-            last_nullable_terms = term_seq.reverse.take_while do |i|
+          t[:first_set_deps] = []
+          t[:follow_set_deps] = []
+          t[:dependencies].each do |rule|
+            concat_term_list = rule.term_names
+            last_position = concat_term_list.size - 1 
+            term_position = concat_term_list.index(t[:term])
+            last_nullable_terms = concat_term_list.reverse.take_while do |i|
               rules.get_rule(i).nullable?
             end
             if last_nullable_terms.empty?
@@ -965,33 +969,58 @@ module Eson
                 #add rule to follow set if term is last term
                 #protect against left recursive references
                 unless rule.name == t[:term]
-                  t[:follow_set_rules].push(rule)
+                  t[:follow_set_deps].push(rule)
                 end
               else
                 #get term after the term and add this first set   
-                term_after = term_seq[term_position + 1]
-                t[:first_set_rules].push(rules.get_rule(term_after))
+                term_after = concat_term_list[term_position + 1]
+                t[:first_set_deps].push(rules.get_rule(term_after))
               end
             else
               if last_nullable_terms.include? t[:term]
                 #add rule to follow set
                 #protect against left recursive references
                 unless rule.name == t[:term]
-                  t[:follow_set_rules].push(rule)
+                  t[:follow_set_deps].push(rule)
                 end
               else
-                term_after = term_seq[term_position + 1]
-                t[:first_set_rules].push(rules.get_rule(term_after))
+                term_after = concat_term_list[term_position + 1]
+                t[:first_set_deps].push(rules.get_rule(term_after))
               end
             end
-            t.delete(:dep_rules)
+            t.delete(:dependencies)
           end
         end
 
-        last_stage = dep_graph.last.partition do |t|
-          t[:follow_set_rules].empty?
+        empty_and_filled_follow_set_stages = dep_graph.last.partition do |t|
+          t[:follow_set_deps].empty?
         end
-        dep_graph[0...-1].concat last_stage
+        dep_graph = dep_graph[0...-1].concat empty_and_filled_follow_set_stages
+
+        no_stage_deps_and_otherwise = split_fill_follow_set_deps(empty_and_filled_follow_set_stages.last)
+
+        puts "-----print first stage terms"
+        dep_graph.first.each{|i| pp "#{i[:term]} with #{i[:dependencies]}"}
+        puts "-----prints second stage"
+        dep_graph[1].each{|i| pp "#{i[:term]} with #{i[:first_set_deps].map{|i| i.name}}"}
+        puts "-----prints third stage"
+        no_stage_deps_and_otherwise.first.each{|i| pp "#{i[:term]} with first #{i[:first_set_deps].map{|i| i.name}} and follow #{i[:follow_set_deps].map{|i| i.name}}"}
+        puts "-----prints fourth stage"
+        no_stage_deps_and_otherwise.last.each{|i| pp "#{i[:term]}"}
+        puts "-----end"
+        
+        dep_graph = dep_graph[0...-1].concat no_stage_deps_and_otherwise
+      end
+
+      #@param stage [Array<tuple>] Each tuple has a :term,
+      #  :first_set_deps and :follow_set_deps arrays.
+      #@return [Array<stage1, stage2>] stage_2 has :follow_set_dependencies
+      #  that are in stage, stage_2 does not.
+      def split_fill_follow_set_deps(stage)
+        all_terms = stage.flat_map{|t| t[:term]}
+        stage.partition do |t|
+          t[:follow_set_deps].none?{|fs| all_terms.include?(fs.name)}
+        end
       end
       
       def add_to_follow_set(rule, term_name)
@@ -1024,18 +1053,28 @@ module Eson
 
       #Initialize tree with given Rule as root node.
       #@param language [Eson::Language::RuleSeq::Rule] Rule
-      def initialize(obj)
-        if obj.instance_of?(Rule) && obj.nonterminal?
-          @root_tree = @active = make_tree(obj)
-          @height = 1
+      def initialize(obj=nil)
+        unless obj.nil?
+          puts "open #{obj.name}"
+        end
+        insert_root(obj)
+      rescue InsertionError => e
+        raise InitializationError,
+              not_a_valid_root_error_message(obj)
+      end
+
+      def insert_root(obj)
+        if obj.nil?
+          @root_tree = @active = nil
         elsif obj.instance_of? Token
-          leaf = make_leaf(obj)
-          @root_tree = @active = leaf
+          @root_tree = @active = make_leaf(obj)
           @height = 1
           close_active
+        elsif obj.instance_of?(Rule) && obj.nonterminal?
+          @root_tree = @active = make_tree(obj)
+          @height = 1
         else
-          raise InitializationError,
-                not_a_valid_root_error_message(obj)
+          raise InsertionError, not_a_valid_input_error_message(obj)
         end
       end
       
@@ -1052,6 +1091,10 @@ module Eson
       def not_a_valid_root_error_message(obj)
         "The class #{obj.class} of '#{obj}' cannot be used as a root node for #{self.class}. Parameter must be either a #{Token} or a nonterminal #{Rule}."
       end
+
+      def empty?
+        @root_tree.nil?
+      end
       
       #Insert an object into the active tree node. Tokens are
       #added as leaf nodes and Rules are added as the active tree
@@ -1060,19 +1103,22 @@ module Eson
       #@raise [InsertionError] If obj is neither a Token or Rule
       #@raise [ClosedTreeError] If the tree is closed
       def insert(obj)
-        ensure_open
-        if obj.instance_of? Token
-          insert_leaf(obj)
-        elsif obj.instance_of? Rule
-          insert_tree(obj)
+        if empty?
+          insert_root(obj)
         else
-          raise InsertionError, not_a_valid_input_error_message(obj)
+          ensure_open
+          if obj.instance_of? Token
+            insert_leaf(obj)
+          elsif obj.instance_of? Rule
+            insert_tree(obj)
+          else
+            raise InsertionError, not_a_valid_input_error_message(obj)
+          end
         end
         self
       end
       
       def insert_leaf(token)
-        puts "inserted #{token.name}- #{token.lexeme} into #{@active.value.name}"
         leaf = make_leaf(token)
         active_node.children.push leaf
         update_height(leaf) 
@@ -1088,7 +1134,6 @@ module Eson
         tree = make_tree(rule)
         active_node.children.push tree
         update_height(tree)
-        puts "inserted #{rule.name} into #{@active.value.name}"
         @active = tree
       end
 
@@ -1100,7 +1145,6 @@ module Eson
       #@param tree [Eson::Language::AbstractSyntaxTree]
       #@raise [MergeError] if tree is not closed before merging
       def merge(tree)
-        puts "#{tree.root_value.name} merged into #{@root_tree.value.name}"
         if tree.closed?
           tree.get.increment_levels(active_node.level)
           possible_height = tree.height + active_node.level
@@ -1130,16 +1174,22 @@ module Eson
       #open ancestor the active node.  
       #@return [Eson::Language::AbstractSyntaxTree]
       def close_active
+        children = if @active.leaf?
+                     "token."
+                   else
+                     "with #{@active.children.map{|i| i.value.name}}"
+                   end
+        puts "closing #{@active.value.name} #{children}"# - #{@active.children.map{|i| i.class}}"
         new_active = @active.parent
         @active.close
-        puts "#{@active.value.name} is now closed"
         unless new_active.nil?
           @active = new_active
         end
         self
       end
 
-      def_delegators :@root_tree, :root_value, :closed?, :open?, :leaf?, :ensure_open, :empty?, :is_child?, :rule, :children, :level
+      def_delegators :@root_tree, :root_value, :degree, :closed?, :open?, :leaf?,
+                     :ensure_open, :has_child?, :has_children?, :rule, :children, :level
       
       #Struct class for a tree node
       Tree = Struct.new :value, :children, :parent, :open_state, :level do
@@ -1165,8 +1215,12 @@ module Eson
           !open?
         end
 
+        def degree
+          children.length
+        end
+
         def leaf?
-          children.nil?
+          children.nil? || children.empty?
         end
 
         def ensure_open
@@ -1179,17 +1233,14 @@ module Eson
           "The method `#{caller_locations(3).first.label}' is not allowed on a closed tree."
         end
 
-        def empty?
-          if leaf?
-            true
-          else
-            children.empty?
-          end
+        #@param name [Symbol] name of child node
+        def has_child?(name)
+          children.detect{|i| i.value.name == name} ? true : false
         end
 
-        #@param name [Symbol] name of either Rule or Token in Tree node
-        def is_child?(name)
-          children.detect{|i| i.value.name == name} ? true : false
+        #@param names [Array<Symbol>] ordered list of the names of child nodes
+        def has_children?(names)
+          names == children.map{|i| i.value.name}
         end
 
         #@param offset [Integer]
@@ -1203,7 +1254,7 @@ module Eson
         #@param offset [Integer]
         def increment_levels(offset)
           set_level(offset)
-          unless empty?
+          unless leaf?
             children.each{|t| t.set_level}
           end
         end

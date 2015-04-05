@@ -1,5 +1,6 @@
 require 'vert'
 require_relative 'eson/token_pass'
+require_relative 'eson/syntax_pass'
 
 module Eson
 
@@ -14,15 +15,17 @@ module Eson
 
   def compile(eson_program)
     if validate_json?(eson_program)
-      token_sequence = TokenPass::Tokenizer.tokenize_program(eson_program).first
-                         .add_line_numbers
-                         .verify_special_forms
-                         .tokenize_variable_identifiers
-                         .tokenize_special_forms
-                         .tokenize_proc_identifiers
-                         .tokenize_word_forms
-                         .label_sub_strings
-                         .insert_string_delimiters
+      token_sequence = TokenPass.tokenize_program(eson_program)
+                       .first
+                       .add_line_numbers
+                       .verify_special_forms
+                       .tokenize_variable_identifiers
+                       .tokenize_special_forms
+                       .tokenize_proc_identifiers
+                       .tokenize_word_forms
+                       .label_sub_strings
+                       .insert_string_delimiters
+      tree = SyntaxPass.build_tree(token_sequence)
     else
       validation_pass(eson_program)
     end

@@ -5,82 +5,123 @@ require_relative '../lib/eson/formal_languages'
 
 describe Eson::Language::AbstractSyntaxTree do
 
+  before do
+    @terminal_rule = Eson::FormalLanguages::e5.variable_identifier
+    @nonterminal_rule = Eson::FormalLanguages::e5.string
+    @token = @terminal_rule.make_token(:var)
+  end
+
   subject {Eson::Language::AbstractSyntaxTree}
   let(:tree) {Eson::Language::AbstractSyntaxTree::Tree}
   
-  describe "create an AST" do
-    before do
-      @root_rule = Eson::FormalLanguages::e5.variable_identifier
-      @tree = subject.new(@root_rule)
-    end 
-    it "root is rule" do
-      @tree.must_be_instance_of subject
-      @tree.root_value.must_equal @root_rule
-    end
-    it "root is open" do
-      @tree.open?.must_equal true
-      @tree.closed?.must_equal false
-    end
-    it "root is active" do
-      @tree.active_node.must_equal @tree.get 
-      @tree.active_node.must_be_instance_of tree
-    end
-    it "root has no parent" do
-      @tree.get.parent.must_be_nil
-    end
+  describe "create_ast" do
     it "incorrect parameter type" do
       proc {subject.new("error_type")}.
-        must_raise Eson::Language::AbstractSyntaxTree::TreeInitializationError
+        must_raise Eson::Language::AbstractSyntaxTree::InitializationError
+    end
+    describe "token" do
+      before do
+        @tree = subject.new @token
+      end
+      it "root_is_leaf" do
+        @tree.leaf?.must_equal true
+      end
+      it "root_is_closed" do
+        @tree.closed?.must_equal true
+      end
+      it "root_has_no_parent" do
+        @tree.get.parent.must_be_nil
+      end
+    end
+    describe "terminal_rule" do
+      it "incorrect parameter type" do
+        proc {subject.new(@terminal_rule)}.
+          must_raise Eson::Language::AbstractSyntaxTree::InitializationError
+      end
+    end
+    describe "nonterminal_rule" do
+      before do
+        @tree = subject.new @nonterminal_rule
+      end
+      it "root is rule" do
+        @tree.must_be_instance_of subject
+        @tree.root_value.must_equal @nonterminal_rule
+      end
+      it "root is open" do
+        @tree.closed?.must_equal false
+      end
+      it "root is active" do
+        @tree.active_node.must_equal @tree.get
+      end
+      it "root has no parent" do
+        @tree.get.parent.must_be_nil
+      end
     end
   end
 
   describe "#insert" do
     before do
-      @root_rule = Eson::FormalLanguages::e5.comma
-      @ast = Eson::Language::AbstractSyntaxTree.new(@root_rule) 
-      @rule = Eson::FormalLanguages::e5.variable_identifier
-      @token = @rule.make_token(:var)
+      @tree = subject.new @nonterminal_rule
     end  
     it "node is invalid type" do
-      proc {@ast.insert("poo")}
-        .must_raise Eson::Language::AbstractSyntaxTree::TreeInsertionError
+      proc {@tree.insert("foo")}
+        .must_raise Eson::Language::AbstractSyntaxTree::InsertionError
     end
     it "inserted token is leaf of active node" do
-      @ast.insert(@token)
-      @ast.active_node.children.must_include @token
+      @tree.insert(@token)
+      @tree.height.must_equal 2
+      child_nodes = @tree.active_node.children
+      child_nodes.first.value.name.must_equal @token.name
     end
     it "inserted rule is active node" do
-      @ast.insert(@rule)
-      @ast.active_node.rule.must_equal @rule
+      @tree.insert(@terminal_rule).insert(@token)
+      @tree.height.must_equal 3
+      @tree.active_node.value.must_equal @terminal_rule
     end
     it "inserted rule has root as parent" do
-      @ast.insert(@rule)
-      @ast.active_node.parent.must_equal @ast.get
+      @tree.insert(@terminal_rule)
+      @tree.active_node.parent.must_equal @tree.get
     end
     it "fails on closed tree" do
-      @ast.close_active
-      proc {@ast.insert(@rule)}
+      @tree.close_active
+      proc {@tree.insert(@rule)}
         .must_raise Eson::Language::AbstractSyntaxTree::ClosedTreeError
     end
   end
 
+  describe "#merge" do
+    before do
+      @root_tree = subject.new @nonterminal_rule
+      @tree = subject.new(@nonterminal_rule).insert(@token).close_tree
+      @root_tree.merge(@tree)
+    end
+    it "tree is child node" do
+      @root_tree.is_child?(@tree.root_value.name).must_equal true
+    end
+    it "height is updated" do
+      @root_tree.height.must_equal 3
+    end
+    it "levels incremented" do
+      @root_tree.level.must_equal 1
+      @tree.level.must_equal 2
+      @tree.children.first.level.must_equal 3
+    end
+  end
+  
   describe "#close_active" do
     before do
-      @root_rule = Eson::FormalLanguages::e5.comma
-      @ast = Eson::Language::AbstractSyntaxTree.new(@root_rule)
-      @ast.insert(Eson::FormalLanguages::e5.variable_identifier)
-      @ast.insert(@root_rule.make_token(:var))
-      @rule = Eson::FormalLanguages::e5.variable_identifier
-      @token = @rule.make_token(:var)
+      @tree = subject.new @nonterminal_rule
+      @tree.insert(Eson::FormalLanguages::e5.variable_identifier)
+      @tree.insert(@token)
     end
     it "active node is closed" do
-      @ast.close_active
-      @ast.active_node.must_equal @ast.get
+      @tree.close_active
+      @tree.active_node.must_equal @tree.get
     end
     it "tree is closed" do
-      @ast.close_active
-      @ast.close_active
-      @ast.closed?.must_equal true
+      @tree.close_active
+      @tree.close_active
+      @tree.closed?.must_equal true
     end
   end
 end

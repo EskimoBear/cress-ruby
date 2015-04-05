@@ -263,17 +263,32 @@ module Eson
         #            S' = match_none(r_def, T)
         #          otherwise
         #            E' = E + et
-        def parse(tokens, rules)
+        def parse(tokens, rules, tree=nil)
           if terminal?
-            parse_terminal(tokens)
-          elsif alternation_rule?
-            parse_any(tokens, rules)
-          elsif concatenation_rule?
-            parse_and_then(tokens, rules)
-          elsif option_rule?
-            parse_maybe(tokens, rules)
-          elsif repetition_rule?
-            parse_many(tokens, rules)
+            acc = parse_terminal(tokens, tree)
+          else
+            if tree.nil?
+              tree = AbstractSyntaxTree.new(self)
+            end
+            root_dup_safe_ast_insert(tree)
+            acc = if alternation_rule?
+                    parse_any(tokens, rules, tree)
+                  elsif concatenation_rule?
+                    parse_and_then(tokens, rules, tree)
+                  elsif option_rule?
+                    parse_maybe(tokens, rules, tree)
+                  elsif repetition_rule?
+                    parse_many(tokens, rules, tree)
+                  end
+            acc[:tree].close_active
+            acc
+          end
+        end
+
+        #@param tree [Eson::Language::AbstractSyntaxTree]
+        def root_dup_safe_ast_insert(tree)
+          unless tree.root_value == self
+            tree.insert(self)
           end
         end
 
@@ -283,26 +298,32 @@ module Eson
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
         #@raise [ParseError] if no legal sub-sequence can be found
-        def parse_terminal(tokens)
+        def parse_terminal(tokens, tree)         
           lookahead = tokens.first
           if @name == lookahead.name
-            return build_parse_result([lookahead], tokens.drop(1))
+            leaf = AbstractSyntaxTree.new(lookahead)
+            tree = if tree.nil?
+                     leaf
+                   else
+                     tree.merge(leaf)
+                   end
+            build_parse_result([lookahead], tokens.drop(1), tree)
           else
-            raise ParseError, parse_terminal_error_message(@name, lookahead.name)
+            raise ParseError, parse_terminal_error_message(@name, lookahead, tokens)
           end
         end
 
-        def build_parse_result(parsed_seq, rest)
+        def build_parse_result(parsed_seq, rest, tree)
           if parsed_seq.instance_of? Array
             parsed_seq = Eson::TokenPass::TokenSeq.new(parsed_seq)
           elsif rest.instance_of? Array
             rest = Eson::TokenPass::TokenSeq.new(rest)
           end
-          result = {:parsed_seq => parsed_seq, :rest => rest}
+          result = {:parsed_seq => parsed_seq, :rest => rest, :tree => tree}
         end
 
-        def parse_terminal_error_message(expected_token, actual_token)
-          "Expected a symbol of type :#{expected_token} but got a :#{actual_token} instead."
+        def parse_terminal_error_message(expected_token, actual_token, token_seq)
+          "Error While parsing #{@name}. Expected a symbol of type :#{expected_token} but got a :#{actual_token.name} instead in line #{actual_token.line_number}:\n #{actual_token.line_number}. #{token_seq.get_program_line(actual_token.line_number)}\n"
         end
 
         #Return a Token sequence that is a legal instance of
@@ -989,61 +1010,104 @@ module Eson
     end
 
     class AbstractSyntaxTree    
-      TreeInsertionError = Class.new(StandardError)
+      InsertionError = Class.new(StandardError)
       ClosedTreeError = Class.new(StandardError)
-      TreeSeqInsertionError = Class.new(StandardError)
-      TreeInitializationError = Class.new(StandardError)
+      ChildInsertionError = Class.new(StandardError)
+      InitializationError = Class.new(StandardError)
 
       extend Forwardable
 
       Token = Eson::Language::LexemeCapture::Token
       Rule = Eson::Language::RuleSeq::Rule
 
+      attr_reader :height
+
       #Initialize tree with given Rule as root node.
       #@param language [Eson::Language::RuleSeq::Rule] Rule
-      def initialize(rule)
-        if rule.instance_of? Rule
-          @root_tree = Tree.new(rule, TreeSeq.new, nil, true)
-          @active = @root_tree
+      def initialize(obj)
+        if obj.instance_of?(Rule) && obj.nonterminal?
+          @root_tree = @active = make_tree(obj)
+          @height = 1
+        elsif obj.instance_of? Token
+          leaf = make_leaf(obj)
+          @root_tree = @active = leaf
+          @height = 1
+          close_active
         else
-          raise TreeInitializationError,
-                not_a_rule_error_message(rule)
+          raise InitializationError,
+                not_a_valid_root_error_message(obj)
         end
       end
       
-      def not_a_rule_error_message(obj)
-        "'#{obj.class}' is not a valid root for #{self.class}. Please provide a #{Rule}"
+      def make_tree(rule)
+        tree = Tree.new(rule, TreeSeq.new, active_node, true)
+               .set_level
       end
-
+      
+      def make_leaf(token)
+        tree = Tree.new(token, nil, active_node, false)
+               .set_level
+      end
+      
+      def not_a_valid_root_error_message(obj)
+        "The class #{obj.class} of '#{obj}' cannot be used as a root node for #{self.class}. Parameter must be either a #{Token} or a nonterminal #{Rule}."
+      end
+      
       #Insert an object into the active tree node. Tokens are
       #added as leaf nodes and Rules are added as the active tree
       #node.
       #@param [Token, Rule] eson token or production rule
-      #@raise [TreeInsertionError] If obj is neither a Token or Rule
+      #@raise [InsertionError] If obj is neither a Token or Rule
       #@raise [ClosedTreeError] If the tree is closed
       def insert(obj)
         ensure_open
-        if obj.instance_of? Eson::Language::LexemeCapture::Token
+        if obj.instance_of? Token
           insert_leaf(obj)
         elsif obj.instance_of? Rule
           insert_tree(obj)
         else
-          raise TreeInsertionError, not_a_valid_input_error_message(obj)
+          raise InsertionError, not_a_valid_input_error_message(obj)
         end
+        self
       end
       
       def insert_leaf(token)
-        active_node.children.push(token)
+        puts "inserted #{token.name}- #{token.lexeme} into #{@active.value.name}"
+        leaf = make_leaf(token)
+        active_node.children.push leaf
+        update_height(leaf) 
+      end
+
+      def update_height(tree)
+        if tree.level > @height
+          @height = tree.level
+        end
       end
 
       def insert_tree(rule)
-        tree = Tree.new(rule, TreeSeq.new, active_node, true)
-        active_node.children.push(tree)
+        tree = make_tree(rule)
+        active_node.children.push tree
+        update_height(tree)
+        puts "inserted #{rule.name} into #{@active.value.name}"
         @active = tree
       end
 
       def not_a_valid_input_error_message(obj)
         "The class #{obj.class} of '#{obj}' is not a valid input for the #{self.class}. Input must be a #{Token}."
+      end
+
+      #Add a given tree to this tree's active node
+      #@param tree [Eson::Language::AbstractSyntaxTree]
+      #@raise [MergeError] if tree is not closed before merging
+      def merge(tree)
+        puts "#{tree.root_value.name} merged into #{@root_tree.value.name}"
+        if tree.closed?
+          tree.get.increment_levels(active_node.level)
+          possible_height = tree.height + active_node.level
+          @height = @height < possible_height ? possible_height : @height
+          @active.children.push(tree.get)
+          self
+        end
       end
       
       #Get the active node of the tree. This is the open tree node to
@@ -1057,27 +1121,33 @@ module Eson
         @root_tree
       end
 
+      def close_tree
+        @root_tree.open_state = false
+        self
+      end
+
       #Closes the active node of the tree and makes the next
       #open ancestor the active node.  
-      #@return [Eson::Language::AbstractSyntaxTree::Tree] the active tree node
+      #@return [Eson::Language::AbstractSyntaxTree]
       def close_active
         new_active = @active.parent
         @active.close
+        puts "#{@active.value.name} is now closed"
         unless new_active.nil?
           @active = new_active
         end
+        self
       end
 
-      def_delegators :@root_tree, :root_value, :closed?, :open?, :ensure_open, :empty?,
-                     :rule, :children
+      def_delegators :@root_tree, :root_value, :closed?, :open?, :leaf?, :ensure_open, :empty?, :is_child?, :rule, :children, :level
       
       #Struct class for a tree node
-      Tree = Struct.new :rule, :children, :parent, :open_state do
+      Tree = Struct.new :value, :children, :parent, :open_state, :level do
 
         #The value of the root node
         #@return [Eson::Language::RuleSeq::Rule]
         def root_value
-          rule
+          value
         end
         
         #Close the active node of the tree and make parent active.
@@ -1095,6 +1165,10 @@ module Eson
           !open?
         end
 
+        def leaf?
+          children.nil?
+        end
+
         def ensure_open
           if closed?
             raise ClosedTreeError, closed_tree_error_message
@@ -1102,12 +1176,37 @@ module Eson
         end
         
         def closed_tree_error_message
-          "The method `#{caller_locations(2).first.label}' is not allowed on a closed tree."
+          "The method `#{caller_locations(3).first.label}' is not allowed on a closed tree."
         end
 
         def empty?
-          children.empty?
-        end 
+          if leaf?
+            true
+          else
+            children.empty?
+          end
+        end
+
+        #@param name [Symbol] name of either Rule or Token in Tree node
+        def is_child?(name)
+          children.detect{|i| i.value.name == name} ? true : false
+        end
+
+        #@param offset [Integer]
+        def set_level(offset=0)
+          self.level = parent.nil? ? 1 : 1 + parent.level
+          self.level = level + offset
+          self
+        end
+
+        #Increment the tree levels of a given tree
+        #@param offset [Integer]
+        def increment_levels(offset)
+          set_level(offset)
+          unless empty?
+            children.each{|t| t.set_level}
+          end
+        end
       end
 
       class TreeSeq < Array
@@ -1116,12 +1215,10 @@ module Eson
         
         pushvalidate = Module.new do
           def push(obj)
-            if obj.instance_of? Token
-              super
-            elsif obj.instance_of? Tree
+            if obj.instance_of? Tree
               super
             else
-              raise TreeSeqInsertionError, not_a_valid_node_error_message(obj)
+              raise ChildInsertionError, not_a_valid_node_error_message(obj)
             end
           end
         end
@@ -1129,7 +1226,7 @@ module Eson
         prepend pushvalidate
 
         def not_a_valid_node_error_message(obj)
-          "The class #{obj.class} of '#{obj}' is not a valid node for the #{self.class}. Must be either a #{Token} or a #{Tree}."
+          "The class #{obj.class} of '#{obj}' is not a valid node for the #{self.class}. The object must be a #{Tree}."
         end
       end
     end

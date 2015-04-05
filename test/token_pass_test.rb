@@ -1,19 +1,16 @@
 require 'minitest/autorun'
 require 'minitest/pride'
-require 'oj'
 require_relative './test_helpers.rb'
-require_relative '../lib/eson/tokenizer.rb'
+require_relative '../lib/eson.rb'
 
-describe Eson::TokenPass::Tokenizer do
-
-  subject {Eson::TokenPass::Tokenizer}
+describe Eson::TokenPass do
+  subject {Eson::TokenPass}
 
   describe "with full eson program" do
     before do
       @program = TestHelpers.get_tokenizer_sample_program
       @token_sequence, @input_sequence = subject.tokenize_program(@program)
-    end
-    
+    end    
     it "has empty input sequence" do
       @input_sequence.empty?.must_equal true 
     end
@@ -35,7 +32,6 @@ describe Eson::TokenPass::Tokenizer do
       @empty_program = TestHelpers.get_empty_program
       @token_sequence, @input_sequence = subject.tokenize_program(@empty_program)
     end
-    
     it "has empty input sequence" do
       @input_sequence.empty?.must_equal true
     end
@@ -48,5 +44,4 @@ describe Eson::TokenPass::Tokenizer do
       (token_seq_length == valid_token_seq_length).must_equal true
     end
   end
-  
 end

@@ -895,8 +895,9 @@ module Eson
         rule.first_set
       end
       
-      #Compute the follow_set of rules. The follow_set is
-      #the set of terminals that can appear to the right of a nonterminal.
+      #Compute the follow_set of nonterminal rules. The follow_set is
+      #the set of terminals that can appear to the right of a nonterminal
+      #in a sentence.
       #@param rules [Eson::Language::RuleSeq] list of possible rules
       #@param top_rule_name [Symbol] name of the top rule in the language
       #  from which @rules derives.
@@ -905,15 +906,13 @@ module Eson
           top_rule = rules.get_rule(top_rule_name)
           add_to_follow_set(top_rule, :eof)
         end
-        map = build_follow_dep_graph(rules)
-        map[1..-1].each do |stage|
+        dependency_graph = build_follow_dep_graph(rules)
+        dependency_graph.each do |stage|
           stage.each do |tuple|
             rule = rules.get_rule(tuple[:term])
-            #add first_set from first_set rules
             tuple[:first_set_deps].each do |r|
               add_to_follow_set(rule, r.first_set-[:nullable])
             end
-            #add follow_set from follow_set rules
             tuple[:follow_set_deps].each do |r|
               add_to_follow_set(rule, r.follow_set)
             end
@@ -926,65 +925,62 @@ module Eson
       #for follow_set computation. Dependencies are divided into
       #:first_set_deps and :follow_set_deps. The tuples are divided
       #into stages to ensure that follow sets are computed in the
-      #correct order.
-      #Stage 1 contains rules with no dependencies
-      #Stage 2 contains rules with :first_set_deps only
-      #Stage 3 contains rules with :follow_set_deps from stage 1 and
-      #  stage 2 only
-      #Stage 4 and upwards contains rules with :follow_set_deps from
-      #  stages before it only
+      #correct order. Stage 1 contains rules with no dependencies.
+      #Stage 2 contains rules with :first_set_deps only. Stage 3 and
+      #upwards contains rules with :follow_set_deps from stages 
+      #before it only.
       #@return [Array] Array of array of tuples. Each tuple has a :term,
       #  and optional :first_set_deps and :follow_set_deps arrays
       def build_follow_dep_graph(rules)
         dep_graph = rules.map do |rule|
-          tuple = {:term => rule.name}
-          concat_rules = rules.select{|i| i.concatenation_rule?}
-                         .select{|i| i.term_names.include? rule.name}
-          tuple[:dependencies] = concat_rules
-          tuple
+          dependency_rules = rules.select{|i| i.nonterminal?&&!i.alternation_rule?}
+                             .select{|i| i.term_names.include? rule.name}
+          tuple = {:term => rule.name,
+                   :dependencies => dependency_rules,
+                   :first_set_deps => [],
+                   :follow_set_deps => []}
         end
         
         dep_graph = dep_graph.partition do |t|
           t[:dependencies].empty?
         end
 
-        #transform :dependencies to :first_set_deps and :follow_set_deps
+        #Replace :dependencies with :first_set_deps and :follow_set_deps
         #:first_set_deps are those rules which must have their first_set
         #added to the term's follow_set
         #:follow_set_deps are those rules which must have their follow_set
         #added to the term's follow_set
         dep_graph.last.each do |t|
-          t[:first_set_deps] = []
-          t[:follow_set_deps] = []
-          t[:dependencies].each do |rule|
-            concat_term_list = rule.term_names
+          t[:dependencies].each do |dep_rule|
+            concat_term_list = dep_rule.term_names
             last_position = concat_term_list.size - 1 
             term_position = concat_term_list.index(t[:term])
+            term_after = concat_term_list[term_position + 1]
             last_nullable_terms = concat_term_list.reverse.take_while do |i|
               rules.get_rule(i).nullable?
             end
             if last_nullable_terms.empty?
               #no nullable terms at end of sequence         
               if last_position == term_position
-                #add rule to follow set if term is last term
+                #add dep_rule to follow set if term is last term
                 #protect against left recursive references
-                unless rule.name == t[:term]
-                  t[:follow_set_deps].push(rule)
+                unless dep_rule.name == t[:term]
+                  t[:follow_set_deps].push(dep_rule)
                 end
               else
                 #get term after the term and add this first set   
-                term_after = concat_term_list[term_position + 1]
+                #term_after = concat_term_list[term_position + 1]
                 t[:first_set_deps].push(rules.get_rule(term_after))
               end
             else
               if last_nullable_terms.include? t[:term]
-                #add rule to follow set
+                #add dep_rule to follow set
                 #protect against left recursive references
-                unless rule.name == t[:term]
-                  t[:follow_set_deps].push(rule)
+                unless dep_rule.name == t[:term]
+                  t[:follow_set_deps].push(dep_rule)
                 end
               else
-                term_after = concat_term_list[term_position + 1]
+                #term_after = concat_term_list[term_position + 1]
                 t[:first_set_deps].push(rules.get_rule(term_after))
               end
             end

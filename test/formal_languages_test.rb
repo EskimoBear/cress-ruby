@@ -125,7 +125,6 @@ describe Eson::FormalLanguages do
       subject.method(:e5).must_equal subject.method(:syntax_pass_lang)
     end
     it "should contain new rules" do
-      @lang.values.each{|i| puts "#{i.name} - has follow_set #{i.follow_set}\n #{i}" }
       @lang.must_respond_to :value
       @lang.must_respond_to :element_more_once
       @lang.must_respond_to :element_more

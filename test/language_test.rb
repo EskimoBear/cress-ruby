@@ -197,7 +197,7 @@ describe Eson::Language::RuleSeq do
         @lang.o_rule_1.follow_set.must_include :eof
       end
       it ":rule_1 correct" do
-        @lang.rule_1.follow_set.must_be_empty
+        @lang.rule_1.follow_set.must_include :eof
       end
       it ":rule_2 correct" do
         @lang.rule_2.follow_set.must_include :rule_1

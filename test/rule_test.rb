@@ -172,7 +172,6 @@ describe Eson::Language::RuleSeq::Rule do
             @tree.closed?.must_equal true
           end
           it "has :terminal_rule child" do
-            pp @tree.get
             @tree.degree.must_equal 1
             @tree.has_child?(:terminal_rule).must_equal true
           end

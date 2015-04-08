@@ -6,7 +6,7 @@ describe Eson::FormalLanguages do
   
   subject {Eson::FormalLanguages}
   
-  describe "validate e0" do
+  describe "validate_e0" do
     before do
       @lang = subject.e0
     end
@@ -27,7 +27,7 @@ describe Eson::FormalLanguages do
     end
   end
   
-  describe "validate e1" do
+  describe "validate_e1" do
     before do
       @lang = subject.e1
     end
@@ -46,7 +46,7 @@ describe Eson::FormalLanguages do
   end
 
   
-  describe "validate e2" do
+  describe "validate_e2" do
     before do
       @lang = subject.e2
     end
@@ -69,7 +69,7 @@ describe Eson::FormalLanguages do
     end
   end
 
-  describe "validate e3" do
+  describe "validate_e3" do
     before do
       @lang = subject.e3
     end
@@ -92,7 +92,7 @@ describe Eson::FormalLanguages do
     end
   end
 
-  describe "validate e4" do
+  describe "validate_e4" do
     before do
       @lang = subject.e4
     end

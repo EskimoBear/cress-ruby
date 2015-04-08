@@ -347,13 +347,11 @@ module Eson
         #        otherwise
         #          E + et 
         def parse_any(tokens, rules, tree)
-          puts "parsing #{@name}"
           lookahead = tokens.first
           if matched_any_first_sets?(lookahead, rules)
             term = first_set_match(lookahead, rules)
             rule = rules.get_rule(term.rule_name)
             t = rule.parse(tokens, rules, tree)
-            puts "end parsing"
             return t
           end
           raise ParseError, parse_terminal_error_message(@name, lookahead, tokens)
@@ -940,51 +938,30 @@ module Eson
                    :first_set_deps => [],
                    :follow_set_deps => []}
         end
-        
         dep_graph = dep_graph.partition do |t|
           t[:dependencies].empty?
         end
 
         #Replace :dependencies with :first_set_deps and :follow_set_deps
         #:first_set_deps are those rules which must have their first_set
-        #added to the term's follow_set
-        #:follow_set_deps are those rules which must have their follow_set
-        #added to the term's follow_set
+        #added to the term's follow_set. :follow_set_deps are those rules
+        #which must have their follow_set added to the term's follow_set
         dep_graph.last.each do |t|
           t[:dependencies].each do |dep_rule|
-            concat_term_list = dep_rule.term_names
-            last_position = concat_term_list.size - 1 
-            term_position = concat_term_list.index(t[:term])
-            term_after = concat_term_list[term_position + 1]
-            last_nullable_terms = concat_term_list.reverse.take_while do |i|
+            term_list = dep_rule.term_names 
+            term_position = term_list.index(t[:term])
+            nullable_last = term_list.reverse.take_while do |i|
               rules.get_rule(i).nullable?
             end
-            if last_nullable_terms.empty?
-              #no nullable terms at end of sequence         
-              if last_position == term_position
-                #add dep_rule to follow set if term is last term
-                #protect against left recursive references
-                unless dep_rule.name == t[:term]
-                  t[:follow_set_deps].push(dep_rule)
-                end
-              else
-                #get term after the term and add this first set   
-                #term_after = concat_term_list[term_position + 1]
-                t[:first_set_deps].push(rules.get_rule(term_after))
+            term_is_last = term_position == term_list.size - 1 
+            if term_is_last || nullable_last.include?(t[:term])          
+              unless dep_rule.name == t[:term]
+                t[:follow_set_deps].push(dep_rule)
               end
             else
-              if last_nullable_terms.include? t[:term]
-                #add dep_rule to follow set
-                #protect against left recursive references
-                unless dep_rule.name == t[:term]
-                  t[:follow_set_deps].push(dep_rule)
-                end
-              else
-                #term_after = concat_term_list[term_position + 1]
-                t[:first_set_deps].push(rules.get_rule(term_after))
-              end
+              term_after = term_list[term_position + 1]
+              t[:first_set_deps].push(rules.get_rule(term_after))
             end
-            t.delete(:dependencies)
           end
         end
 
@@ -992,30 +969,27 @@ module Eson
           t[:follow_set_deps].empty?
         end
         dep_graph = dep_graph[0...-1].concat empty_and_filled_follow_set_stages
-
-        no_stage_deps_and_otherwise = split_fill_follow_set_deps(empty_and_filled_follow_set_stages.last)
-
-        puts "-----print first stage terms"
-        dep_graph.first.each{|i| pp "#{i[:term]} with #{i[:dependencies]}"}
-        puts "-----prints second stage"
-        dep_graph[1].each{|i| pp "#{i[:term]} with #{i[:first_set_deps].map{|i| i.name}}"}
-        puts "-----prints third stage"
-        no_stage_deps_and_otherwise.first.each{|i| pp "#{i[:term]} with first #{i[:first_set_deps].map{|i| i.name}} and follow #{i[:follow_set_deps].map{|i| i.name}}"}
-        puts "-----prints fourth stage"
-        no_stage_deps_and_otherwise.last.each{|i| pp "#{i[:term]}"}
-        puts "-----end"
         
+        no_stage_deps_and_otherwise = split_by_follow_set_dep_order(empty_and_filled_follow_set_stages.last)        
         dep_graph = dep_graph[0...-1].concat no_stage_deps_and_otherwise
       end
 
-      #@param stage [Array<tuple>] Each tuple has a :term,
-      #  :first_set_deps and :follow_set_deps arrays.
-      #@return [Array<stage1, stage2>] stage_2 has :follow_set_dependencies
-      #  that are in stage, stage_2 does not.
-      def split_fill_follow_set_deps(stage)
+      #Split a `stage` of tuples into an array of stages such that members
+      #of a stage contain follow_set_deps of terms which appear in
+      #previous stages. This ensures that the dependencies are ordered.
+      #@param stage [Array<tuple>]
+      #@return [Array<<Array<tuple>>]
+      def split_by_follow_set_dep_order(stage, acc=[])
         all_terms = stage.flat_map{|t| t[:term]}
-        stage.partition do |t|
+        final_stages = stage.partition do |t|
           t[:follow_set_deps].none?{|fs| all_terms.include?(fs.name)}
+        end
+        last_stage = final_stages.last
+        acc = acc[0...-1].concat final_stages
+        if last_stage.empty?
+          acc
+        else
+          split_by_follow_set_dep_order(last_stage, acc)
         end
       end
       
@@ -1050,9 +1024,6 @@ module Eson
       #Initialize tree with given Rule as root node.
       #@param language [Eson::Language::RuleSeq::Rule] Rule
       def initialize(obj=nil)
-        unless obj.nil?
-          puts "open #{obj.name}"
-        end
         insert_root(obj)
       rescue InsertionError => e
         raise InitializationError,
@@ -1170,12 +1141,6 @@ module Eson
       #open ancestor the active node.  
       #@return [Eson::Language::AbstractSyntaxTree]
       def close_active
-        children = if @active.leaf?
-                     "token."
-                   else
-                     "with #{@active.children.map{|i| i.value.name}}"
-                   end
-        puts "closing #{@active.value.name} #{children}"# - #{@active.children.map{|i| i.class}}"
         new_active = @active.parent
         @active.close
         unless new_active.nil?

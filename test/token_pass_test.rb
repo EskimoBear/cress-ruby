@@ -6,7 +6,7 @@ require_relative '../lib/eson.rb'
 describe Eson::TokenPass do
   subject {Eson::TokenPass}
 
-  describe "with full eson program" do
+  describe "with_full_eson_program" do
     before do
       @program = TestHelpers.get_tokenizer_sample_program
       @token_sequence, @input_sequence = subject.tokenize_program(@program)
@@ -27,7 +27,7 @@ describe Eson::TokenPass do
     end
   end
   
-  describe "empty eson program" do
+  describe "empty_eson_program" do
     before do
       @empty_program = TestHelpers.get_empty_program
       @token_sequence, @input_sequence = subject.tokenize_program(@empty_program)

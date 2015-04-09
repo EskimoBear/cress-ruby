@@ -7,10 +7,11 @@ module Eson::SyntaxPass
 
   ParseError = Class.new(StandardError)
 
+  #Produce AbstractSyntaxTree for eson program
   #@param token_seq [TokenSeq]  
   #@return [AbstractSyntaxTree]
   def build_tree(token_seq)
     rules = syntax_pass_lang.rule_seq
-    syntax_pass_lang.top_rule.parse(token_seq, rules)
+    syntax_pass_lang.top_rule.parse(token_seq, rules)[:tree]
   end
 end

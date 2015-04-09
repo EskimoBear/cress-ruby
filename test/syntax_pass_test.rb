@@ -11,8 +11,8 @@ describe Eson::SyntaxPass do
   subject {Eson::SyntaxPass}
 
   describe "valid_token_seq" do
-    it "succeeds" do
-      tree = get_ast[:tree]
+    it "creates_tree" do
+      tree = get_ast
       tree.must_be_instance_of Eson::Language::AbstractSyntaxTree
       tree.closed?.must_equal true
     end

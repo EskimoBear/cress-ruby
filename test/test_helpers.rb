@@ -1,4 +1,6 @@
+require 'pp'
 require_relative '../lib/eson'
+
 module TestHelpers
 
   extend self
@@ -24,15 +26,20 @@ module TestHelpers
   end
 
   def get_token_sequence
-    tokenizer_output = Eson::Tokenizer.tokenize_program(get_tokenizer_sample_program).first
+    Eson::TokenPass.tokenize_program(get_tokenizer_sample_program)
+      .first
       .add_line_numbers
-    Eson::ErrorPass.verify_special_forms(tokenizer_output)
+      .verify_special_forms
       .tokenize_variable_identifiers
       .tokenize_special_forms
       .tokenize_proc_identifiers
       .tokenize_word_forms
       .label_sub_strings
       .insert_string_delimiters
+  end
+
+  def get_ast
+    Eson::SyntaxPass.build_tree(get_token_sequence)
   end
   
   private

@@ -363,6 +363,13 @@ module Eson::TokenPass
       take_with_seq(*token_names) ? true : false
     end
 
+    #Returns a token sequence that begins at the head of self and
+    #ends with the token_names. Delegates to #take_with_seq_recur.
+    #@see take_with_seq_recur
+    #@param token_names [Array<Symbols>] sequence of token names to match
+    #@yield [t] matching token sequence
+    #@return [Eson::TokenPass::TokenSeq, nil] matching token sequence
+    #or nil
     def take_with_seq(*token_names)
       if block_given?
         yield take_with_seq_recur(token_names, self.clone)
@@ -371,13 +378,15 @@ module Eson::TokenPass
       end
     end
 
-    #Returns a token sequence that begins at head of sequence and
-    #  ends with the pattern sequence.
-    #@param token_names [Array<Symbols>] sequence of token names to match
-    #@return [Eson::Tokenizer::TokenSeq] sequence ending with token
-    #  names pattern.
-    #Currently exits on first partially failing pattern it matches
-    #Need to start another scan when first fails
+    #Scans a input_sequence recursively for a token sequence that
+    #begins at head and ends with the token names pat_seq.
+    #@param pat_seq [Array<Symbols>] sequence of token names to match
+    #@param input_sequence [Eson::TokenPass::TokenSeq] token sequence to
+    #analyze
+    #@param output_sequence [Eson::TokenPass::TokenSeq] scanned token
+    #sequence
+    #@return [Eson::TokenPass::TokenSeq, nil] matching token sequence
+    #or nil
     #@eskimobear.specification
     # T, input token sequence
     # et,tokens in T

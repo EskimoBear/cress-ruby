@@ -588,7 +588,11 @@ module Eson
         end
       end    
       # end of rule
-      
+
+      #Hook to ensure that RuleSeq can only be initialized
+      #with an array of Rules.
+      #@param obj [Array]
+      #@return [Eson::Language]
       def self.new(obj)
         array = super
         unless self.all_rules?(array)
@@ -675,7 +679,8 @@ module Eson
         end
       end
 
-      #@param rule [Eson::Language::RuleSeq::Rule] Given rule
+      #@param rule [Eson::Language::RuleSeq::Rule]
+      #@return [nil]
       def prepare_first_set(rule)
         unless rule.partial_status
           build_first_set(rule)
@@ -1021,8 +1026,11 @@ module Eson
 
       attr_reader :height
 
-      #Initialize tree with given Rule as root node.
-      #@param language [Eson::Language::RuleSeq::Rule] Rule
+      #Initialize tree with obj as root node. An empty
+      #tree is created if no parameter is given.
+      #@param obj [Eson::Language::RuleSeq::Rule] Rule
+      #@raise [InsertionError] obj is not a valid type
+      #for the root node
       def initialize(obj=nil)
         insert_root(obj)
       rescue InsertionError => e
@@ -1066,7 +1074,7 @@ module Eson
       #Insert an object into the active tree node. Tokens are
       #added as leaf nodes and Rules are added as the active tree
       #node.
-      #@param [Token, Rule] eson token or production rule
+      #@param obj [Token, Rule] eson token or production rule
       #@raise [InsertionError] If obj is neither a Token or Rule
       #@raise [ClosedTreeError] If the tree is closed
       def insert(obj)

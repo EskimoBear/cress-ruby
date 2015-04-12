@@ -14,8 +14,8 @@ describe Eson::Language::RuleSeq do
     it "item is a Rule" do
       proc {subject.new([rule.new(nil, nil)])}.must_be_silent
     end
-    it "items not a Rule" do
-      proc {subject.new([45])}.must_raise Eson::Language::RuleSeq::ItemError
+    it "item is not a Rule" do
+      proc {subject.new([45])}.must_raise Eson::Language::RuleSeq::WrongElementType
     end
   end
 
@@ -36,7 +36,7 @@ describe Eson::Language::RuleSeq do
     end
     it "is partial rule" do
       @rules.make_concatenation_rule(:rule_4, [:rule_2, :undefined])
-      proc {@rules.convert_to_terminal(:rule_4)}.must_raise Eson::Language::RuleSeq::ConversionError
+      proc {@rules.convert_to_terminal(:rule_4)}.must_raise Eson::Language::RuleSeq::CannotMakeTerminal
     end
   end
 
@@ -44,7 +44,7 @@ describe Eson::Language::RuleSeq do
     it "succeeds" do
       rules = rule_seq.remove_rules([:rule_1])
       rules.must_be_instance_of subject
-      proc {rules.get_rule(:rule_1)}.must_raise Eson::Language::RuleSeq::ItemError
+      proc {rules.get_rule(:rule_1)}.must_raise Eson::Language::RuleSeq::MissingRule
       rules.length.must_equal 1
     end
     it "fails" do

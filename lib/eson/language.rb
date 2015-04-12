@@ -8,32 +8,33 @@ module Eson
   module Language
     
     extend self
-
-    module LanguageOperations
-
-      def get_rule(rule_name)
-        rule_seq.get_rule(rule_name)
-      end
-      
-      def rule_seq
-        Eson::Language::RuleSeq.new self.values
-      end
-
-      def make_top_rule(rule_name)
-        self.class.send(:define_method, :top_rule){get_rule(rule_name)}
-        self
-      end
-
-      def to_s
-        rule_list = rule_seq.map{|i| i.to_s}
-        "#{self.class.to_s.gsub(/Struct::/, "")} has the following production rules:\n#{rule_list.join("\n")}"
-      end              
-    end
     
     class RuleSeq < Array
 
-      ItemError = Class.new(StandardError)
-      ConversionError = Class.new(StandardError)
+      WrongElementType = Class.new(StandardError)
+      MissingRule = Class.new(StandardError)
+      CannotMakeTerminal = Class.new(StandardError)
+
+      module LanguageOperations
+
+        def get_rule(rule_name)
+          rule_seq.get_rule(rule_name)
+        end
+        
+        def rule_seq
+          Eson::Language::RuleSeq.new self.values
+        end
+
+        def make_top_rule(rule_name)
+          self.class.send(:define_method, :top_rule){get_rule(rule_name)}
+          self
+        end
+
+        def to_s
+          rule_list = rule_seq.map{|i| i.to_s}
+          "#{self.class.to_s.gsub(/Struct::/, "")} has the following production rules:\n#{rule_list.join("\n")}"
+        end              
+      end
       
       #EBNF production rule representation for terminals and non-terminals
       class Rule
@@ -453,7 +454,7 @@ module Eson
       def self.new(obj)
         array = super
         unless self.all_rules?(array)
-          raise ItemError, self.new_item_error_message
+          raise WrongElementType, self.new_item_error_message
         end
         array
       end
@@ -468,9 +469,9 @@ module Eson
 
       def convert_to_terminal(rule_name)
         if partial_rule?(rule_name)
-          raise ConversionError, rule_conversion_error_message(rule_name)
+          raise CannotMakeTerminal, rule_conversion_error_message(rule_name)
         elsif !include_rule?(rule_name)
-          raise ItemError, missing_item_error_message(rule_name)
+          raise MissingRule, missing_rule_error_message(rule_name)
         end
         self.map! do |rule|
           new_rule = if rule_name == rule.name
@@ -483,7 +484,7 @@ module Eson
       end
 
       def rule_conversion_error_message(rule_name)
-        "The Rule #{rule_name} has partial status and thus has an undefined regular expression. This Rule cannot be converted to a terminal Rule."
+        "The Rule #{rule_name} has partial status thus it has an undefined regular expression. This Rule cannot be converted to a terminal Rule because it can't capture tokens."
       end
       
       def partial_rule?(rule_name)
@@ -653,12 +654,12 @@ module Eson
       
       def get_rule(rule_name)
         unless include_rule?(rule_name)
-          raise ItemError, missing_item_error_message(rule_name)
+          raise MissingRule, missing_rule_error_message(rule_name)
         end
         self.find{|i| i.name == rule_name}
       end
 
-      def missing_item_error_message(rule_name)
+      def missing_rule_error_message(rule_name)
         "The Eson::Language::Rule.name ':#{rule_name}' is not present in the sequence."
       end
       

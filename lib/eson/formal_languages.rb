@@ -202,10 +202,8 @@ module Eson
       Rule.new_terminal_rule(:key_string, all_chars_rxp)
     end
 
-    #eson formal language with tokens only
     #@return [E0] the initial compiler language used by Tokenizer
     #@eskimobear.specification
-    # Prop : E0 is a struct of eson production rules for the language 
     #
     # The following EBNF rules describe the eson grammar, E0:
     # variable_prefix := "$";

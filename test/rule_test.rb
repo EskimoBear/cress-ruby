@@ -83,7 +83,7 @@ describe Eson::Language::RuleSeq::Rule do
       end
       it "with invalid token" do
         proc {@rule.parse(@invalid_token_seq, rule_seq)}
-          .must_raise Eson::Language::RuleSeq::Rule::ParseError
+          .must_raise Eson::Language::RuleSeq::Rule::InvalidSequenceParsed
       end
     end
     describe "alternation_rule" do
@@ -138,7 +138,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Language::RuleSeq::Rule::InvalidSequenceParsed
         end
       end
       describe "with_nonterminals" do
@@ -273,7 +273,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid token" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Language::RuleSeq::Rule::InvalidSequenceParsed
         end
       end
       describe "with_nonterminals" do
@@ -347,7 +347,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Language::RuleSeq::Rule::InvalidSequenceParsed
         end
       end
     end
@@ -412,7 +412,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid terminal" do
           proc{@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Language::RuleSeq::Rule::InvalidSequenceParsed
         end
       end
       describe "with_nonterminals" do
@@ -547,7 +547,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid tokens" do
           proc{@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Language::RuleSeq::Rule::InvalidSequenceParsed
         end
       end
     end
@@ -684,7 +684,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Language::RuleSeq::Rule::InvalidSequenceParsed
         end
       end
     end

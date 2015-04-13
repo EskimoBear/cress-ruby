@@ -42,9 +42,9 @@ module Eson
         include EBNF
         include LexemeCapture
 
-        ParseError = Class.new(StandardError)
-        UnmatchedFirstSetError = Class.new(StandardError)
-        JointFirstSetError = Class.new(StandardError)
+        InvalidSequenceParsed = Class.new(StandardError)
+        NoMatchingFirstSet = Class.new(StandardError)
+        FirstSetNotDisjoint = Class.new(StandardError)
 
         attr_accessor :name, :first_set, :partial_status, :ebnf, :follow_set
 
@@ -79,7 +79,7 @@ module Eson
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
-        #@raise [ParseError] if no legal sub-sequence can be found
+        #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
         #@eskimobear.specification
         # T, input token sequence
         # S, sub-sequence matching rule
@@ -147,7 +147,7 @@ module Eson
         #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
-        #@raise [ParseError] if no legal sub-sequence can be found
+        #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
         def parse_terminal(tokens, tree)         
           lookahead = tokens.first
           if @name == lookahead.name
@@ -159,7 +159,7 @@ module Eson
                    end
             build_parse_result([lookahead], tokens.drop(1), tree)
           else
-            raise ParseError, parse_terminal_error_message(@name, lookahead, tokens)
+            raise InvalidSequenceParsed, parse_terminal_error_message(@name, lookahead, tokens)
           end
         end
 
@@ -182,7 +182,7 @@ module Eson
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
-        #@raise [ParseError] if no legal sub-sequence can be found
+        #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
         #@eskimobear.specification
         # T, input token sequence
         # et, token at the head of T
@@ -212,7 +212,7 @@ module Eson
             t = rule.parse(tokens, rules, tree)
             return t
           end
-          raise ParseError, parse_terminal_error_message(@name, lookahead, tokens)
+          raise InvalidSequenceParsed, parse_terminal_error_message(@name, lookahead, tokens)
         end
 
         #@param token [Eson::Language::LexemeCapture::Token] token
@@ -235,18 +235,18 @@ module Eson
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Terminal, NonTerminal] term that has a first_set
         #  which includes the given token. Works with alternation rules only.
-        #@raise [JointFirstSetError] if more than one term found
-        #@raise [UnmatchedFirstSetError] if no terms found
+        #@raise [FirstSetNotDisjoint] if more than one term found
+        #@raise [NoMatchingFirstSet] if no terms found
         def first_set_match(token, rules)
           terms = get_matching_first_sets(token, rules)
           case terms.length
           when 1
             terms.first
           when 0
-            raise UnmatchedFirstSetError,
+            raise NoMatchingFirstSet,
                   "None of the first_sets of #{@name} contain #{token.name}"
           else
-            raise JointFirstSetError,
+            raise FirstSetNotDisjoint,
                   "The first_sets of #{@name} are not disjoint."
           end
         end
@@ -257,7 +257,7 @@ module Eson
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
-        #@raise [ParseError] if no legal sub-sequence can be found
+        #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
         #@eskimobear.specification
         # T, input token sequence
         # et, token at the head of T
@@ -301,7 +301,7 @@ module Eson
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
-        #@raise [ParseError] if no legal sub-sequence can be found
+        #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
         #@eskimobear.specification
         # T, input token sequence
         # et, token at the head of T
@@ -333,7 +333,7 @@ module Eson
             acc = term_rule.parse(tokens, rules)
             acc.store(:tree, tree.merge(acc[:tree]))
             acc
-          rescue ParseError => pe
+          rescue InvalidSequenceParsed => pe
             parse_none(tokens, pe, tree)
           end
         end
@@ -353,7 +353,7 @@ module Eson
         #@param rules [Eson::Language::RuleSeq] list of possible rules
         #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
         #  tokens as :parsed_seq and the rest of the Token sequence as :rest
-        #@raise [ParseError] if no legal sub-sequence can be found
+        #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
         #@eskimobear.specification
         # T, input token sequence
         # et, token at the head of T
@@ -390,7 +390,7 @@ module Eson
                   new
                 end
               end
-            rescue ParseError => pe
+            rescue InvalidSequenceParsed => pe
               acc
             end
           end

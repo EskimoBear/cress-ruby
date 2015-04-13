@@ -1,4 +1,4 @@
-require_relative 'language.rb'
+require_relative 'language/language.rb'
 
 module Eson
   module FormalLanguages

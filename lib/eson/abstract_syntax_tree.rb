@@ -194,8 +194,8 @@ module Eson
         end
 
         def closed_tree_error_message
-                    "The method `#{caller_locations(3).first.label}' is not allowed on a \
-closed tree."
+          "The method `#{caller_locations(3).first.label}' is not allowed on a
+           closed tree."
         end
 
         #@param name [Symbol] name of child node
@@ -203,7 +203,8 @@ closed tree."
           children.detect{|i| i.value.name == name} ? true : false
         end
 
-        #@param names [Array<Symbol>] ordered list of the names of child nodes
+        #@param names [Array<Symbol>] ordered list of the
+        #names of child nodes
         def has_children?(names)
           names == children.map{|i| i.value.name}
         end
@@ -227,7 +228,7 @@ closed tree."
 
       class TreeSeq < Array
 
-        Tree = Eson::Language::AbstractSyntaxTree::Tree
+        #Tree = Eson::Language::AbstractSyntaxTree::Tree
 
         pushvalidate = Module.new do
           def push(obj)

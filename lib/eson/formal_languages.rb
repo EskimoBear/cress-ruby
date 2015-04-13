@@ -6,7 +6,7 @@ module Eson
     extend self
 
     RuleSeq =  Eson::Language::RuleSeq
-    Rule = Eson::Language::RuleSeq::Rule
+    Rule = Eson::Language::Rule
 
     # null := "nil";
     def null_rule

@@ -44,7 +44,6 @@ describe Eson::FormalLanguages do
       @lang.values.none?{|x| x.partial_status}.must_equal true
     end
   end
-
   
   describe "validate_e2" do
     before do
@@ -148,7 +147,7 @@ describe Eson::FormalLanguages do
   end 
 end
 
-describe Eson::Language::RuleSeq::Rule do
+describe Eson::Language::Rule do
     
   describe "#to_s" do
     it "is a terminal rule" do
@@ -207,4 +206,3 @@ describe Eson::Language::RuleSeq::Rule do
     end
   end
 end
-

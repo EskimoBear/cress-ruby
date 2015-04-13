@@ -6,7 +6,7 @@ require_relative '../lib/eson/token_pass'
 describe Eson::Language::RuleSeq do
 
   subject {Eson::Language::RuleSeq}
-  let(:rule) {Eson::Language::RuleSeq::Rule}
+  let(:rule) {Eson::Language::Rule}
   let(:rule_seq) {subject.new([rule.new(:rule_1, /RU/),
                                rule.new(:rule_2, /LE/)])}
   
@@ -73,7 +73,7 @@ describe Eson::Language::RuleSeq do
 
   describe "#make_terminal_rule" do
     it "has correct properties" do
-      @rule = subject::Rule.new_terminal_rule(:rule, /k/)
+      @rule = rule.new_terminal_rule(:rule, /k/)
       @rule.must_be_instance_of rule
       @rule.terminal?.must_equal true
       @rule.ebnf.must_be_nil true

@@ -1,13 +1,13 @@
 require 'minitest'
 require 'minitest/autorun'
 require 'minitest/pride'
-require_relative '../lib/eson/formal_languages'
+require_relative '../lib/eson/eson_grammars'
 
 describe Eson::Language::AbstractSyntaxTree do
 
   before do
-    @terminal_rule = Eson::FormalLanguages::e5.variable_identifier
-    @nonterminal_rule = Eson::FormalLanguages::e5.string
+    @terminal_rule = Eson::EsonGrammars::e5.variable_identifier
+    @nonterminal_rule = Eson::EsonGrammars::e5.string
     @token = @terminal_rule.make_token(:var)
   end
 
@@ -133,7 +133,7 @@ describe Eson::Language::AbstractSyntaxTree do
   describe "#close_active" do
     before do
       @tree = subject.new @nonterminal_rule
-      @tree.insert(Eson::FormalLanguages::e5.variable_identifier)
+      @tree.insert(Eson::EsonGrammars::e5.variable_identifier)
       @tree.insert(@token)
     end
     it "active node is closed" do

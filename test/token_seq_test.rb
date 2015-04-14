@@ -40,8 +40,8 @@ end
 describe Eson::TokenPass::TokenSeq do
 
   before do
-    @alternation_rule = Eson::FormalLanguages.e1.word_form
-    @concatenation_rule = Eson::FormalLanguages.e0.variable_identifier
+    @alternation_rule = Eson::EsonGrammars.e1.word_form
+    @concatenation_rule = Eson::EsonGrammars.e0.variable_identifier
     @token_seq = Eson::TokenPass::TokenSeq.new(4) {Eson::Language::LexemeCapture::Token.new}
   end
   

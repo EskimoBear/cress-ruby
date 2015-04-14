@@ -1,8 +1,8 @@
-require_relative './formal_languages.rb'
+require_relative './eson_grammars.rb'
 
 module Eson::SyntaxPass
 
-  extend Eson::FormalLanguages
+  extend Eson::EsonGrammars
   extend self
 
   ParseError = Class.new(StandardError)

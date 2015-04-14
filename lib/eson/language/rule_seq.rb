@@ -6,7 +6,7 @@ module Eson
       MissingRule = Class.new(StandardError)
       CannotMakeTerminal = Class.new(StandardError)
 
-      module LanguageOperations
+      module GrammarOperations
 
         def get_rule(rule_name)
           rule_seq.get_rule(rule_name)
@@ -23,8 +23,7 @@ module Eson
 
         def to_s
           rule_list = rule_seq.map{|i| i.to_s}
-                    "#{self.class.to_s.gsub(/Struct::/, "")} has the following production\
- rules:\n#{rule_list.join("\n")}"
+          "#{self.class.to_s.gsub(/Struct::/, "")} has the following produc          tion rules:\n#{rule_list.join("\n")}"
         end
       end
 
@@ -257,18 +256,18 @@ quence."
         end
       end
 
-      def build_language(lang_name, top_rule_name=nil)
+      def build_grammar(grammar_name, top_rule_name=nil)
         rules = self.clone
-        result_lang = Struct.new lang_name, *rules.names do
-          include LanguageOperations
+        grammar_struct = Struct.new grammar_name, *rules.names do
+          include GrammarOperations
         end
         complete_partial_first_sets(rules)
         compute_follow_sets(rules, top_rule_name)
-        lang = result_lang.new *rules
+        grammar = grammar_struct.new *rules
         if top_rule_name.nil?
-          lang
+          grammar
         else
-          lang.make_top_rule(top_rule_name)
+          grammar.make_top_rule(top_rule_name)
         end
       end
 

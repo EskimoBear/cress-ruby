@@ -52,22 +52,22 @@ describe Eson::Language::RuleSeq do
     end
   end
 
-  describe "#build_language" do
+  describe "#build_grammar" do
     before do
       @rules = rule_seq.
                make_concatenation_rule(:rule_3, [:rule_1, :rule_2])
     end
     it "has correct properties" do
-      @rules.build_language("LANG").must_be_instance_of Struct::LANG
+      @rules.build_grammar("LANG").must_be_instance_of Struct::LANG
     end
     it "has no partial first sets" do
-      @rules.build_language("LANG").rule_3.partial_status.must_equal false
+      @rules.build_grammar("LANG").rule_3.partial_status.must_equal false
     end
   end
 
   describe "to_s" do
     it "success" do
-      rule_seq.build_language("LANG").to_s.must_match /has the following production rules/
+      rule_seq.build_grammar("LANG").to_s.must_match /has the following/
     end
   end
 
@@ -155,13 +155,13 @@ describe Eson::Language::RuleSeq do
         @rule = @rules.get_rule(:rule)
       end
       it "has correct first set" do
-        lang = @rules.build_language("LANG")
+        lang = @rules.build_grammar("LANG")
         rule = lang.rule
         rule.first_set.must_include :rule_1
         rule.first_set.must_include :rule_2
       end
       it "no duplicates in first set" do
-        lang = @rules.build_language("LANG")
+        lang = @rules.build_grammar("LANG")
         lang.rule.first_set.uniq!.must_be_nil
       end
     end
@@ -176,7 +176,7 @@ describe Eson::Language::RuleSeq do
         @rule.nullable?.must_equal true
       end
       it "has correct first set" do
-        lang = @rules.build_language("LANG")
+        lang = @rules.build_grammar("LANG")
         rule = lang.rule
         rule.first_set.must_include :rule_1
         rule.first_set.must_include :rule_2
@@ -187,7 +187,7 @@ describe Eson::Language::RuleSeq do
       before do
         @rules = rule_seq.make_option_rule(:o_rule_1, :rule_1)
                  .make_concatenation_rule(:rule, [:rule_2, :o_rule_1])
-        @lang = @rules.build_language("LANG", :rule)
+        @lang = @rules.build_grammar("LANG", :rule)
       end
       it ":top_rule correct" do
         @lang.top_rule.follow_set.must_include :eof

@@ -32,7 +32,7 @@ module Eson::TokenPass
 
     ItemError = Class.new(StandardError)
     
-    Token = Eson::Language::LexemeCapture::Token
+    Token = Eson::LexemeCapture::Token
 
     def self.new(obj=nil)
       if obj.nil?
@@ -51,7 +51,7 @@ module Eson::TokenPass
     end
 
     def self.new_item_error_message
-      "One or more of the given array elements are not of the type #{Eson::Language::LexemeCapture::Token}"
+      "One or more of the given array elements are not of the type #{Eson::LexemeCapture::Token}"
     end
 
     def get_program_line(line_no)
@@ -152,7 +152,7 @@ module Eson::TokenPass
     #Given an alternation rule add rule.name to each referenced
     #  token's alternation_names array.
     #
-    #@param rule [Eson::Language::RuleSeq::Rule] alternation rule
+    #@param rule [Eson::RuleSeq::Rule] alternation rule
     def assign_alternation_names(rule)
       token_names = rule.term_names
       new_token_name = rule.name
@@ -197,7 +197,7 @@ module Eson::TokenPass
     #Replace tokens of :choice names with token of rule name and
     #  equivalent lexeme. Reduce all repetitions to a single token. 
     #  
-    #@param rule [Eson::Language::RuleSeq::Rule] An alternation rule 
+    #@param rule [Eson::RuleSeq::Rule] An alternation rule 
     #@eskimobear.specification
     # Original token sequence, T
     # Output token sequence, O
@@ -296,7 +296,7 @@ module Eson::TokenPass
     #Replace inner token sequence of :none names with token of rule
     #  name and equivalent lexeme.
     #
-    #@param rule [Eson::Language::RuleSeq::Rule] A concatenation rule
+    #@param rule [Eson::RuleSeq::Rule] A concatenation rule
     #@eskimobear.specification
     # Original token sequence, T
     # Output token sequence, O

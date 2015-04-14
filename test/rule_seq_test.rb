@@ -1,12 +1,12 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
-require_relative '../lib/eson/language/rule_seq'
+require_relative '../lib/eson/rule_seq'
 
-describe Eson::Language::RuleSeq do
+describe Eson::RuleSeq do
 
-  subject {Eson::Language::RuleSeq}
-  let(:rule) {Eson::Language::Rule}
+  subject {Eson::RuleSeq}
+  let(:rule) {Eson::Rule}
   let(:rule_seq) {subject.new([rule.new(:rule_1, /RU/),
                                rule.new(:rule_2, /LE/)])}
   
@@ -15,7 +15,7 @@ describe Eson::Language::RuleSeq do
       proc {subject.new([rule.new(nil, nil)])}.must_be_silent
     end
     it "item is not a Rule" do
-      proc {subject.new([45])}.must_raise Eson::Language::RuleSeq::WrongElementType
+      proc {subject.new([45])}.must_raise Eson::RuleSeq::WrongElementType
     end
   end
 
@@ -36,7 +36,7 @@ describe Eson::Language::RuleSeq do
     end
     it "is partial rule" do
       @rules.make_concatenation_rule(:rule_4, [:rule_2, :undefined])
-      proc {@rules.convert_to_terminal(:rule_4)}.must_raise Eson::Language::RuleSeq::CannotMakeTerminal
+      proc {@rules.convert_to_terminal(:rule_4)}.must_raise Eson::RuleSeq::CannotMakeTerminal
     end
   end
 
@@ -44,7 +44,7 @@ describe Eson::Language::RuleSeq do
     it "succeeds" do
       rules = rule_seq.remove_rules([:rule_1])
       rules.must_be_instance_of subject
-      proc {rules.get_rule(:rule_1)}.must_raise Eson::Language::RuleSeq::MissingRule
+      proc {rules.get_rule(:rule_1)}.must_raise Eson::RuleSeq::MissingRule
       rules.length.must_equal 1
     end
     it "fails" do
@@ -87,7 +87,7 @@ describe Eson::Language::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
-      @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::AlternationRule
+      @new_rule.ebnf.must_be_instance_of Eson::EBNF::AlternationRule
       @new_rule.nullable?.must_equal false
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :rule_2
@@ -125,7 +125,7 @@ describe Eson::Language::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
-      @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::ConcatenationRule
+      @new_rule.ebnf.must_be_instance_of Eson::EBNF::ConcatenationRule
       @new_rule.nullable?.must_equal false
       @new_rule.first_set.must_include :rule_1
       @new_rule.partial_status.must_equal false
@@ -213,7 +213,7 @@ describe Eson::Language::RuleSeq do
       @rules = rule_seq.make_repetition_rule(:new_rule, :rule_1)
       @new_rule = @rules.get_rule(:new_rule)     
       @rules.must_be_instance_of subject
-      @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::RepetitionRule
+      @new_rule.ebnf.must_be_instance_of Eson::EBNF::RepetitionRule
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
       @new_rule.nullable?.must_equal true
@@ -244,7 +244,7 @@ describe Eson::Language::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
-      @new_rule.ebnf.must_be_instance_of Eson::Language::EBNF::OptionRule
+      @new_rule.ebnf.must_be_instance_of Eson::EBNF::OptionRule
       @new_rule.nullable?.must_equal true
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :nullable

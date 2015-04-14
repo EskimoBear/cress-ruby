@@ -6,13 +6,13 @@ require_relative './test_helpers.rb'
 class TestTokenSeq < MiniTest::Test
 
   def setup
-    @token_seq = Eson::TokenPass::TokenSeq.new(5) {Eson::Language::LexemeCapture::Token.new}
+    @token_seq = Eson::TokenPass::TokenSeq.new(5) {Eson::LexemeCapture::Token.new}
   end
 
   def test_take_with_seq_should_succeed
     @token_seq[3].name = "target_1"
     @token_seq.last.name = "target_2"
-    @token_seq.push(Eson::Language::LexemeCapture::Token["lexeme", "name"])
+    @token_seq.push(Eson::LexemeCapture::Token["lexeme", "name"])
     expected_seq =  @token_seq.take(@token_seq.length - 1)
     assert_equal expected_seq, @token_seq.take_with_seq("target_1", "target_2")
   end
@@ -25,7 +25,7 @@ class TestTokenSeq < MiniTest::Test
     @token_seq[1].name = "target_2"
     @token_seq[3].name = "target_1"
     @token_seq.last.name = "target_2"
-    @token_seq.push(Eson::Language::LexemeCapture::Token["lexeme", "target_2"])
+    @token_seq.push(Eson::LexemeCapture::Token["lexeme", "target_2"])
     assert @token_seq.seq_match?("target_1", "target_2")
   end
 
@@ -42,7 +42,7 @@ describe Eson::TokenPass::TokenSeq do
   before do
     @alternation_rule = Eson::EsonGrammars.e1.word_form
     @concatenation_rule = Eson::EsonGrammars.e0.variable_identifier
-    @token_seq = Eson::TokenPass::TokenSeq.new(4) {Eson::Language::LexemeCapture::Token.new}
+    @token_seq = Eson::TokenPass::TokenSeq.new(4) {Eson::LexemeCapture::Token.new}
   end
   
   describe "#tokenize_rule" do

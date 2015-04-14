@@ -1,12 +1,12 @@
-require_relative 'language/language.rb'
+require_relative 'rule_seq.rb'
 
 module Eson
   module EsonGrammars
 
     extend self
 
-    RuleSeq =  Eson::Language::RuleSeq
-    Rule = Eson::Language::Rule
+    RuleSeq =  Eson::RuleSeq
+    Rule = Eson::Rule
 
     # null := "nil";
     def null_rule

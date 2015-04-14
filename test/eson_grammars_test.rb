@@ -147,7 +147,7 @@ describe Eson::EsonGrammars do
   end 
 end
 
-describe Eson::Language::Rule do
+describe Eson::Rule do
     
   describe "#to_s" do
     it "is a terminal rule" do

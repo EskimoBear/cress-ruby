@@ -1,3 +1,5 @@
+require_relative './rule'
+
 module Eson
   module Language
     class RuleSeq < Array

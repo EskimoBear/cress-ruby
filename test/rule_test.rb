@@ -7,7 +7,7 @@ require_relative '../lib/eson/token_pass'
 describe Eson::Language::Rule do
 
   subject {Eson::Language::Rule}
-  let(:ast) {Eson::Language::AbstractSyntaxTree}
+  let(:ast) {Eson::Language::Rule::AbstractSyntaxTree}
   let(:token) {Eson::Language::LexemeCapture::Token}
   let(:token_seq) {Eson::TokenPass::TokenSeq}
   let(:rule_seq) {Eson::Language::RuleSeq.new([subject.new(:rule_1, /RU/),

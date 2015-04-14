@@ -1,5 +1,6 @@
 require_relative './lexeme_capture.rb'
 require_relative './ebnf.rb'
+require_relative './abstract_syntax_tree.rb'
 
 module Eson
   module Language

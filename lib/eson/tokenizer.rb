@@ -113,42 +113,45 @@ module Eson::TokenPass
       end
       seq.push(JsonSymbol.new(:"]", :array_end))                     
     end
-    
-    def symbol_length(json_symbol)
-      json_symbol.lexeme.size
-    end
 
     def json_symbols_to_tokens(json_symbol_seq, char_seq)
       json_symbol_seq.each_with_object(Eson::TokenPass::TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start
-          update_seqs(LANG.program_start.make_token(symbol.lexeme),
-                      seq,
-                      char_seq)
+          update_json_and_char_seqs(
+            LANG.program_start.make_token(symbol.lexeme),
+            seq,
+            char_seq)
         when :object_end
-          update_seqs(LANG.program_end.make_token(symbol.lexeme),
-                      seq,
-                      char_seq)
+          update_json_and_char_seqs(
+            LANG.program_end.make_token(symbol.lexeme),
+            seq,
+            char_seq)
         when :array_start
-          update_seqs(LANG.array_start.make_token(symbol.lexeme),
-                      seq,
-                      char_seq)
+          update_json_and_char_seqs(
+            LANG.array_start.make_token(symbol.lexeme),
+            seq,
+            char_seq)
         when :array_end
-          update_seqs(LANG.array_end.make_token(symbol.lexeme),
-                      seq,
-                      char_seq)
+          update_json_and_char_seqs(
+            LANG.array_end.make_token(symbol.lexeme),
+            seq,
+            char_seq)
         when :colon
-          update_seqs(LANG.colon.make_token(symbol.lexeme),
-                      seq,
-                      char_seq)
+          update_json_and_char_seqs(
+            LANG.colon.make_token(symbol.lexeme),
+            seq,
+            char_seq)
         when :array_comma
-          update_seqs(LANG.comma.make_token(symbol.lexeme),
-                      seq,
-                      char_seq)
+          update_json_and_char_seqs(
+            LANG.comma.make_token(symbol.lexeme),
+            seq,
+            char_seq)
         when :member_comma
-          update_seqs(LANG.end_of_line.make_token(symbol.lexeme),
-                      seq,
-                      char_seq)
+          update_json_and_char_seqs(
+            LANG.end_of_line.make_token(symbol.lexeme),
+            seq,
+            char_seq)
         when :JSON_key
           tokenize_json_key(symbol.lexeme, seq, char_seq)
         when :JSON_value
@@ -157,25 +160,23 @@ module Eson::TokenPass
       end
     end
 
-    def update_seqs(token, token_seq, char_seq)
+    def update_json_and_char_seqs(token, token_seq, char_seq)
       token_seq.push(token)
-      pop_chars_string(char_seq, token.lexeme)
-    end
-    
-    def pop_chars_string(char_seq, matched_string)
-      char_seq.slice!(0, matched_string.size)
+      char_seq.slice!(0, token.lexeme.size)
     end
 
     def tokenize_json_key(json_key, seq, char_seq)
       if begins_with_proc_prefix?(json_key)
-        update_seqs(LANG.proc_prefix.match_token(json_key),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.proc_prefix.match_token(json_key),
+          seq,
+          char_seq)
         tokenize_special_form(get_prefixed_string(json_key), seq, char_seq)
       else
-        update_seqs(LANG.key_string.make_token(json_key),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.key_string.make_token(json_key),
+          seq,
+          char_seq)
       end
     end
 
@@ -190,41 +191,49 @@ module Eson::TokenPass
     def tokenize_special_form(json_string, seq, char_seq)
       case json_string
       when LANG.doc.rxp
-        update_seqs(LANG.doc.match_token(json_string),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.doc.match_token(json_string),
+          seq,
+          char_seq)
       when LANG.let.rxp
-        update_seqs(LANG.let.match_token(json_string),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.let.match_token(json_string),
+          seq,
+          char_seq)
       when LANG.ref.rxp
-        update_seqs(LANG.ref.match_token(json_string),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.ref.match_token(json_string),
+          seq,
+          char_seq)
       else
-        update_seqs(LANG.unknown_special_form.make_token(json_string),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.unknown_special_form.make_token(json_string),
+          seq,
+          char_seq)
       end      
     end
 
     def tokenize_json_value(json_value, seq, char_seq)
       if json_value.is_a? TrueClass
-        update_seqs(LANG.true.make_token(json_value.to_s),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.true.make_token(json_value.to_s),
+          seq,
+          char_seq)
       elsif json_value.is_a? FalseClass
-        update_seqs(LANG.false.make_token(json_value.to_s),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.false.make_token(json_value.to_s),
+          seq,
+          char_seq)
       elsif json_value.is_a? Numeric
-        update_seqs(LANG.number.make_token(json_value.to_s),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.number.make_token(json_value.to_s),
+          seq,
+          char_seq)
       elsif json_value.nil?
-        update_seqs(LANG.null.make_token(:null),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.null.make_token(:null),
+          seq,
+          char_seq)
       elsif json_value.is_a? String
         tokenize_json_string(json_value.freeze, seq, char_seq)
       end
@@ -233,29 +242,34 @@ module Eson::TokenPass
     def tokenize_json_string(json_string, seq, char_seq)
       case json_string
       when LANG.whitespace.rxp
-        update_seqs(LANG.whitespace.match_token(json_string),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.whitespace.match_token(json_string),
+          seq,
+          char_seq)
         tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
       when LANG.variable_prefix.rxp
-        update_seqs(LANG.variable_prefix.match_token(json_string),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.variable_prefix.match_token(json_string),
+          seq,
+          char_seq)
         tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
       when LANG.other_chars.rxp
-        update_seqs(LANG.other_chars.match_token(json_string),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.other_chars.match_token(json_string),
+          seq,
+          char_seq)
         tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
       when LANG.word.rxp
-        update_seqs(LANG.word.match_token(json_string),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.word.match_token(json_string),
+          seq,
+          char_seq)
         tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
       when LANG.empty_word.rxp
-        update_seqs(LANG.empty_word.match_token(json_string),
-                    seq,
-                    char_seq)
+        update_json_and_char_seqs(
+          LANG.empty_word.match_token(json_string),
+          seq,
+          char_seq)
       end
     end
     

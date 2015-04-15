@@ -1,36 +1,18 @@
 require_relative 'eson_grammars'
 require_relative 'tokenizer'
+require_relative 'error_pass'
 
 module Eson::TokenPass
 
   extend Tokenizer
 
   LANG = Eson::EsonGrammars.tokenizer_lang
-
-  module ErrorPasses
-
-    SpecialFormError = Class.new(StandardError)
-    
-    #Throw SpecialFormError when unknown_special_forms Token is present
-    def verify_special_forms
-      error_token = self.find {|i| i.name == LANG.unknown_special_form.name}
-      raise SpecialFormError,
-            build_exception_message(error_token) unless error_token.nil?
-      return self
-    end
-
-    private
-
-    def build_exception_message(token)
-      "'#{token.lexeme}' is not a known special form in line #{token.line_number}:\n #{token.line_number}. #{self.get_program_line(token.line_number)}" 
-    end
-  end
   
   class TokenSeq < Array
 
-    include ErrorPasses
-
-    ItemError = Class.new(StandardError)
+    include Eson::ErrorPass
+    
+    WrongElementType = Class.new(StandardError)
     
     Token = Eson::LexemeCapture::Token
 
@@ -40,7 +22,7 @@ module Eson::TokenPass
       else
         array = super
         unless self.all_tokens?(array)
-          raise ItemError, self.new_item_error_message
+          raise WrongElementType, self.new_item_error_message
         end
         array
       end

@@ -29,7 +29,7 @@ describe Eson do
   describe "program_with_unknown_special_forms" do
     it ".compile" do
       proc {Eson.compile(@unknown_special_form_program)}
-        .must_raise Eson::TokenPass::TokenSeq::SpecialFormError
+        .must_raise Eson::TokenPass::TokenSeq::UnknownSpecialForm
     end
   end
 

@@ -38,7 +38,6 @@ class TestTokenSeq < MiniTest::Test
 end
 
 describe Eson::TokenPass::TokenSeq do
-
   before do
     @alternation_rule = Eson::EsonGrammars.e1.word_form
     @concatenation_rule = Eson::EsonGrammars.e0.variable_identifier

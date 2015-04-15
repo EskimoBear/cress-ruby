@@ -36,12 +36,11 @@ module Eson::TokenPass
       program_char_seq = get_program_char_sequence(program_json_hash)
       json_symbol_seq = get_json_symbol_sequence(program_json_hash)
       token_seq = json_symbols_to_tokens(json_symbol_seq, program_char_seq)
-      if program_char_seq.empty?
-        return token_seq
-      else
+      unless program_char_seq.empty?
         raise TokenizationIncomplete,
               tokenization_incomplete_error_message
       end
+      token_seq
     end
 
     private

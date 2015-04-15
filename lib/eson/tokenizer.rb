@@ -6,7 +6,7 @@ module Eson::TokenPass
   
   module Tokenizer
     
-    LANG = Eson::FormalLanguages.tokenizer_lang
+    LANG = Eson::EsonGrammars.tokenizer_lang
     
     JsonSymbol = Struct.new :lexeme, :name
     

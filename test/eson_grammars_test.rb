@@ -1,10 +1,10 @@
 require 'minitest/autorun'
 require 'minitest/pride'
-require_relative '../lib/eson/formal_languages.rb'
+require_relative '../lib/eson/eson_grammars.rb'
 
-describe Eson::FormalLanguages do
+describe Eson::EsonGrammars do
   
-  subject {Eson::FormalLanguages}
+  subject {Eson::EsonGrammars}
   
   describe "validate_e0" do
     before do
@@ -44,7 +44,6 @@ describe Eson::FormalLanguages do
       @lang.values.none?{|x| x.partial_status}.must_equal true
     end
   end
-
   
   describe "validate_e2" do
     before do
@@ -148,36 +147,36 @@ describe Eson::FormalLanguages do
   end 
 end
 
-describe Eson::Language::RuleSeq::Rule do
+describe Eson::Rule do
     
   describe "#to_s" do
     it "is a terminal rule" do
-      Eson::FormalLanguages::e0.comma.to_s.must_match /( := )/ 
+      Eson::EsonGrammars::e0.comma.to_s.must_match /( := )/ 
     end
     it "is a concatenation rule" do
-      Eson::FormalLanguages::e0.variable_identifier.to_s.must_match /( := )/
+      Eson::EsonGrammars::e0.variable_identifier.to_s.must_match /( := )/
     end
     it "is a alternation rule" do
-      Eson::FormalLanguages::e0.special_form.to_s.must_match /( := )/
+      Eson::EsonGrammars::e0.special_form.to_s.must_match /( := )/
     end
     it "is a repetition rule" do
-      Eson::FormalLanguages::e4.sub_string_list.to_s.must_match /( := )/
+      Eson::EsonGrammars::e4.sub_string_list.to_s.must_match /( := )/
     end
     it "is an option rule" do
-      Eson::FormalLanguages::e5.element_set.to_s.must_match /( := )/
+      Eson::EsonGrammars::e5.element_set.to_s.must_match /( := )/
     end
   end
   
   it "is terminal rule" do
-    Eson::FormalLanguages::e0.number.partial_status.must_equal false
-    first_set = Eson::FormalLanguages::e0.number.first_set
+    Eson::EsonGrammars::e0.number.partial_status.must_equal false
+    first_set = Eson::EsonGrammars::e0.number.first_set
     first_set.must_be_instance_of Array
     first_set.length.must_equal 1
     first_set.must_equal [:number]
   end
   it "has non-terminals" do
-    Eson::FormalLanguages::e5.value.partial_status.must_equal false
-    first_set = Eson::FormalLanguages::e5.value.first_set
+    Eson::EsonGrammars::e5.value.partial_status.must_equal false
+    first_set = Eson::EsonGrammars::e5.value.first_set
     first_set.must_be_instance_of Array
     first_set.length.must_equal 8
     first_set.must_include :variable_identifier
@@ -191,8 +190,8 @@ describe Eson::Language::RuleSeq::Rule do
   end
   describe "starts with nonterminal" do
     it "is option rule" do
-      Eson::FormalLanguages::e5.element_set.partial_status.must_equal false
-      first_set = Eson::FormalLanguages::e5.element_set.first_set
+      Eson::EsonGrammars::e5.element_set.partial_status.must_equal false
+      first_set = Eson::EsonGrammars::e5.element_set.first_set
       first_set.must_be_instance_of Array
       first_set.length.must_equal 9
       first_set.must_include :variable_identifier
@@ -207,4 +206,3 @@ describe Eson::Language::RuleSeq::Rule do
     end
   end
 end
-

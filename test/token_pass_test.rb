@@ -19,7 +19,7 @@ describe Eson::TokenPass do
     end
     it "has only tokens in sequence" do
       token_seq_length = @token_sequence.length
-      valid_token_seq_length = @token_sequence.select{|i| i.class == Eson::Language::LexemeCapture::Token}.length
+      valid_token_seq_length = @token_sequence.select{|i| i.class == Eson::LexemeCapture::Token}.length
       (token_seq_length == valid_token_seq_length).must_equal true
     end
     it "is a TokenSeq" do
@@ -40,7 +40,7 @@ describe Eson::TokenPass do
     end
     it "has only tokens in sequence" do
       token_seq_length = @token_sequence.length 
-      valid_token_seq_length = @token_sequence.select{|i| i.class == Eson::Language::LexemeCapture::Token}.length
+      valid_token_seq_length = @token_sequence.select{|i| i.class == Eson::LexemeCapture::Token}.length
       (token_seq_length == valid_token_seq_length).must_equal true
     end
   end

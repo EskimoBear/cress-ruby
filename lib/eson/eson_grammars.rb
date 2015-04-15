@@ -1,12 +1,12 @@
-require_relative 'language.rb'
+require_relative 'rule_seq.rb'
 
 module Eson
-  module FormalLanguages
+  module EsonGrammars
 
     extend self
 
-    RuleSeq =  Eson::Language::RuleSeq
-    Rule = Eson::Language::RuleSeq::Rule
+    RuleSeq =  Eson::RuleSeq
+    Rule = Eson::Rule
 
     # null := "nil";
     def null_rule
@@ -202,10 +202,8 @@ module Eson
       Rule.new_terminal_rule(:key_string, all_chars_rxp)
     end
 
-    #eson formal language with tokens only
     #@return [E0] the initial compiler language used by Tokenizer
     #@eskimobear.specification
-    # Prop : E0 is a struct of eson production rules for the language 
     #
     # The following EBNF rules describe the eson grammar, E0:
     # variable_prefix := "$";
@@ -261,7 +259,7 @@ module Eson
         .make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :empty_word, :other_chars])
         .make_concatenation_rule(:variable_identifier, [:variable_prefix, :word])
         .make_concatenation_rule(:proc_identifier, [:proc_prefix, :special_form])
-        .build_language("E0")
+        .build_grammar("E0")
     end
 
     #@return e1 the second language of the compiler
@@ -271,7 +269,7 @@ module Eson
     def e1
       e0.rule_seq
         .remove_rules([:unknown_special_form])
-        .build_language("E1")
+        .build_grammar("E1")
     end
 
     #@return e2 the third language of the compiler
@@ -285,7 +283,7 @@ module Eson
         .convert_to_terminal(:proc_identifier)
         .make_alternation_rule(:key, [:proc_identifier, :key_string])
         .remove_rules([:let, :ref, :doc, :proc_prefix, :special_form])
-        .build_language("E2")
+        .build_grammar("E2")
     end
 
     #@return e3 the fourth language of the compiler
@@ -297,7 +295,7 @@ module Eson
     def e3
       e2.rule_seq.convert_to_terminal(:word_form)
         .remove_rules([:other_chars, :variable_prefix, :word, :empty_word, :whitespace])
-        .build_language("E3")
+        .build_grammar("E3")
     end
 
     #@return e4 the fifth language of the compiler
@@ -309,7 +307,7 @@ module Eson
         .make_terminal_rule(:string_delimiter, /"/)
         .make_repetition_rule(:sub_string_list, :sub_string)
         .make_concatenation_rule(:string, [:string_delimiter, :sub_string_list, :string_delimiter])
-        .build_language("E4")
+        .build_grammar("E4")
     end
 
     #@return e5 the sixth language of the compiler
@@ -332,7 +330,7 @@ module Eson
         .make_concatenation_rule(:declaration_list, [:declaration, :declaration_more])
         .make_option_rule(:declaration_set, :declaration_list)
         .make_concatenation_rule(:program, [:program_start, :declaration_set, :program_end])
-        .build_language("E5", :program)
+        .build_grammar("E5", :program)
     end
 
     alias_method :tokenizer_lang, :e0

@@ -1,16 +1,16 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
-require_relative '../lib/eson/language'
+require_relative '../lib/eson/rule.rb'
 require_relative '../lib/eson/token_pass'
 
-describe Eson::Language::RuleSeq::Rule do
+describe Eson::Rule do
 
-  subject {Eson::Language::RuleSeq::Rule}
-  let(:ast) {Eson::Language::AbstractSyntaxTree}
-  let(:token) {Eson::Language::LexemeCapture::Token}
+  subject {Eson::Rule}
+  let(:ast) {Eson::Rule::AbstractSyntaxTree}
+  let(:token) {Eson::LexemeCapture::Token}
   let(:token_seq) {Eson::TokenPass::TokenSeq}
-  let(:rule_seq) {Eson::Language::RuleSeq.new([subject.new(:rule_1, /RU/),
+  let(:rule_seq) {Eson::RuleSeq.new([subject.new(:rule_1, /RU/),
                                                subject.new(:rule_2, /LE/),
                                                subject.new(:rule_3, /RL/)])}
 
@@ -83,7 +83,7 @@ describe Eson::Language::RuleSeq::Rule do
       end
       it "with invalid token" do
         proc {@rule.parse(@invalid_token_seq, rule_seq)}
-          .must_raise Eson::Language::RuleSeq::Rule::ParseError
+          .must_raise Eson::Rule::InvalidSequenceParsed
       end
     end
     describe "alternation_rule" do
@@ -138,7 +138,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Rule::InvalidSequenceParsed
         end
       end
       describe "with_nonterminals" do
@@ -273,7 +273,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid token" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Rule::InvalidSequenceParsed
         end
       end
       describe "with_nonterminals" do
@@ -347,7 +347,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Rule::InvalidSequenceParsed
         end
       end
     end
@@ -355,7 +355,7 @@ describe Eson::Language::RuleSeq::Rule do
       before do
         @rules = rule_seq
                  .make_repetition_rule(:terminal_rule, :rule_1)
-        @lang = @rules.build_language("LANG")
+        @lang = @rules.build_grammar("LANG")
         @rule = @lang.terminal_rule
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_1)]
         @valid_token_seq = token_seq.new(@sequence)
@@ -412,7 +412,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid terminal" do
           proc{@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Rule::InvalidSequenceParsed
         end
       end
       describe "with_nonterminals" do
@@ -421,7 +421,7 @@ describe Eson::Language::RuleSeq::Rule do
                    .make_concatenation_rule(:c_rule, [:rule_1, :rule_2])
                    .make_repetition_rule(:nonterminal_rule, :c_rule)
                    .make_concatenation_rule(:top, [:nonterminal_rule, :rule_3])
-          @lang = @rules.build_language("LANG", :top)
+          @lang = @rules.build_grammar("LANG", :top)
           @rule = @lang.nonterminal_rule
           @sequence  = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
           @valid_once_seq = token_seq.new(@sequence).concat(@invalid_sequence)
@@ -547,7 +547,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid tokens" do
           proc{@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Rule::InvalidSequenceParsed
         end
       end
     end
@@ -555,7 +555,7 @@ describe Eson::Language::RuleSeq::Rule do
       before do
         @rules = rule_seq
                  .make_option_rule(:terminal_rule, :rule_1)
-        @lang = @rules.build_language("LANG")
+        @lang = @rules.build_grammar("LANG")
         @rule = @lang.terminal_rule
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
         @valid_token_seq = token_seq.new(@sequence)
@@ -598,7 +598,7 @@ describe Eson::Language::RuleSeq::Rule do
                    .make_concatenation_rule(:c_rule, [:rule_1, :rule_2])
                    .make_option_rule(:nonterminal_rule, :c_rule)
                    .make_concatenation_rule(:top, [:nonterminal_rule, :rule_3])
-          @lang = @rules.build_language("LANG", :top)
+          @lang = @rules.build_grammar("LANG", :top)
           @rule = @lang.nonterminal_rule
         end
         describe "with_valid_tokens" do
@@ -684,7 +684,7 @@ describe Eson::Language::RuleSeq::Rule do
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Language::RuleSeq::Rule::ParseError
+            .must_raise Eson::Rule::InvalidSequenceParsed
         end
       end
     end

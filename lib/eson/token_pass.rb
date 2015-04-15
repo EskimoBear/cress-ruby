@@ -1,11 +1,11 @@
-require_relative 'formal_languages'
+require_relative 'eson_grammars'
 require_relative 'tokenizer'
 
 module Eson::TokenPass
 
   extend Tokenizer
 
-  LANG = Eson::FormalLanguages.tokenizer_lang
+  LANG = Eson::EsonGrammars.tokenizer_lang
 
   module ErrorPasses
 
@@ -32,7 +32,7 @@ module Eson::TokenPass
 
     ItemError = Class.new(StandardError)
     
-    Token = Eson::Language::LexemeCapture::Token
+    Token = Eson::LexemeCapture::Token
 
     def self.new(obj=nil)
       if obj.nil?
@@ -51,7 +51,7 @@ module Eson::TokenPass
     end
 
     def self.new_item_error_message
-      "One or more of the given array elements are not of the type #{Eson::Language::LexemeCapture::Token}"
+      "One or more of the given array elements are not of the type #{Eson::LexemeCapture::Token}"
     end
 
     def get_program_line(line_no)
@@ -124,7 +124,7 @@ module Eson::TokenPass
     #        T' = []
     #        O' = O + T
     def insert_string_delimiters
-      self.replace insert_string_delimiters_recur(Eson::FormalLanguages.e4.sub_string, self.clone)  
+      self.replace insert_string_delimiters_recur(Eson::EsonGrammars.e4.sub_string, self.clone)  
     end
 
     def insert_string_delimiters_recur(rule, input_sequence,
@@ -132,7 +132,7 @@ module Eson::TokenPass
       if input_sequence.include_alt_name?(rule)
         scanned, unscanned = input_sequence.split_before_alt_name(rule)
         
-        delimiter = Eson::FormalLanguages.e4.string_delimiter.make_token("\"")
+        delimiter = Eson::EsonGrammars.e4.string_delimiter.make_token("\"")
         delimiter.line_number = scanned.get_next_line_number
         output_sequence.push(scanned).push(delimiter).flatten!
         head = unscanned.take_while{|i| i.alternation_names.to_a.include?(rule.name)}
@@ -146,13 +146,13 @@ module Eson::TokenPass
     end
     
     def label_sub_strings
-      assign_alternation_names(Eson::FormalLanguages.e4.sub_string)
+      assign_alternation_names(Eson::EsonGrammars.e4.sub_string)
     end
     
     #Given an alternation rule add rule.name to each referenced
     #  token's alternation_names array.
     #
-    #@param rule [Eson::Language::RuleSeq::Rule] alternation rule
+    #@param rule [Eson::RuleSeq::Rule] alternation rule
     def assign_alternation_names(rule)
       token_names = rule.term_names
       new_token_name = rule.name
@@ -197,7 +197,7 @@ module Eson::TokenPass
     #Replace tokens of :choice names with token of rule name and
     #  equivalent lexeme. Reduce all repetitions to a single token. 
     #  
-    #@param rule [Eson::Language::RuleSeq::Rule] An alternation rule 
+    #@param rule [Eson::RuleSeq::Rule] An alternation rule 
     #@eskimobear.specification
     # Original token sequence, T
     # Output token sequence, O
@@ -296,7 +296,7 @@ module Eson::TokenPass
     #Replace inner token sequence of :none names with token of rule
     #  name and equivalent lexeme.
     #
-    #@param rule [Eson::Language::RuleSeq::Rule] A concatenation rule
+    #@param rule [Eson::RuleSeq::Rule] A concatenation rule
     #@eskimobear.specification
     # Original token sequence, T
     # Output token sequence, O

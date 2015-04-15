@@ -21,7 +21,7 @@ describe Eson::Rule::AbstractSyntaxTree do
   describe "create_ast" do
     it "incorrect parameter type" do
       proc {subject.new("error_type")}.
-        must_raise Eson::Rule::AbstractSyntaxTree::InitializationError
+        must_raise Eson::Rule::AbstractSyntaxTree::FailedInitialization
     end
     describe "empty" do
       before do
@@ -48,7 +48,7 @@ describe Eson::Rule::AbstractSyntaxTree do
     describe "terminal_rule" do
       it "incorrect parameter type" do
         proc {subject.new(@terminal_rule)}.
-          must_raise Eson::Rule::AbstractSyntaxTree::InitializationError
+          must_raise Eson::Rule::AbstractSyntaxTree::FailedInitialization
       end
     end
     describe "nonterminal_rule" do

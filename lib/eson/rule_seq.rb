@@ -25,14 +25,16 @@ module Eson
 
       def to_s
         rule_list = rule_seq.map{|i| i.to_s}
-        "#{self.class.to_s.gsub(/Struct::/, "")} has the following produc          tion rules:\n#{rule_list.join("\n")}"
+        "#{self.class.to_s.gsub(/Struct::/, "")}" \
+        " has the following production rules:" \
+        "\n#{rule_list.join("\n")}"
       end
     end
 
     #Hook to ensure that RuleSeq can only be initialized
     #with an array of Rules.
     #@param obj [Array]
-    #@return [Eson::Language]
+    #@return [Eson::RuleSeq]
     def self.new(obj)
       array = super
       unless self.all_rules?(array)
@@ -42,8 +44,8 @@ module Eson
     end
 
     def self.new_item_error_message
-      "One or more of the given array elements are not of the type Eson::Lang\
-uage::Rule"
+      "One or more of the given array elements are not" \
+      " of the type Eson::Rule"
     end
 
     def make_terminal_rule(new_rule_name, rxp)
@@ -67,9 +69,10 @@ uage::Rule"
     end
 
     def rule_conversion_error_message(rule_name)
-      "The Rule #{rule_name} has partial status thus it has an undefined regu\
-lar expression. This Rule cannot be converted to a terminal Rule because it can\
-'t capture tokens."
+      "The Rule #{rule_name} has partial status thus it" \
+      " has an undefined regular expression. This Rule" \
+      " cannot be converted to a terminal Rule because" \
+      "it can't capture tokens."
     end
 
     def partial_rule?(rule_name)
@@ -216,8 +219,8 @@ lar expression. This Rule cannot be converted to a terminal Rule because it can\
 
     def missing_items_error_message(rule_names)
       names = rule_names.map{|i| ":".concat(i.to_s)}
-      "One or more of the following Eson::Rule.name's are not prese\
-nt in the sequence: #{names.join(", ")}."
+      "One or more of the following Eson::Rule.name's" \
+      " are not present in the sequence: #{names.join(", ")}."
     end
 
     def include_rules?(rule_names)
@@ -246,8 +249,8 @@ nt in the sequence: #{names.join(", ")}."
     end
 
     def missing_rule_error_message(rule_name)
-      "The Eson::Rule.name ':#{rule_name}' is not present in the se\
-quence."
+      "The Eson::Rule.name ':#{rule_name}' is not present" \
+      " in the sequence."
     end
 
     def remove_rules(rule_names)

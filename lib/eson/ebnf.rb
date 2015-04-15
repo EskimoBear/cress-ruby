@@ -82,8 +82,8 @@ module Eson
     def join_rule_names(terms, infix="")
       initial = terms.first.rule_name.to_s
       rest = terms.drop(1)
-      rest.each_with_object(initial){|i, memo| memo.concat(infix).concat(\
-                                                                         i.rule_name.to_s)}
+      rest.each_with_object(initial){
+        |i, memo| memo.concat(infix).concat(i.rule_name.to_s)}
     end
   end
 end

@@ -157,8 +157,8 @@ module Eson
                end
         build_parse_result([lookahead], tokens.drop(1), tree)
       else
-        raise InvalidSequenceParsed, parse_terminal_error_message(@name,\
-                                                                  lookahead, tokens)
+        raise InvalidSequenceParsed,
+              parse_terminal_error_message(@name, lookahead, tokens)
       end
     end
 
@@ -174,9 +174,11 @@ module Eson
     def parse_terminal_error_message(expected_token,
                                      actual_token,
                                      token_seq)
-      "Error while parsing #{@name}. Expected a symbol of type :#{expected_token} 
-           but got a :#{actual_token.name} instead in line #{actual_token.line_number}:
-           \n #{actual_token.line_number}. #{token_seq.get_program_line(actual_token.line_number)}\n"
+      line_num = actual_token.line_number
+      "Error while parsing #{@name}." \
+      " Expected a symbol of type :#{expected_token} but got a" \
+      " :#{actual_token.name} instead in line #{line_num}:"
+      "\n #{line_num}. #{token_seq.get_program_line(line_num)}\n"
     end
 
     #Return a Token sequence that is a legal instance of

@@ -5,7 +5,7 @@ module Eson
   #  regexp that matches a fixed lexeme or a set of strings.
   module LexemeCapture
 
-    LexemeTypeError = Class.new(StandardError)
+    WrongLexemeType = Class.new(StandardError)
 
     Token = Struct.new :lexeme, :name, :alternation_names, :line_number
 
@@ -15,14 +15,14 @@ module Eson
       elsif lexeme.instance_of? String
         Token.new(lexeme.intern, @name)
       else
-        raise LexemeTypeError, lexeme_type_error_message(lexeme)
+        raise WrongLexemeType, lexeme_type_error_message(lexeme)
       end
     end
 
     def lexeme_type_error_message(lexeme)
-      "Lexeme provided to method #{caller_locations[0].label} must be eit\
-her a Symbol or a String but the given lexeme - #{lexeme} is a #{lexeme.cla\
-ss}."
+      "Lexeme provided to method #{caller_locations[0].label}" \
+      "must be either a Symbol or a String but the given lexeme" \
+      "- #{lexeme} is a #{lexeme.class}."
     end
 
     def match_token(string)

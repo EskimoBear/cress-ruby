@@ -7,8 +7,8 @@ module Eson
     class AbstractSyntaxTree
       InsertionError = Class.new(StandardError)
       ClosedTreeError = Class.new(StandardError)
-      ChildInsertionError = Class.new(StandardError)
-      InitializationError = Class.new(StandardError)
+      ElementMustBeTree = Class.new(StandardError)
+      FailedInitialization = Class.new(StandardError)
 
       extend Forwardable
       include LexemeCapture
@@ -23,7 +23,7 @@ module Eson
       def initialize(obj=nil)
         insert_root(obj)
       rescue InsertionError => e
-        raise InitializationError,
+        raise FailedInitialization,
               not_a_valid_root_error_message(obj)
       end
 
@@ -38,7 +38,8 @@ module Eson
           @root_tree = @active = make_tree(obj)
           @height = 1
         else
-          raise InsertionError, not_a_valid_input_error_message(obj)
+          raise InsertionError,
+                not_a_valid_input_error_message(obj)
         end
       end
 
@@ -54,9 +55,9 @@ module Eson
       end
 
       def not_a_valid_root_error_message(obj)
-        "The class #{obj.class} of '#{obj}' cannot be used as a root
-         node for #{self.class}. Parameter must be either a #{Token} 
-         or a nonterminal #{Rule}."
+        "The class #{obj.class} of '#{obj}' cannot be used as a" \
+        " root node for #{self.class}. Parameter must be either" \
+        " a #{Token} or a nonterminal #{Rule}."
       end
       
       def empty?
@@ -79,7 +80,8 @@ module Eson
           elsif obj.instance_of? Rule
             insert_tree(obj)
           else
-            raise InsertionError, not_a_valid_input_error_message(obj)
+            raise InsertionError,
+                  not_a_valid_input_error_message(obj)
           end
         end
         self
@@ -105,8 +107,9 @@ module Eson
       end
 
       def not_a_valid_input_error_message(obj)
-        "The class #{obj.class} of '#{obj}' is not a valid input for the #{self\
-.class}. Input must be a #{Token}."
+        "The class #{obj.class} of '#{obj}' is not a" \
+        " valid input for the #{self.class}. Input" \
+        " must be a #{Token}."
       end
 
       #Add a given tree to this tree's active node
@@ -188,13 +191,14 @@ module Eson
 
         def ensure_open
           if closed?
-            raise ClosedTreeError, closed_tree_error_message
+            raise ClosedTreeError,
+                  closed_tree_error_message
           end
         end
 
         def closed_tree_error_message
-          "The method `#{caller_locations(3).first.label}' is not allowed on a
-           closed tree."
+          "The method `#{caller_locations(3).first.label}'" \
+          " is not allowed on a closed tree."
         end
 
         #@param name [Symbol] name of child node
@@ -232,7 +236,8 @@ module Eson
             if obj.instance_of? Tree
               super
             else
-              raise ChildInsertionError, not_a_valid_node_error_message(obj)
+              raise ElementMustBeTree,
+                    not_a_valid_node_error_message(obj)
             end
           end
         end
@@ -240,11 +245,11 @@ module Eson
         prepend pushvalidate
 
         def not_a_valid_node_error_message(obj)
-          "The class #{obj.class} of '#{obj}' is not a valid node for the #{sel\
-f.class}. The object must be a #{Tree}."
+          "The class #{obj.class} of '#{obj}' is not a" \
+          " valid node for the #{self.class}. The object" \
+          " must be a #{Tree}."
         end
       end
     end
-
   end
 end

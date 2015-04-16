@@ -50,7 +50,6 @@ module Eson::TokenPass
     end
     
     #Add line number metadata to each token
-    #
     #@eskimobear.specification
     # T, input token sequence
     # O, output token sequence

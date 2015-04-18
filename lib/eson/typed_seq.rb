@@ -27,7 +27,7 @@ module TypedSeq
       def wrong_element_error_message(obj, type)
         "The class #{obj.class} of '#{obj}' is not a" \
         " valid element for the #{self.class}. The object" \
-        " must be a #{type} typo."
+        " must be a #{type}."
       end
 
       def initialize(obj=nil)

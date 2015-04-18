@@ -140,6 +140,7 @@ module Eson
         acc
       end
     end
+
     #Return a Token sequence with one Token that is an instance of
     #  a terminal rule
     #@param tokens [Eson::TokenPass::TokenSeq] a token sequence

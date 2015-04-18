@@ -219,11 +219,8 @@ module Eson
       class TreeSeq < Array
         
         extend TypedSeq
-
-        ElementMustBeTree = Class.new(StandardError)
         
-        prepend enforce_type(Tree)
-        
+        prepend enforce_type(Eson::Rule::AbstractSyntaxTree::Tree)
       end
     end
   end

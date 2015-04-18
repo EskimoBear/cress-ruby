@@ -15,7 +15,7 @@ describe Eson::RuleSeq do
       proc {subject.new([rule.new(nil, nil)])}.must_be_silent
     end
     it "item is not a Rule" do
-      proc {subject.new([45])}.must_raise Eson::RuleSeq::WrongElementType
+      proc {subject.new([45])}.must_raise TypedSeq::WrongInitializationType
     end
   end
 

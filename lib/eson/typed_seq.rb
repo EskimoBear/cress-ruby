@@ -7,6 +7,8 @@ module TypedSeq
   #Create anonymous module to prepend to Array subclasses.
   #Enforces single type arrays with type enforcement
   #for #new and #push methods
+  #@param type [Constant] type of Array subclass
+  #@return [Module] module to prepend for type enforcement
   def enforce_type(type)
 
     dynamic_methods = proc do |dyn_type|

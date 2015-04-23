@@ -11,9 +11,9 @@ module Eson
 
     def make_token(lexeme)
       if lexeme.instance_of? Symbol
-        Token.new(lexeme, @name)
+        Token.new(lexeme, self.name)
       elsif lexeme.instance_of? String
-        Token.new(lexeme.intern, @name)
+        Token.new(lexeme.intern, self.name)
       else
         raise WrongLexemeType, lexeme_type_error_message(lexeme)
       end
@@ -26,8 +26,8 @@ module Eson
     end
 
     def match_token(string)
-      lexeme = self.match(string).to_s.intern
-      self.make_token(lexeme)
+      lexeme = match(string).to_s.intern
+      make_token(lexeme)
     end
 
     def match(string)
@@ -35,16 +35,16 @@ module Eson
     end
 
     def rxp
-      apply_at_start(@start_rxp)
+      apply_at_start(self.start_rxp)
     end
 
     def match_rxp?(string)
-      regex_match?(self.rxp, string)
+      regex_match?(rxp, string)
     end
 
     def match_start(string)
       if self.nonterminal?
-        string.match(@start_rxp)
+        string.match(self.start_rxp)
       else
         nil
       end

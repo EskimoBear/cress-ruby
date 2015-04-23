@@ -14,7 +14,8 @@ module Eson
     NoMatchingFirstSet = Class.new(StandardError)
     FirstSetNotDisjoint = Class.new(StandardError)
 
-    attr_accessor :name, :first_set, :partial_status, :ebnf, :follow_set
+    attr_accessor :name, :first_set, :partial_status, :ebnf,
+                  :follow_set, :start_rxp
 
     #@param name [Symbol] name of the production rule
     #@param sequence [Array<Terminal, NonTerminal>] list of terms this
@@ -403,7 +404,7 @@ module Eson
 
     #Compute the start rxp of nonterminal rules
     #@param rules [Eson::RuleSeq] the other rules making
-    #  up the formal language
+    #  up the grammar
     #@return [Eson::RuleSeq::Rule] the mutated Rule
     def compute_start_rxp(rules)
       @start_rxp = if alternation_rule?
@@ -423,7 +424,7 @@ module Eson
     end
 
     def make_repetition_rxp(rules, rule_names)
-      rules.get_rule(rule_names.first).rxp
+      rules.get_rule(rule_names.first).start_rxp
     end
 
     def make_concatenation_rxp(rules, rule_names)
@@ -446,7 +447,7 @@ module Eson
 
     def get_rxp_sources(rules, rule_array)
       rule_array.map do |i|
-        rules.get_rule(i).rxp.source
+        rules.get_rule(i).start_rxp.source
       end
     end
   end

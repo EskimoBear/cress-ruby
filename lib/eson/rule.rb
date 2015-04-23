@@ -432,7 +432,7 @@ module Eson
       combination = rxp_strings.reduce("") do |memo, i|
         memo.concat(i)
       end
-      apply_at_start(Regexp.new(combination))
+      Regexp.new(combination)
     end
 
     def make_alternation_rxp(rules, rule_names)
@@ -442,7 +442,8 @@ module Eson
       combination = rest.reduce(initial) do |memo, i|
         memo.concat("|").concat(i)
       end
-      apply_at_start(Regexp.new(combination))
+      combination.prepend("(").concat(")")
+      Regexp.new(combination)
     end
 
     def get_rxp_sources(rules, rule_array)

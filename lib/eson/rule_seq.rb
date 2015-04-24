@@ -19,7 +19,7 @@ module Eson
         rule_seq.get_rule(rule_name)
       end
 
-      def rule_seq
+      def copy_rules
         Eson::RuleSeq.new self.values
       end
 
@@ -33,6 +33,12 @@ module Eson
         "#{self.class.to_s.gsub(/Struct::/, "")}" \
         " has the following production rules:" \
         "\n#{rule_list.join("\n")}"
+      end
+
+      private
+
+      def rule_seq
+        Eson::RuleSeq.new self.values
       end
     end
 

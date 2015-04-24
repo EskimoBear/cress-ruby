@@ -207,7 +207,7 @@ module Eson::TokenPass
           char_seq)
       else
         update_json_and_char_seqs(
-          LANG.unknown_special_form.make_token(json_string),
+          LANG.unreserved_special_form.make_token(json_string),
           seq,
           char_seq)
       end      

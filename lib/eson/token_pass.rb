@@ -15,9 +15,7 @@ module Eson::TokenPass
     include Eson::ErrorPass
 
     prepend enforce_type(Eson::LexemeCapture::Token)
-    
-    WrongElementType = Class.new(StandardError)
-    
+
     Token = Eson::LexemeCapture::Token
 
     def get_program_line(line_no)
@@ -38,14 +36,15 @@ module Eson::TokenPass
     # T, input token sequence
     # O, output token sequence
     # t, end_of_line token
-    # ets, sequence begins with T start and ends with end_of_line
+    # ets, sequence beginning at the head of T and
+    # ending with the end_of_line token
     # L, line number integer
     #
     # Init : length(T) > 0
     #      : length(O) = 0
     #        L = 1
     # Next : when T contains end_of_line
-    #        T' = T - ets - t
+    #        T' = T - ets
     #        O' = O + label(ets, L)
     #        L' = L + 1
     #        when T does not contain end_of_line
@@ -70,7 +69,6 @@ module Eson::TokenPass
 
     #Add a string_delimiter token before and after each sequence of
     #  possible sub_strings
-    #
     #@eskimobear.specification
     #T, inpuut token sequence
     #O, output token sequence
@@ -89,7 +87,9 @@ module Eson::TokenPass
     #        T' = []
     #        O' = O + T
     def insert_string_delimiters
-      self.replace insert_string_delimiters_recur(Eson::EsonGrammars.e4.sub_string, self.clone)  
+      self.replace insert_string_delimiters_recur(
+                     Eson::EsonGrammars.e4.sub_string,
+                     self.clone)  
     end
 
     def insert_string_delimiters_recur(rule, input_sequence,
@@ -195,7 +195,6 @@ module Eson::TokenPass
       if input_sequence.include_alt_name?(rule)
         scanned, unscanned = input_sequence.split_before_alt_name(rule)
         output_sequence.concat(scanned)
-        #output_sequence.push(scanned).flatten!
         head = unscanned.take_while{|i| i.alternation_names.to_a.include? new_token_name}
         new_input = unscanned.drop(head.size)
         new_token = reduce_tokens(new_token_name, *head)
@@ -257,9 +256,8 @@ module Eson::TokenPass
     def get_alt_name_index(rule_name)
       alt_names.find_index{|i| i.include? rule_name}
     end
-    
-    
-    #Replace inner token sequence of :none names with token of rule
+
+    #Replace inner token sequence of concatenation names with token of rule
     #  name and equivalent lexeme.
     #
     #@param rule [Eson::RuleSeq::Rule] A concatenation rule

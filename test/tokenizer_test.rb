@@ -12,7 +12,7 @@ describe Eson::TokenPass::Tokenizer do
       @token_sequence = subject.tokenize_program(@program)
     end
     it "is a TokenSeq" do
-      assert @token_sequence.instance_of? Eson::TokenPass::TokenSeq
+      @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
     end
   end
 end

@@ -11,7 +11,7 @@ module Eson::SyntaxPass
   #@param token_seq [TokenSeq]  
   #@return [AbstractSyntaxTree]
   def build_tree(token_seq)
-    rules = syntax_pass_lang.rule_seq
+    rules = syntax_pass_lang.copy_rules
     syntax_pass_lang.top_rule.parse(token_seq, rules)[:tree]
   end
 end

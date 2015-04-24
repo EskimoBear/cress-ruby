@@ -12,6 +12,8 @@ describe Eson::EsonGrammars do
     end
     it "should contain built rules" do
       @lang.must_respond_to :special_form
+      @lang.must_respond_to :unreserved_special_form
+      @lang.must_respond_to :any_special_form
     end
   end
   
@@ -46,7 +48,7 @@ describe Eson::EsonGrammars do
       subject.method(:e1).must_equal subject.method(:verified_special_forms_lang)
     end
     it "should contain new rules" do
-      @lang.wont_respond_to :unkown_special_form
+      @lang.wont_respond_to :unreserved_special_form
     end
     it "has no partial rules" do
       @lang.values.none?{|x| x.partial_status}.must_equal true

@@ -1,6 +1,7 @@
 require_relative 'eson_grammars'
 require_relative 'tokenizer'
 require_relative 'error_pass'
+require_relative 'typed_seq'
 
 module Eson::TokenPass
 
@@ -10,31 +11,12 @@ module Eson::TokenPass
   
   class TokenSeq < Array
 
+    extend TypedSeq
     include Eson::ErrorPass
-    
-    WrongElementType = Class.new(StandardError)
-    
+
+    prepend enforce_type(Eson::LexemeCapture::Token)
+
     Token = Eson::LexemeCapture::Token
-
-    def self.new(obj=nil)
-      if obj.nil?
-        super []
-      else
-        array = super
-        unless self.all_tokens?(array)
-          raise WrongElementType, self.new_item_error_message
-        end
-        array
-      end
-    end
-
-    def self.all_tokens?(seq)
-      seq.all?{|i| i.class == Token}
-    end
-
-    def self.new_item_error_message
-      "One or more of the given array elements are not of the type #{Eson::LexemeCapture::Token}"
-    end
 
     def get_program_line(line_no)
       take_while{|i| i.line_number == line_no}
@@ -50,19 +32,19 @@ module Eson::TokenPass
     end
     
     #Add line number metadata to each token
-    #
     #@eskimobear.specification
     # T, input token sequence
     # O, output token sequence
     # t, end_of_line token
-    # ets, sequence begins with T start and ends with end_of_line
+    # ets, sequence beginning at the head of T and
+    # ending with the end_of_line token
     # L, line number integer
     #
     # Init : length(T) > 0
     #      : length(O) = 0
     #        L = 1
     # Next : when T contains end_of_line
-    #        T' = T - ets - t
+    #        T' = T - ets
     #        O' = O + label(ets, L)
     #        L' = L + 1
     #        when T does not contain end_of_line
@@ -78,16 +60,15 @@ module Eson::TokenPass
         scanned, unscanned = input_seq.split_after_token(:end_of_line)
         scanned.map{|i| i.line_number = line_no}
         add_line_numbers_recur(line_no + 1, unscanned,
-                               output_seq.push(scanned).flatten)                              
+                               output_seq.concat(scanned))
       else
         lined_seq = input_seq.each{|i| i.line_number = line_no}
-        output_seq.push(lined_seq).flatten
+        output_seq.concat(lined_seq)
       end
     end
 
     #Add a string_delimiter token before and after each sequence of
     #  possible sub_strings
-    #
     #@eskimobear.specification
     #T, inpuut token sequence
     #O, output token sequence
@@ -106,7 +87,9 @@ module Eson::TokenPass
     #        T' = []
     #        O' = O + T
     def insert_string_delimiters
-      self.replace insert_string_delimiters_recur(Eson::EsonGrammars.e4.sub_string, self.clone)  
+      self.replace insert_string_delimiters_recur(
+                     Eson::EsonGrammars.e4.sub_string,
+                     self.clone)  
     end
 
     def insert_string_delimiters_recur(rule, input_sequence,
@@ -116,14 +99,14 @@ module Eson::TokenPass
         
         delimiter = Eson::EsonGrammars.e4.string_delimiter.make_token("\"")
         delimiter.line_number = scanned.get_next_line_number
-        output_sequence.push(scanned).push(delimiter).flatten!
+        output_sequence.concat(scanned).push(delimiter)
         head = unscanned.take_while{|i| i.alternation_names.to_a.include?(rule.name)}
         new_input = unscanned.drop(head.length)
         insert_string_delimiters_recur(rule,
                                        new_input,
-                                       output_sequence.push(head).push(delimiter).flatten)
+                                       output_sequence.concat(head).push(delimiter))
       else
-        output_sequence.push(input_sequence).flatten
+        output_sequence.concat(input_sequence)
       end        
     end
     
@@ -211,14 +194,14 @@ module Eson::TokenPass
 
       if input_sequence.include_alt_name?(rule)
         scanned, unscanned = input_sequence.split_before_alt_name(rule)
-        output_sequence.push(scanned).flatten!
+        output_sequence.concat(scanned)
         head = unscanned.take_while{|i| i.alternation_names.to_a.include? new_token_name}
         new_input = unscanned.drop(head.size)
         new_token = reduce_tokens(new_token_name, *head)
         tokenize_alternation_rule_recur(rule, new_input,
                                         output_sequence.push(new_token).flatten)
       else
-        output_sequence.push(input_sequence).flatten
+        output_sequence.concat(input_sequence)
       end
     end
 
@@ -273,9 +256,8 @@ module Eson::TokenPass
     def get_alt_name_index(rule_name)
       alt_names.find_index{|i| i.include? rule_name}
     end
-    
-    
-    #Replace inner token sequence of :none names with token of rule
+
+    #Replace inner token sequence of concatenation names with token of rule
     #  name and equivalent lexeme.
     #
     #@param rule [Eson::RuleSeq::Rule] A concatenation rule
@@ -309,13 +291,13 @@ module Eson::TokenPass
           matching_tokens = m.last(match_seq_size)
           new_token = reduce_tokens(new_token_name, *matching_tokens)
           m.swap_tail(match_seq_size, new_token)
-          new_output = output_sequence.push(m).flatten
+          new_output = output_sequence.concat(m)
           tokenize_concatenation_rule_recur(rule,
                                             new_input,
                                             new_output)
         end
       else
-        output_sequence.push(input_sequence).flatten
+        output_sequence.concat(input_sequence)
       end
     end
 
@@ -416,9 +398,9 @@ module Eson::TokenPass
           end
         else
           new_input = unscanned
-          new_output = output_sequence.push(scanned).flatten!
+          new_output = output_sequence.concat(scanned)
           if pat_seq == head_names
-            output_sequence.push(unscanned_head).flatten!
+            output_sequence.concat(unscanned_head)
             if block_given?
               yield output_sequence
             else

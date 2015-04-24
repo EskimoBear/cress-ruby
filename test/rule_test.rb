@@ -410,7 +410,7 @@ describe Eson::Rule do
             end
           end
         end
-        it "with invalid terminal" do
+        it "with_invalid_terminal" do
           proc{@rule.parse(@invalid_token_seq, @rules)}
             .must_raise Eson::Rule::InvalidSequenceParsed
         end
@@ -545,7 +545,7 @@ describe Eson::Rule do
             @tree.closed?.must_equal true
           end
         end
-        it "with invalid tokens" do
+        it "with_invalid_tokens" do
           proc{@rule.parse(@invalid_token_seq, @rules)}
             .must_raise Eson::Rule::InvalidSequenceParsed
         end
@@ -563,12 +563,12 @@ describe Eson::Rule do
         @valid_nulled_seq = token_seq.new(@nulled_sequence)
         @invalid_token_seq = token_seq.new @sequence.reverse
       end
-      describe "with terminals only" do
+      describe "with_terminals_only" do
         before do
           @parse_result = @rule.parse(@valid_token_seq, @rules)
           @tree = @parse_result[:tree]
         end
-        describe "with valid tokens" do
+        describe "with_valid_tokens" do
           it "correct types" do
             verify_types(@parse_result).must_equal true
           end

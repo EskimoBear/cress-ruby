@@ -1,8 +1,13 @@
 require_relative './rule'
+require_relative './typed_seq'
 
 module Eson
 
   class RuleSeq < Array
+
+    extend TypedSeq
+
+    prepend enforce_type(Eson::Rule)
 
     WrongElementType = Class.new(StandardError)
     MissingRule = Class.new(StandardError)
@@ -14,7 +19,7 @@ module Eson
         rule_seq.get_rule(rule_name)
       end
 
-      def rule_seq
+      def copy_rules
         Eson::RuleSeq.new self.values
       end
 
@@ -29,18 +34,12 @@ module Eson
         " has the following production rules:" \
         "\n#{rule_list.join("\n")}"
       end
-    end
 
-    #Hook to ensure that RuleSeq can only be initialized
-    #with an array of Rules.
-    #@param obj [Array]
-    #@return [Eson::RuleSeq]
-    def self.new(obj)
-      array = super
-      unless self.all_rules?(array)
-        raise WrongElementType, self.new_item_error_message
+      private
+
+      def rule_seq
+        Eson::RuleSeq.new self.values
       end
-      array
     end
 
     def self.new_item_error_message
@@ -455,12 +454,6 @@ module Eson
       else
         rule.follow_set.push(term_name)
       end
-    end
-
-    protected
-
-    def self.all_rules?(seq)
-      seq.all? {|i| i.class == Rule }
     end
   end
 end

@@ -6,12 +6,16 @@ require_relative '../lib/eson/rule.rb'
 describe Eson::Rule::AbstractSyntaxTree do
 
   before do
-    @terminal_rule = Eson::Rule.new_terminal_rule(:terminal,
-                                                            /rule/)
-    @nonterminal_rule = Eson::Rule.new(:nonterminal,
-                                                 /rule/,
-                                                 false,
-                                                 ["test"])
+    @terminal_rule = Eson::Rule
+                     .new_terminal_rule(
+                       :terminal,
+                       /rule/)
+    @nonterminal_rule = Eson::Rule.
+                        new(
+                          :nonterminal,
+                          /rule/,
+                          false,
+                          ["test"])
     @token = @terminal_rule.make_token(:var)
   end
 
@@ -21,14 +25,14 @@ describe Eson::Rule::AbstractSyntaxTree do
   describe "create_ast" do
     it "incorrect parameter type" do
       proc {subject.new("error_type")}.
-        must_raise Eson::Rule::AbstractSyntaxTree::FailedInitialization
+        must_raise Eson::Rule::AbstractSyntaxTree::CannotConvertTypeToTree
     end
     describe "empty" do
       before do
         @tree = subject.new
       end
       it "root_is_empty" do
-        @tree.empty?.must_equal true
+        @tree.empty_tree?.must_equal true
       end
     end
     describe "token" do
@@ -42,13 +46,13 @@ describe Eson::Rule::AbstractSyntaxTree do
         @tree.closed?.must_equal true
       end
       it "root_has_no_parent" do
-        @tree.get.parent.must_be_nil
+        @tree.get.parent.empty_tree?.must_equal true
       end
     end
     describe "terminal_rule" do
       it "incorrect parameter type" do
         proc {subject.new(@terminal_rule)}.
-          must_raise Eson::Rule::AbstractSyntaxTree::FailedInitialization
+          must_raise Eson::Rule::AbstractSyntaxTree::CannotConvertTypeToTree
       end
     end
     describe "nonterminal_rule" do
@@ -66,7 +70,7 @@ describe Eson::Rule::AbstractSyntaxTree do
         @tree.active_node.must_equal @tree.get
       end
       it "root has no parent" do
-        @tree.get.parent.must_be_nil
+        @tree.get.parent.empty_tree?.must_equal true
       end
     end
   end
@@ -77,7 +81,7 @@ describe Eson::Rule::AbstractSyntaxTree do
     end
     it "node is invalid type" do
       proc {@tree.insert("foo")}
-        .must_raise Eson::Rule::AbstractSyntaxTree::InsertionError
+        .must_raise Eson::Rule::AbstractSyntaxTree::CannotConvertTypeToTree
     end
     it "inserted token is leaf of active node" do
       @tree.insert(@token)
@@ -86,18 +90,18 @@ describe Eson::Rule::AbstractSyntaxTree do
       child_nodes.first.value.name.must_equal @token.name
     end
     it "inserted rule is active node" do
-      @tree.insert(@terminal_rule).insert(@token)
+      @tree.insert(@nonterminal_rule).insert(@token)
       @tree.height.must_equal 3
-      @tree.active_node.value.must_equal @terminal_rule
+      @tree.active_node.value.must_equal @nonterminal_rule
     end
     it "inserted rule has root as parent" do
-      @tree.insert(@terminal_rule)
+      @tree.insert(@nonterminal_rule)
       @tree.active_node.parent.must_equal @tree.get
     end
     it "fails on closed tree" do
       @tree.close_active
       proc {@tree.insert(@rule)}
-        .must_raise Eson::Rule::AbstractSyntaxTree::ClosedTreeError
+        .must_raise Eson::Rule::AbstractSyntaxTree::UnallowedMethodForClosedTree
     end
     describe "empty_tree" do
       before do
@@ -110,7 +114,7 @@ describe Eson::Rule::AbstractSyntaxTree do
       end
       it "root insertion failed" do
         proc {@empty_tree.insert("error_string")}
-          .must_raise Eson::Rule::AbstractSyntaxTree::InsertionError
+          .must_raise Eson::Rule::AbstractSyntaxTree::CannotConvertTypeToTree
       end
     end
   end

@@ -16,7 +16,6 @@ module Eson
   def compile(eson_program)
     if validate_json?(eson_program)
       token_sequence = TokenPass.tokenize_program(eson_program)
-                       .first
                        .add_line_numbers
                        .verify_special_forms
                        .tokenize_variable_identifiers

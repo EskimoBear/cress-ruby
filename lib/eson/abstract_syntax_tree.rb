@@ -1,15 +1,14 @@
 require 'forwardable'
+require_relative './typed_seq'
 
 module Eson
 
   class Rule
 
     class AbstractSyntaxTree
-      InsertionError = Class.new(StandardError)
-      ClosedTreeError = Class.new(StandardError)
-      ElementMustBeTree = Class.new(StandardError)
-      FailedInitialization = Class.new(StandardError)
-
+      CannotConvertTypeToTree = Class.new(StandardError)
+      UnallowedMethodForClosedTree = Class.new(StandardError)
+      
       extend Forwardable
       include LexemeCapture
 
@@ -18,98 +17,82 @@ module Eson
       #Initialize tree with obj as root node. An empty
       #tree is created if no parameter is given.
       #@param obj [Eson::Rule] Rule
-      #@raise [InsertionError] obj is not a valid type
-      #for the root node
       def initialize(obj=nil)
-        insert_root(obj)
-      rescue InsertionError => e
-        raise FailedInitialization,
-              not_a_valid_root_error_message(obj)
+        init_empty
+        set_root(obj)
       end
 
-      def insert_root(obj)
-        if obj.nil?
-          @root_tree = @active = nil
-        elsif obj.instance_of? Token
-          @root_tree = @active = make_leaf(obj)
+      def init_empty
+        @height = 0
+        @root_tree = @active = Tree.new
+      end
+
+      def set_root(obj)
+        unless obj.nil?      
+          @root_tree = @active = convert_to_tree(obj)
           @height = 1
-          close_active
-        elsif obj.instance_of?(Rule) && obj.nonterminal?
-          @root_tree = @active = make_tree(obj)
-          @height = 1
-        else
-          raise InsertionError,
-                not_a_valid_input_error_message(obj)
+          if obj.instance_of?(Token)
+            close_active
+          end
         end
       end
 
-      def make_tree(rule)
-        tree = Tree.new(rule, TreeSeq.new, active_node, true)
-               .set_level
+      #Converts Rule or Token to a Tree
+      #@param obj [Rule, Token] the Rule or Token to be converted
+      #@return [Eson::Rule::AbstractSyntax::Tree] the resulting tree
+      #@raise [CannotConvertTypeToTree] if the object is neither
+      #  a Token or a nonterminal Rule
+      def convert_to_tree(obj)
+        if obj.instance_of?(Token)
+          make_leaf(obj)
+        elsif obj.instance_of?(Rule) && obj.nonterminal?
+          make_tree_node(obj)
+        else
+          raise CannotConvertTypeToTree,
+                invalid_input_type_error_message(obj)
+        end
       end
-
 
       def make_leaf(token)
-        tree = Tree.new(token, nil, active_node, false)
+        tree = Tree.new(token, TreeSeq.new, active_node, false)
                .set_level
       end
 
-      def not_a_valid_root_error_message(obj)
-        "The class #{obj.class} of '#{obj}' cannot be used as a" \
-        " root node for #{self.class}. Parameter must be either" \
-        " a #{Token} or a nonterminal #{Rule}."
-      end
-      
-      def empty?
-        @root_tree.nil?
+      def make_tree_node(rule)
+        tree = Tree.new(rule, TreeSeq.new, active_node, true)
+               .set_level
       end
       
       #Insert an object into the active tree node. Tokens are
       #added as leaf nodes and Rules are added as the active tree
       #node.
       #@param obj [Token, Rule] eson token or production rule
-      #@raise [InsertionError] If obj is neither a Token or Rule
-      #@raise [ClosedTreeError] If the tree is closed
+      #@raise [UnallowedMethodForClosedTree] If the tree is closed
       def insert(obj)
-        if empty?
-          insert_root(obj)
+        if empty_tree?
+          set_root(obj)
         else
           ensure_open
-          if obj.instance_of? Token
-            insert_leaf(obj)
-          elsif obj.instance_of? Rule
-            insert_tree(obj)
-          else
-            raise InsertionError,
-                  not_a_valid_input_error_message(obj)
+          new_tree = convert_to_tree(obj)
+          active_node.children.push new_tree
+          update_height(new_tree)
+          if obj.instance_of? Rule
+            @active = new_tree
           end
         end
         self
       end
-
-      def insert_leaf(token)
-        leaf = make_leaf(token)
-        active_node.children.push leaf
-        update_height(leaf)
-      end
-
+      
       def update_height(tree)
         if tree.level > @height
           @height = tree.level
         end
       end
-
-      def insert_tree(rule)
-        tree = make_tree(rule)
-        active_node.children.push tree
-        update_height(tree)
-        @active = tree
-      end
-
-      def not_a_valid_input_error_message(obj)
+      
+      def invalid_input_type_error_message(obj)
         "The class #{obj.class} of '#{obj}' is not a" \
         " valid input for the #{self.class}. Input" \
-        " must be a #{Token}."
+        " must be a #{Token} or a nonterminal #{Rule}."
       end
 
       #Add a given tree to this tree's active node
@@ -147,7 +130,7 @@ module Eson
       def close_active
         new_active = @active.parent
         @active.close
-        unless new_active.nil?
+        unless new_active.empty_tree?
           @active = new_active
         end
         self
@@ -155,18 +138,18 @@ module Eson
 
       def_delegators :@root_tree, :root_value, :degree, :closed?,
                      :open?, :leaf?, :ensure_open, :has_child?,
-                     :has_children?, :rule, :children, :level
+                     :has_children?, :rule, :children, :level,
+                     :empty_tree?
 
       #Struct class for a tree node
       Tree = Struct.new :value, :children, :parent, :open_state, :level do
-
+        
         #The value of the root node
         #@return [Eson::Rule]
         def root_value
           value
         end
-
-        #Close the active node of the tree and make parent active.
+        
         def close
           self.open_state = false
         end
@@ -182,16 +165,20 @@ module Eson
         end
 
         def degree
-          children.length
+          leaf? ? 0 : children.length
         end
 
         def leaf?
           children.nil? || children.empty?
         end
 
+        def empty_tree?
+          value.nil?
+        end
+
         def ensure_open
           if closed?
-            raise ClosedTreeError,
+            raise UnallowedMethodForClosedTree,
                   closed_tree_error_message
           end
         end
@@ -214,7 +201,7 @@ module Eson
 
         #@param offset [Integer]
         def set_level(offset=0)
-          self.level = parent.nil? ? 1 : 1 + parent.level
+          self.level = parent.empty_tree? ? 1 : 1 + parent.level
           self.level = level + offset
           self
         end
@@ -230,25 +217,10 @@ module Eson
       end
 
       class TreeSeq < Array
-
-        pushvalidate = Module.new do
-          def push(obj)
-            if obj.instance_of? Tree
-              super
-            else
-              raise ElementMustBeTree,
-                    not_a_valid_node_error_message(obj)
-            end
-          end
-        end
-
-        prepend pushvalidate
-
-        def not_a_valid_node_error_message(obj)
-          "The class #{obj.class} of '#{obj}' is not a" \
-          " valid node for the #{self.class}. The object" \
-          " must be a #{Tree}."
-        end
+        
+        extend TypedSeq
+        
+        prepend enforce_type(Eson::Rule::AbstractSyntaxTree::Tree)
       end
     end
   end

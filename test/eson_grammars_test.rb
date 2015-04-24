@@ -5,6 +5,17 @@ require_relative '../lib/eson/eson_grammars.rb'
 describe Eson::EsonGrammars do
   
   subject {Eson::EsonGrammars}
+
+  describe "validate_r0" do
+    before do
+      @lang = subject.reserved_keys
+    end
+    it "should contain built rules" do
+      @lang.must_respond_to :special_form
+      @lang.must_respond_to :unreserved_special_form
+      @lang.must_respond_to :any_special_form
+    end
+  end
   
   describe "validate_e0" do
     before do
@@ -17,7 +28,6 @@ describe Eson::EsonGrammars do
       subject.method(:e0).must_equal subject.method(:tokenizer_lang)
     end
     it "should contain built rules" do
-      @lang.must_respond_to :special_form
       @lang.must_respond_to :proc_identifier
       @lang.must_respond_to :word_form
       @lang.must_respond_to :variable_identifier
@@ -38,7 +48,7 @@ describe Eson::EsonGrammars do
       subject.method(:e1).must_equal subject.method(:verified_special_forms_lang)
     end
     it "should contain new rules" do
-      @lang.wont_respond_to :unkown_special_form
+      @lang.wont_respond_to :unreserved_special_form
     end
     it "has no partial rules" do
       @lang.values.none?{|x| x.partial_status}.must_equal true

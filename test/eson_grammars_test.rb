@@ -5,6 +5,15 @@ require_relative '../lib/eson/eson_grammars.rb'
 describe Eson::EsonGrammars do
   
   subject {Eson::EsonGrammars}
+
+  describe "validate_r0" do
+    before do
+      @lang = subject.reserved_keys
+    end
+    it "should contain built rules" do
+      @lang.must_respond_to :special_form
+    end
+  end
   
   describe "validate_e0" do
     before do
@@ -17,7 +26,6 @@ describe Eson::EsonGrammars do
       subject.method(:e0).must_equal subject.method(:tokenizer_lang)
     end
     it "should contain built rules" do
-      @lang.must_respond_to :special_form
       @lang.must_respond_to :proc_identifier
       @lang.must_respond_to :word_form
       @lang.must_respond_to :variable_identifier

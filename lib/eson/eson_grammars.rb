@@ -124,32 +124,17 @@ module Eson
     def end_of_line_rule
       Rule.new_terminal_rule(:end_of_line, comma_rxp)
     end
-    
-    # let := "let";
-    def let_rule
-      Rule.new_terminal_rule(:let, let_rxp)
-    end
 
-    def let_rxp
-      /let\z/
-    end
-    
-    # ref := "ref";
-    def ref_rule
-      Rule.new_terminal_rule(:ref, ref_rxp)
-    end
-
-    def ref_rxp
-      /ref\z/
-    end
-    
-    # doc := "doc";
-    def doc_rule
-      Rule.new_terminal_rule(:doc, doc_rxp)
-    end
-
-    def doc_rxp
-      /doc\z/
+    def make_special_form_rules(keywords)
+      keywords.map do |k|
+        if k.is_a?(String) || k.is_a?(Symbol)
+          k_name = k.is_a?(Symbol) ? k : k.intern
+          k_string = k.is_a?(String) ? k : k.to_s
+          Rule.new_terminal_rule(
+            k_name,
+            Regexp.new(k_string.concat("\\z")))
+        end
+      end
     end
 
     # unknown_special_form := {JSON_char};
@@ -202,6 +187,15 @@ module Eson
       Rule.new_terminal_rule(:key_string, all_chars_rxp)
     end
 
+    #@return [R0] grammar composed of the reserved keywords
+    #  in eson.
+    def reserved_keys
+      reserved = [:let, :ref, :doc]
+      RuleSeq.new(make_special_form_rules(reserved))
+        .make_alternation_rule(:special_form, reserved)
+        .build_grammar("R0")
+    end
+
     #@return [E0] the initial compiler language used by Tokenizer
     #@eskimobear.specification
     #
@@ -245,17 +239,14 @@ module Eson
                array_end_rule,
                comma_rule,
                end_of_line_rule,
-               let_rule,
-               ref_rule,
-               doc_rule,
                unknown_special_form_rule,
                proc_prefix_rule,
                colon_rule,
                program_start_rule,
                program_end_rule,
                key_string_rule]
+      rules.concat(reserved_keys.rule_seq)
       RuleSeq.new(rules)
-        .make_alternation_rule(:special_form, [:let, :ref, :doc])
         .make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :empty_word, :other_chars])
         .make_concatenation_rule(:variable_identifier, [:variable_prefix, :word])
         .make_concatenation_rule(:proc_identifier, [:proc_prefix, :special_form])

@@ -214,9 +214,6 @@ module Eson
     # array_end := "]";
     # comma := ",";
     # end_of_line := ",";
-    # let := "let";
-    # ref := "ref";
-    # doc := "doc";
     # proc_prefix := "&";
     # colon := ":";
     # program_start := "{";

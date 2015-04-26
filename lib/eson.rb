@@ -19,7 +19,6 @@ module Eson
                        .add_line_numbers
                        .verify_special_forms
                        .tokenize_variable_identifiers
-                       .tokenize_special_forms
                        .tokenize_proc_identifiers
                        .tokenize_word_forms
                        .label_sub_strings

@@ -46,6 +46,8 @@ describe Eson do
       @token_sequence.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
     end
     it "tokenize_proc_identifier" do
+      @token_sequence.detect{|i| i.name == :proc_identifier}
+       .type.wont_equal nil
       @token_sequence.find_all {|i| i.name == :proc_identifier}.length.must_equal 4
     end
     it "#tokenize_word_form" do

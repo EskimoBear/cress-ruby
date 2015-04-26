@@ -7,7 +7,7 @@ module Eson
 
     WrongLexemeType = Class.new(StandardError)
 
-    Token = Struct.new :lexeme, :name, :alternation_names, :line_number
+    Token = Struct.new :lexeme, :name, :alternation_names, :line_number, :type
 
     def make_token(lexeme)
       if lexeme.instance_of? Symbol

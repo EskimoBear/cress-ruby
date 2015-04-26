@@ -120,7 +120,6 @@ module Eson::TokenPass
     #@param rule [Eson::RuleSeq::Rule] alternation rule
     def assign_alternation_names(rule)
       token_names = rule.term_names
-      new_token_name = rule.name
       self.map! do |old_token|
         if token_names.include?(old_token.name)
           old_token.alternation_names = [].push(rule.name)
@@ -134,6 +133,7 @@ module Eson::TokenPass
     end
 
     def tokenize_proc_identifiers
+      tokenize_special_forms
       tokenize_rule(LANG.proc_identifier)
       self.each do |i|
         if i.name == :proc_identifier
@@ -143,12 +143,23 @@ module Eson::TokenPass
       end
     end
 
+    def tokenize_special_forms
+      convert_name_to_type(LANG.special_form)
+      tokenize_rule(LANG.special_form)
+    end
+
     def tokenize_word_forms
       tokenize_rule(LANG.word_form)
     end
 
-    def tokenize_special_forms
-      tokenize_rule(LANG.special_form)
+    def convert_name_to_type(rule)
+      token_names = rule.term_names
+      self.map! do |token|
+        if token_names.include?(token.name)
+          token.type = token.name
+        end
+        token
+      end
     end
 
     def tokenize_rule(rule)
@@ -187,8 +198,11 @@ module Eson::TokenPass
       self.replace tokenize_alternation_rule_recur(rule, self.clone)
     end
 
-    def tokenize_alternation_rule_recur(rule, input_sequence,
-                                        output_sequence = Eson::TokenPass::TokenSeq.new)
+    def tokenize_alternation_rule_recur(
+          rule,
+          input_sequence,
+          output_sequence = Eson::TokenPass::TokenSeq.new)
+
       new_token_name = rule.name
       token_names = rule.term_names
 
@@ -302,11 +316,14 @@ module Eson::TokenPass
     end
 
     def reduce_tokens(new_name, *tokens)
-      line_no = Eson::TokenPass::TokenSeq.new(tokens).get_next_line_number
+      line_no = Eson::TokenPass::TokenSeq
+                .new(tokens)
+                .get_next_line_number
+      type = tokens.reduce(nil) {|memo, t| memo == nil ? t.type : memo}
       combined_lexeme = tokens.each_with_object("") do |i, string|
         string.concat(i.lexeme.to_s)
       end
-      Token[combined_lexeme.intern, new_name, nil, line_no]
+      Token[combined_lexeme.intern, new_name, nil, line_no, type]
     end
 
     def get_next_line_number

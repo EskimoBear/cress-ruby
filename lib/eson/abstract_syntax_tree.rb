@@ -139,7 +139,7 @@ module Eson
       def_delegators :@root_tree, :root_value, :degree, :closed?,
                      :open?, :leaf?, :ensure_open, :has_child?,
                      :has_children?, :rule, :children, :level,
-                     :empty_tree?
+                     :empty_tree?, :contains?
 
       #Struct class for a tree node
       Tree = Struct.new :value, :children, :parent, :open_state, :level do
@@ -197,6 +197,18 @@ module Eson
         #names of child nodes
         def has_children?(names)
           names == children.map{|i| i.value.name}
+        end
+
+        #Search tree for the presence of a value
+        #@param name [Symbol] name of child node
+        #@return [Boolean] true if the name is present
+        def contains?(name)
+          root_match = root_value.name == name
+          if root_match || has_child?(name)
+            true
+          else
+            children.any?{|i| i.contains?(name)}
+          end
         end
 
         #@param offset [Integer]

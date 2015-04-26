@@ -66,7 +66,6 @@ describe Eson::EsonGrammars do
       subject.method(:e2).must_equal subject.method(:tokenize_variable_identifier_lang)
     end
     it "should contain new rules" do
-      @lang.must_respond_to :key
       @lang.wont_respond_to :let
       @lang.wont_respond_to :ref
       @lang.wont_respond_to :doc
@@ -140,6 +139,8 @@ describe Eson::EsonGrammars do
       @lang.must_respond_to :element_list
       @lang.must_respond_to :element_set
       @lang.must_respond_to :array
+      @lang.must_respond_to :attribute
+      @lang.must_respond_to :call
       @lang.must_respond_to :declaration
       @lang.must_respond_to :declaration_more_once
       @lang.must_respond_to :declaration_more
@@ -154,7 +155,7 @@ describe Eson::EsonGrammars do
     it "has no partial rules" do
       @lang.values.none?{|x| x.partial_status}.must_equal true
     end
-  end 
+  end
 end
 
 describe Eson::Rule do

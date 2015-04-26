@@ -272,7 +272,6 @@ module Eson
       e1.copy_rules
         .convert_to_terminal(:variable_identifier)
         .convert_to_terminal(:proc_identifier)
-        .make_alternation_rule(:key, [:proc_identifier, :key_string])
         .remove_rules([:let, :ref, :doc, :proc_prefix, :special_form])
         .build_grammar("E2")
     end
@@ -284,7 +283,8 @@ module Eson
     #         'whitespace', 'variable_prefix', 'word' and 
     #         'other_chars' removed.    
     def e3
-      e2.copy_rules.convert_to_terminal(:word_form)
+      e2.copy_rules
+        .convert_to_terminal(:word_form)
         .remove_rules([:other_chars, :variable_prefix, :word, :empty_word, :whitespace])
         .build_grammar("E3")
     end
@@ -294,7 +294,8 @@ module Eson
     # Prop : E4 is a struct of eson production rules of E3 with
     #        'sub_string' production rule added.
     def e4
-      e3.copy_rules.make_alternation_rule(:sub_string, [:word_form, :variable_identifier])
+      e3.copy_rules
+        .make_alternation_rule(:sub_string, [:word_form, :variable_identifier])
         .make_terminal_rule(:string_delimiter, /"/)
         .make_repetition_rule(:sub_string_list, :sub_string)
         .make_concatenation_rule(:string, [:string_delimiter, :sub_string_list, :string_delimiter])
@@ -315,7 +316,9 @@ module Eson
         .make_concatenation_rule(:element_list, [:value, :element_more])
         .make_option_rule(:element_set, :element_list)
         .make_concatenation_rule(:array, [:array_start, :element_set, :array_end])
-        .make_concatenation_rule(:declaration, [:key, :colon, :value])
+        .make_concatenation_rule(:attribute, [:key_string, :colon, :value])
+        .make_concatenation_rule(:call, [:proc_identifier, :colon, :value])
+        .make_alternation_rule(:declaration, [:call, :attribute])
         .make_concatenation_rule(:declaration_more_once, [:end_of_line, :declaration])
         .make_repetition_rule(:declaration_more, :declaration_more_once)
         .make_concatenation_rule(:declaration_list, [:declaration, :declaration_more])

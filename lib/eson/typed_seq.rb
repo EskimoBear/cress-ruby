@@ -26,9 +26,9 @@ module TypedSeq
       end
 
       def wrong_element_error_message(obj, type)
-        "The class #{obj.class} of '#{obj}' is not a" \
-        " valid element for the #{self.class}. The object" \
-        " must be a #{type}."
+        "The #{obj.class}, '#{obj}' is not a valid" \
+        " element for the #{self.class} collection." \
+        " The element must be a #{type}."
       end
 
       def initialize(obj=nil)
@@ -49,10 +49,14 @@ module TypedSeq
       end
 
       def wrong_initialization_error_message(seq, type)
-        "The array #{seq} cannot be used to initialize" \
-        " an instance of #{self.class}." \
-        " It contains one or more elements which are" \
-        " not of the #{type} type."
+        contains_one = "It contains a #{seq.first.class}" \
+                       "but only elements of the #{type}" \
+                       " type are allowed."
+        contains_many = "It contains elements which are" \
+                        " not of the allowed type #{type}."
+        "The Array, #{seq} cannot be used to initialize" \
+        " an instance of #{self.class}.".concat(
+          seq.length.eql?(1) ? contains_one : contains_many)
       end
     end
 

@@ -1,4 +1,3 @@
-require 'pry'
 module TypedSeq
   
   WrongElementType = Class.new(StandardError)
@@ -58,7 +57,7 @@ module TypedSeq
     end
 
     prepend_module = Module.new
-    prepend_module.module_exec type, &dynamic_methods
+    prepend_module.module_exec(type, &dynamic_methods)
     prepend_module
   end
 end

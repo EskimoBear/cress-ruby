@@ -228,12 +228,7 @@ module Eson
         end
       end
 
-      class TreeSeq < Array
-        
-        extend TypedSeq
-        
-        prepend enforce_type(Eson::Rule::AbstractSyntaxTree::Tree)
-      end
+      TreeSeq = TypedSeq.new_seq(Tree)
     end
   end
 end

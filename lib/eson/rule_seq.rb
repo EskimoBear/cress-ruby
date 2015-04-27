@@ -3,11 +3,9 @@ require_relative './typed_seq'
 
 module Eson
 
-  class RuleSeq < Array
+  RuleSeq = TypedSeq.new_seq(Eson::Rule)
 
-    extend TypedSeq
-
-    prepend enforce_type(Eson::Rule)
+  class RuleSeq
 
     WrongElementType = Class.new(StandardError)
     MissingRule = Class.new(StandardError)

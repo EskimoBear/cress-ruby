@@ -3,9 +3,22 @@ module TypedSeq
   WrongElementType = Class.new(StandardError)
   WrongInitializationType = Class.new(StandardError)
 
-  #Create anonymous module to prepend to Array subclasses.
-  #Enforces single type arrays with type enforcement
-  #for #new and #push methods
+  #Create a subclass of Array that can only have
+  #elements with a class of type. The element is
+  #tested against the #instance_of? method.
+  #@param type [Constant] type or class of Array elements
+  #@return [Class] anonymous subclass of Array
+  def self.new_seq(type)
+    Class.new(Array) do
+      extend TypedSeq
+      prepend enforce_type(type)
+    end
+  end
+
+  private
+
+  #Create anonymous module which provides type enforcement
+  #for #new and #push methods.
   #@param type [Constant] type of Array subclass
   #@return [Module] module to prepend for type enforcement
   def enforce_type(type)
@@ -49,10 +62,10 @@ module TypedSeq
       end
 
       def wrong_initialization_error_message(seq, type)
-        contains_one = "It contains a #{seq.first.class}" \
-                       "but only elements of the #{type}" \
+        contains_one = " It contains a #{seq.first.class}" \
+                       " but only elements of the #{type}" \
                        " type are allowed."
-        contains_many = "It contains elements which are" \
+        contains_many = " It contains elements which are" \
                         " not of the allowed type #{type}."
         "The Array, #{seq} cannot be used to initialize" \
         " an instance of #{self.class}.".concat(

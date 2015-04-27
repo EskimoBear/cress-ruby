@@ -7,10 +7,7 @@ describe TypedSeq, "Demo" do
   subject {TypedSeq}
 
   before do
-    @string_seq = Class.new(Array) do
-      extend TypedSeq
-      prepend enforce_type(String)
-    end
+    @string_seq = TypedSeq.new_seq(String)
     @bad_param = ["wrong", 9]
   end
 

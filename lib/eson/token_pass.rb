@@ -7,16 +7,14 @@ module Eson::TokenPass
 
   extend Tokenizer
 
-  LANG = Eson::EsonGrammars.tokenizer_lang
+  Token = Eson::LexemeCapture::Token
+  TokenSeq = TypedSeq.new_seq(Token)
   
-  class TokenSeq < Array
+  LANG = Eson::EsonGrammars.tokenizer_lang
 
-    extend TypedSeq
+  class TokenSeq
+
     include Eson::ErrorPass
-
-    prepend enforce_type(Eson::LexemeCapture::Token)
-
-    Token = Eson::LexemeCapture::Token
 
     def get_program_line(line_no)
       take_while{|i| i.line_number == line_no}

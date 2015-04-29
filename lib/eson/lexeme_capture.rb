@@ -1,3 +1,5 @@
+require_relative './respondent'
+
 module Eson
 
   #Operations and data structures for the lexeme field
@@ -5,10 +7,14 @@ module Eson
   #  regexp that matches a fixed lexeme or a set of strings.
   module LexemeCapture
 
+    extend Respondent
+
     WrongLexemeType = Class.new(StandardError)
 
     Token = Struct.new :lexeme, :name, :alternation_names, :line_number, :type
 
+    uses :name, :start_rxp 
+     
     def make_token(lexeme)
       if lexeme.instance_of? Symbol
         Token.new(lexeme, self.name)

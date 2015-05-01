@@ -194,7 +194,7 @@ module Eson
         .make_alternation_rule(
           :any_special_form,
           [:special_form, :unreserved_special_form])
-        .build_grammar("R0")
+        .build_cfg("R0")
     end
 
     #@return [E0] the initial compiler language used by Tokenizer
@@ -247,7 +247,7 @@ module Eson
         .make_alternation_rule(:word_form, [:whitespace, :variable_prefix, :word, :empty_word, :other_chars])
         .make_concatenation_rule(:variable_identifier, [:variable_prefix, :word])
         .make_concatenation_rule(:proc_identifier, [:proc_prefix, :special_form])
-        .build_grammar("E0")
+        .build_cfg("E0")
     end
 
     #@return e1 the second language of the compiler
@@ -257,7 +257,7 @@ module Eson
     def e1
       e0.copy_rules
         .remove_rules([:unreserved_special_form])
-        .build_grammar("E1")
+        .build_cfg("E1")
     end
 
     #@return e2 the third language of the compiler
@@ -270,7 +270,7 @@ module Eson
         .convert_to_terminal(:variable_identifier)
         .convert_to_terminal(:proc_identifier)
         .remove_rules([:let, :ref, :doc, :proc_prefix, :special_form])
-        .build_grammar("E2")
+        .build_cfg("E2")
     end
 
     #@return e3 the fourth language of the compiler
@@ -283,7 +283,7 @@ module Eson
       e2.copy_rules
         .convert_to_terminal(:word_form)
         .remove_rules([:other_chars, :variable_prefix, :word, :empty_word, :whitespace])
-        .build_grammar("E3")
+        .build_cfg("E3")
     end
 
     #@return e4 the fifth language of the compiler
@@ -296,7 +296,7 @@ module Eson
         .make_terminal_rule(:string_delimiter, /"/)
         .make_repetition_rule(:sub_string_list, :sub_string)
         .make_concatenation_rule(:string, [:string_delimiter, :sub_string_list, :string_delimiter])
-        .build_grammar("E4")
+        .build_cfg("E4")
     end
 
     #@return e5 the sixth language of the compiler
@@ -321,7 +321,7 @@ module Eson
         .make_concatenation_rule(:declaration_list, [:declaration, :declaration_more])
         .make_option_rule(:declaration_set, :declaration_list)
         .make_concatenation_rule(:program, [:program_start, :declaration_set, :program_end])
-        .build_grammar("E5", :program)
+        .build_cfg("E5", :program)
     end
 
     alias_method :tokenizer_lang, :e0

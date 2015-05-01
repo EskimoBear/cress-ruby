@@ -355,7 +355,7 @@ describe Eson::Rule do
       before do
         @rules = rule_seq
                  .make_repetition_rule(:terminal_rule, :rule_1)
-        @lang = @rules.build_grammar("LANG")
+        @lang = @rules.build_cfg("LANG")
         @rule = @lang.terminal_rule
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_1)]
         @valid_token_seq = token_seq.new(@sequence)
@@ -421,7 +421,7 @@ describe Eson::Rule do
                    .make_concatenation_rule(:c_rule, [:rule_1, :rule_2])
                    .make_repetition_rule(:nonterminal_rule, :c_rule)
                    .make_concatenation_rule(:top, [:nonterminal_rule, :rule_3])
-          @lang = @rules.build_grammar("LANG", :top)
+          @lang = @rules.build_cfg("LANG", :top)
           @rule = @lang.nonterminal_rule
           @sequence  = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
           @valid_once_seq = token_seq.new(@sequence).concat(@invalid_sequence)
@@ -555,7 +555,7 @@ describe Eson::Rule do
       before do
         @rules = rule_seq
                  .make_option_rule(:terminal_rule, :rule_1)
-        @lang = @rules.build_grammar("LANG")
+        @lang = @rules.build_cfg("LANG")
         @rule = @lang.terminal_rule
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
         @valid_token_seq = token_seq.new(@sequence)
@@ -598,7 +598,7 @@ describe Eson::Rule do
                    .make_concatenation_rule(:c_rule, [:rule_1, :rule_2])
                    .make_option_rule(:nonterminal_rule, :c_rule)
                    .make_concatenation_rule(:top, [:nonterminal_rule, :rule_3])
-          @lang = @rules.build_grammar("LANG", :top)
+          @lang = @rules.build_cfg("LANG", :top)
           @rule = @lang.nonterminal_rule
         end
         describe "with_valid_tokens" do

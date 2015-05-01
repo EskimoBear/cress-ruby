@@ -258,7 +258,12 @@ module Eson
       end
     end
 
-    def build_grammar(grammar_name, top_rule_name=nil)
+    #Output a context free grammar for the rules
+    #in the RuleSeq
+    #@param grammar_name [Symbol] name of the grammar
+    #@return [Struct] a struct of class grammar_name
+    #  representing a context free grammar
+    def build_cfg(grammar_name, top_rule_name=nil)
       rules = self.clone
       grammar_struct = Struct.new grammar_name, *rules.names do
         include GrammarOperations

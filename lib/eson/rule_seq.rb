@@ -13,6 +13,18 @@ module Eson
 
     module GrammarOperations
 
+      def productions
+        self.values.select{|i| i.nonterminal?}
+      end
+
+      def nonterminals
+        productions.map{|i| i.name}
+      end
+
+      def terminals
+        self.values.select{|i| i.terminal?}.map{|i| i.name}
+      end
+
       def get_rule(rule_name)
         rule_seq.get_rule(rule_name)
       end
@@ -55,6 +67,7 @@ module Eson
       elsif !include_rule?(rule_name)
         raise MissingRule, missing_rule_error_message(rule_name)
       end
+      remove_rules(self.get_rule(rule_name).term_names)
       self.map! do |rule|
         new_rule = if rule_name == rule.name
                      Rule.new_terminal_rule(rule.name, rule.rxp)
@@ -62,6 +75,14 @@ module Eson
                      rule
                    end
         new_rule
+      end
+    end
+
+    def remove_rules(rule_names)
+      if include_rules?(rule_names)
+        initialize(self.reject{|i| rule_names.include?(i.name)})
+      else
+        nil
       end
     end
 
@@ -248,14 +269,6 @@ module Eson
     def missing_rule_error_message(rule_name)
       "The Eson::Rule.name ':#{rule_name}' is not present" \
       " in the sequence."
-    end
-
-    def remove_rules(rule_names)
-      if include_rules?(rule_names)
-        initialize(self.reject{|i| rule_names.include?(i.name)})
-      else
-        nil
-      end
     end
 
     #Output a context free grammar for the rules

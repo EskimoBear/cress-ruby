@@ -18,25 +18,19 @@ describe Eson::TokenPass::Tokenizer do
     @token_sequence.find_all {|i| i.line_number == nil}.size.must_equal 0
   end
   it "#tokenize_variable_identifier" do
-    @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
     @token_sequence.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
   end
   it "tokenize_proc_identifier" do
-    @token_sequence.detect{|i| i.name == :proc_identifier}
-      .type.wont_equal nil
-    @token_sequence.find_all {|i| i.name == :proc_identifier}.length.must_equal 4
+    @token_sequence.find_all {|i| i.name == :special_form_identifier}.length.must_equal 4
   end
   it "#tokenize_word_form" do
-    @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
-    @token_sequence.find_all {|i| i.name == :word_form}.length.must_equal 7
+    @token_sequence.find_all {|i| i.name == :word_form}.length.must_equal 26
   end
   it "#label_sub_strings" do
-    @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
     @token_sequence.find_all {|i| i.alternation_names.to_a.include?(:sub_string)}
-      .length.must_equal 8
+      .length.must_equal 27
   end
   it "#insert_string_delimiters" do
-    @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
     @token_sequence.find_all {|i| i.name == :string_delimiter}.length.must_equal 12
   end
 end

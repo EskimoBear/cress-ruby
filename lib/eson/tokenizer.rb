@@ -6,6 +6,7 @@ module Eson::TokenPass
   
   module Tokenizer
 
+    InvalidLexeme = Class.new(StandardError)
     TokenizationIncomplete = Class.new(StandardError)
     
     LANG = Eson::EsonGrammars.tokenizer_lang
@@ -166,51 +167,29 @@ module Eson::TokenPass
     end
 
     def tokenize_json_key(json_key, seq, char_seq)
-      if begins_with_proc_prefix?(json_key)
-        update_json_and_char_seqs(
-          LANG.proc_prefix.match_token(json_key),
-          seq,
-          char_seq)
-        tokenize_special_form(get_prefixed_string(json_key), seq, char_seq)
+      lexer([:special_form_identifier,
+             :unreserved_procedure_identifier,
+             :key_string],
+            json_key,
+            seq,
+            char_seq)
+    end
+
+    def lexer(terminals, string, seq, char_seq)
+      matched_terminal = terminals.detect{|i| LANG.send(i).match(string)}
+      if matched_terminal.nil?
+        raise InvalidLexeme, lexer_error_message(string)
       else
         update_json_and_char_seqs(
-          LANG.key_string.make_token(json_key),
+          LANG.send(matched_terminal).match_token(string),
           seq,
           char_seq)
       end
     end
 
-    def begins_with_proc_prefix?(string)
-      string[0] == "&"
-    end
-    
-    def get_prefixed_string(string)
-      string[1..-1]     
-    end
-
-    def tokenize_special_form(json_string, seq, char_seq)
-      case json_string
-      when LANG.doc.rxp
-        update_json_and_char_seqs(
-          LANG.doc.match_token(json_string),
-          seq,
-          char_seq)
-      when LANG.let.rxp
-        update_json_and_char_seqs(
-          LANG.let.match_token(json_string),
-          seq,
-          char_seq)
-      when LANG.ref.rxp
-        update_json_and_char_seqs(
-          LANG.ref.match_token(json_string),
-          seq,
-          char_seq)
-      else
-        update_json_and_char_seqs(
-          LANG.unreserved_special_form.make_token(json_string),
-          seq,
-          char_seq)
-      end      
+    def lexer_error_message(string)
+      "The string - \n\"#{string}\"\ncould not be broken up into tokens." \
+      " It does not match any of the valid tokens in eson."
     end
 
     def tokenize_json_value(json_value, seq, char_seq)
@@ -238,43 +217,23 @@ module Eson::TokenPass
         tokenize_json_string(json_value.freeze, seq, char_seq)
       end
     end
-    
+
     def tokenize_json_string(json_string, seq, char_seq)
-      case json_string
-      when LANG.whitespace.rxp
-        update_json_and_char_seqs(
-          LANG.whitespace.match_token(json_string),
-          seq,
-          char_seq)
-        tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
-      when LANG.variable_prefix.rxp
-        update_json_and_char_seqs(
-          LANG.variable_prefix.match_token(json_string),
-          seq,
-          char_seq)
-        tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
-      when LANG.other_chars.rxp
-        update_json_and_char_seqs(
-          LANG.other_chars.match_token(json_string),
-          seq,
-          char_seq)
-        tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
-      when LANG.word.rxp
-        update_json_and_char_seqs(
-          LANG.word.match_token(json_string),
-          seq,
-          char_seq)
-        tokenize_json_string(get_rest(json_string, seq.last.lexeme), seq, char_seq)
-      when LANG.empty_word.rxp
-        update_json_and_char_seqs(
-          LANG.empty_word.match_token(json_string),
-          seq,
-          char_seq)
+      lexer(
+        [:word_form,
+         :variable_identifier],
+        json_string,
+        seq,
+        char_seq)
+      rest = get_rest(json_string, seq)
+      unless rest.empty?
+        tokenize_json_string(rest, seq, char_seq)
       end
     end
-    
-    def get_rest(json_string, matched_string)
-      json_string[matched_string.size..-1]
+
+    def get_rest(string, seq)
+      matched_string = seq.last.lexeme
+      string[matched_string.size..-1]
     end
   end
 end

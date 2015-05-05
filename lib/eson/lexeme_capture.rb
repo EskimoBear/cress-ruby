@@ -13,8 +13,21 @@ module Eson
 
     Token = Struct.new :lexeme, :name, :alternation_names, :line_number, :type
 
-    uses :name, :start_rxp 
-     
+    uses :name, :start_rxp
+
+    def match_token(string)
+      lexeme = match(string).to_s.intern
+      make_token(lexeme)
+    end
+
+    def match(string)
+      string.match(rxp)
+    end
+
+    def rxp
+      apply_at_start(self.start_rxp)
+    end
+
     def make_token(lexeme)
       if lexeme.instance_of? Symbol
         Token.new(lexeme, self.name)
@@ -29,19 +42,6 @@ module Eson
       "Lexeme provided to method #{caller_locations[0].label}" \
       "must be either a Symbol or a String but the given lexeme" \
       "- #{lexeme} is a #{lexeme.class}."
-    end
-
-    def match_token(string)
-      lexeme = match(string).to_s.intern
-      make_token(lexeme)
-    end
-
-    def match(string)
-      string.match(rxp)
-    end
-
-    def rxp
-      apply_at_start(self.start_rxp)
     end
 
     def match_rxp?(string)

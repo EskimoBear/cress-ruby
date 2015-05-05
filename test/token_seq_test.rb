@@ -39,16 +39,16 @@ end
 
 describe Eson::TokenPass::TokenSeq do
   before do
-    @alternation_rule = Eson::EsonGrammars.e1.word_form
+    @alternation_rule = Eson::EsonGrammars.e5.sub_string
     @concatenation_rule = Eson::EsonGrammars.e0.variable_identifier
     @token_seq = Eson::TokenPass::TokenSeq.new(4) {Eson::LexemeCapture::Token.new}
   end
   
   describe "#tokenize_rule" do
     it "with-alternation-rule" do
-      @token_seq[0].name = :variable_prefix
+      @token_seq[1].name = :variable_identifier
       @token_seq[1].lexeme = :word_1
-      @token_seq[2].name = :other_chars
+      @token_seq[2].name = :word_form
       @token_seq[2].lexeme = :word_1
       @token_seq[3].name = :word
       @token_seq[3].lexeme = :word_1
@@ -70,10 +70,10 @@ describe Eson::TokenPass::TokenSeq do
   end
   describe "#assign_alternation_names" do
     it "succeeds" do
-      @token_seq[0].name = :variable_prefix
-      @token_seq[1].name = :whitespace
-      @token_seq[2].name = :other_chars
-      @token_seq[3].name = :word
+      @token_seq[0].name = :word_form
+      @token_seq[1].name = :variable_identifier
+      @token_seq[2].name = :variable_identifier
+      @token_seq[3].name = :word_form
       @token_seq.assign_alternation_names(@alternation_rule)
       @token_seq.all?{|i| i.alternation_names.include?(@alternation_rule.name)}.must_equal true
     end

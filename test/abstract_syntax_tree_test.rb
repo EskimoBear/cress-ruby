@@ -6,9 +6,10 @@ require_relative '../lib/eson/rule.rb'
 describe Eson::Rule::AbstractSyntaxTree do
 
   before do
+    @terminal_name = :terminal
     @terminal_rule = Eson::Rule
                      .new_terminal_rule(
-                       :terminal,
+                       @terminal_name,
                        /rule/)
     @nonterminal_rule = Eson::Rule.
                         new(
@@ -152,6 +153,20 @@ describe Eson::Rule::AbstractSyntaxTree do
       @tree.close_active
       @tree.close_active
       @tree.closed?.must_equal true
+    end
+  end
+
+  describe "#contains?" do
+    before do
+      @tree = subject.new @nonterminal_rule
+      @tree.insert(@nonterminal_rule)
+    end
+    it "contains token" do
+      @tree.insert(@terminal_rule.make_token(:token))
+      @tree.contains?(@terminal_name).must_equal true
+    end
+    it "doesn't contain token" do
+      @tree.contains?(@terminal_name).must_equal false
     end
   end
 end

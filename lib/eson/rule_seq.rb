@@ -3,17 +3,27 @@ require_relative './typed_seq'
 
 module Eson
 
-  class RuleSeq < Array
+  RuleSeq = TypedSeq.new_seq(Eson::Rule)
 
-    extend TypedSeq
-
-    prepend enforce_type(Eson::Rule)
+  class RuleSeq
 
     WrongElementType = Class.new(StandardError)
     MissingRule = Class.new(StandardError)
     CannotMakeTerminal = Class.new(StandardError)
 
     module GrammarOperations
+
+      def productions
+        self.values.select{|i| i.nonterminal?}
+      end
+
+      def nonterminals
+        productions.map{|i| i.name}
+      end
+
+      def terminals
+        self.values.select{|i| i.terminal?}.map{|i| i.name}
+      end
 
       def get_rule(rule_name)
         rule_seq.get_rule(rule_name)
@@ -57,6 +67,7 @@ module Eson
       elsif !include_rule?(rule_name)
         raise MissingRule, missing_rule_error_message(rule_name)
       end
+      remove_rules(self.get_rule(rule_name).term_names)
       self.map! do |rule|
         new_rule = if rule_name == rule.name
                      Rule.new_terminal_rule(rule.name, rule.rxp)
@@ -64,6 +75,14 @@ module Eson
                      rule
                    end
         new_rule
+      end
+    end
+
+    def remove_rules(rule_names)
+      if include_rules?(rule_names)
+        initialize(self.reject{|i| rule_names.include?(i.name)})
+      else
+        nil
       end
     end
 
@@ -252,15 +271,12 @@ module Eson
       " in the sequence."
     end
 
-    def remove_rules(rule_names)
-      if include_rules?(rule_names)
-        initialize(self.reject{|i| rule_names.include?(i.name)})
-      else
-        nil
-      end
-    end
-
-    def build_grammar(grammar_name, top_rule_name=nil)
+    #Output a context free grammar for the rules
+    #in the RuleSeq
+    #@param grammar_name [Symbol] name of the grammar
+    #@return [Struct] a struct of class grammar_name
+    #  representing a context free grammar
+    def build_cfg(grammar_name, top_rule_name=nil)
       rules = self.clone
       grammar_struct = Struct.new grammar_name, *rules.names do
         include GrammarOperations

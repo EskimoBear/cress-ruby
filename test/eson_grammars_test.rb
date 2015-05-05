@@ -11,9 +11,10 @@ describe Eson::EsonGrammars do
       @lang = subject.reserved_keys
     end
     it "should contain built rules" do
-      @lang.must_respond_to :special_form
-      @lang.must_respond_to :unreserved_special_form
-      @lang.must_respond_to :any_special_form
+      @lang.nonterminals.must_be_empty
+      @lang.terminals.must_include :special_form_identifier
+      @lang.terminals.must_include :unreserved_procedure_identifier
+      @lang.terminals.must_include :key_string
     end
   end
   
@@ -28,73 +29,9 @@ describe Eson::EsonGrammars do
       subject.method(:e0).must_equal subject.method(:tokenizer_lang)
     end
     it "should contain built rules" do
-      @lang.must_respond_to :proc_identifier
-      @lang.must_respond_to :word_form
-      @lang.must_respond_to :variable_identifier
-    end
-    it "has no partial rules" do
-      @lang.values.none?{|x| x.partial_status}.must_equal true
-    end
-  end
-  
-  describe "validate_e1" do
-    before do
-      @lang = subject.e1
-    end
-    it "should be E1" do
-      @lang.class.must_equal Struct::E1
-    end
-    it "should be aliased" do
-      subject.method(:e1).must_equal subject.method(:verified_special_forms_lang)
-    end
-    it "should contain new rules" do
-      @lang.wont_respond_to :unreserved_special_form
-    end
-    it "has no partial rules" do
-      @lang.values.none?{|x| x.partial_status}.must_equal true
-    end
-  end
-  
-  describe "validate_e2" do
-    before do
-      @lang = subject.e2
-    end
-    it "should be E2" do
-      @lang.class.must_equal Struct::E2
-    end
-    it "should be aliased" do
-      subject.method(:e2).must_equal subject.method(:tokenize_variable_identifier_lang)
-    end
-    it "should contain new rules" do
-      @lang.must_respond_to :key
-      @lang.wont_respond_to :let
-      @lang.wont_respond_to :ref
-      @lang.wont_respond_to :doc
-      @lang.wont_respond_to :special_form
-      @lang.wont_respond_to :proc_prefix
-    end
-    it "has no partial rules" do
-      @lang.values.none?{|x| x.partial_status}.must_equal true
-    end
-  end
-
-  describe "validate_e3" do
-    before do
-      @lang = subject.e3
-    end
-    it "should be E3" do
-      @lang.class.must_equal Struct::E3
-    end
-    it "should be aliased" do
-      subject.method(:e3).must_equal subject.method(:tokenize_word_form_lang)
-    end
-    it "should contain new rules" do
-      @lang.must_respond_to :word_form
-      @lang.wont_respond_to :other_chars
-      @lang.wont_respond_to :variable_prefix
-      @lang.wont_respond_to :word
-      @lang.wont_respond_to :whitespace
-      @lang.wont_respond_to :empty_word
+      @lang.nonterminals.must_include :proc_identifier
+      @lang.terminals.must_include :word_form
+      @lang.terminals.must_include :variable_identifier
     end
     it "has no partial rules" do
       @lang.values.none?{|x| x.partial_status}.must_equal true
@@ -140,6 +77,8 @@ describe Eson::EsonGrammars do
       @lang.must_respond_to :element_list
       @lang.must_respond_to :element_set
       @lang.must_respond_to :array
+      @lang.must_respond_to :attribute
+      @lang.must_respond_to :call
       @lang.must_respond_to :declaration
       @lang.must_respond_to :declaration_more_once
       @lang.must_respond_to :declaration_more
@@ -154,7 +93,7 @@ describe Eson::EsonGrammars do
     it "has no partial rules" do
       @lang.values.none?{|x| x.partial_status}.must_equal true
     end
-  end 
+  end
 end
 
 describe Eson::Rule do
@@ -167,7 +106,7 @@ describe Eson::Rule do
       Eson::EsonGrammars::e0.variable_identifier.to_s.must_match /( := )/
     end
     it "is a alternation rule" do
-      Eson::EsonGrammars::e0.special_form.to_s.must_match /( := )/
+      Eson::EsonGrammars::e0.special_form_identifier.to_s.must_match /( := )/
     end
     it "is a repetition rule" do
       Eson::EsonGrammars::e4.sub_string_list.to_s.must_match /( := )/

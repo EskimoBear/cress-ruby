@@ -181,8 +181,6 @@ module Eson
     def reserved_keys
       reserved = [:let, :ref, :doc]
       RuleSeq.new(make_reserved_keys_rules(reserved))
-        .make_terminal_rule(:proc_prefix,
-                            proc_prefix_rxp)
         .make_alternation_rule(:special_form_identifier, reserved)
         .convert_to_terminal(:special_form_identifier)
         .make_terminal_rule(

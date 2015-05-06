@@ -50,10 +50,10 @@ describe Eson::EsonGrammars do
       subject.method(:e4).must_equal subject.method(:insert_string_delimiter_lang)
     end
     it "should contain new rules" do
-      @lang.must_respond_to :sub_string
-      @lang.must_respond_to :string_delimiter
-      @lang.must_respond_to :sub_string_list
-      @lang.must_respond_to :string
+      @lang.terminals.must_include :string_delimiter
+      @lang.nonterminals.must_include :sub_string
+      @lang.nonterminals.must_include :sub_string_list
+      @lang.nonterminals.must_include :string
     end
     it "has no partial rules" do
       @lang.values.none?{|x| x.partial_status}.must_equal true
@@ -71,20 +71,20 @@ describe Eson::EsonGrammars do
       subject.method(:e5).must_equal subject.method(:syntax_pass_lang)
     end
     it "should contain new rules" do
-      @lang.must_respond_to :value
-      @lang.must_respond_to :element_more_once
-      @lang.must_respond_to :element_more
-      @lang.must_respond_to :element_list
-      @lang.must_respond_to :element_set
-      @lang.must_respond_to :array
-      @lang.must_respond_to :attribute
-      @lang.must_respond_to :call
-      @lang.must_respond_to :declaration
-      @lang.must_respond_to :declaration_more_once
-      @lang.must_respond_to :declaration_more
-      @lang.must_respond_to :declaration_list
-      @lang.must_respond_to :declaration_set
-      @lang.must_respond_to :program
+      @lang.nonterminals.must_include :value
+      @lang.nonterminals.must_include :element_more_once
+      @lang.nonterminals.must_include :element_more
+      @lang.nonterminals.must_include :element_list
+      @lang.nonterminals.must_include :element_set
+      @lang.nonterminals.must_include :array
+      @lang.nonterminals.must_include :attribute
+      @lang.nonterminals.must_include :call
+      @lang.nonterminals.must_include :declaration
+      @lang.nonterminals.must_include :declaration_more_once
+      @lang.nonterminals.must_include :declaration_more
+      @lang.nonterminals.must_include :declaration_list
+      @lang.nonterminals.must_include :declaration_set
+      @lang.nonterminals.must_include :program
     end
     it "should have top rule" do
       @lang.must_respond_to :top_rule

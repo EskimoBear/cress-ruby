@@ -8,33 +8,6 @@ module Eson
 
     RuleSeq =  Eson::RuleSeq
     Rule = Eson::Rule
-    
-    #Builds an attribute grammar. An attribute grammar is a Struct
-    #with rules which identify synthesized and inherited attributes
-    #and action rules for computing attributes on tokens and ASTs.
-    #@param name [String] class of the Struct representing the grammar
-    #@param cfg [Struct] a context free grammar containing terms
-    #                    referenced in @attr_maps and @action_maps
-    #@param attr_maps [Array<Hash>] maps of attributes to terms and
-    #                               computation rules
-    #return [Struct] an attribute grammar
-    def build_attr_grammar(name, cfg, attr_maps)
-      make_attribute_rules(cfg, attr_maps)
-      cfg.copy_rules.build_cfg(name)
-    end
-
-    def make_attribute_rules(cfg, attr_maps)
-      special_terms = [:All]
-      attr_maps.each do |i|
-        if i[:terms].include? :All
-          cfg.each{ |rule| rule.add_attribute(i) }
-        end
-        (i[:terms]-special_terms).each do |rn|
-          cfg.send(rn).add_attribute(i)
-          cfg.send(rn).add_action(i)
-        end
-      end
-    end
 
     # null := "nil";
     def null_rule

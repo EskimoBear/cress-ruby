@@ -13,6 +13,10 @@ module Eson
 
     module GrammarOperations
 
+      def terms
+        self.members
+      end
+
       def productions
         self.values.select{|i| i.nonterminal?}
       end
@@ -269,6 +273,33 @@ module Eson
     def missing_rule_error_message(rule_name)
       "The Eson::Rule.name ':#{rule_name}' is not present" \
       " in the sequence."
+    end
+
+    #Builds an attribute grammar. An attribute grammar is a Struct
+    #with rules which identify synthesized and inherited attributes
+    #and action rules for computing attributes on tokens and ASTs.
+    #@param name [String] class of the Struct representing the grammar
+    #@param cfg [Struct] a context free grammar containing terms
+    #                    referenced in @attr_maps and @action_maps
+    #@param attr_maps [Array<Hash>] maps of attributes to terms and
+    #                               computation rules
+    #return [Struct] an attribute grammar
+    def self.build_attr_grammar(name, cfg, attr_maps)
+      make_attribute_rules(cfg, attr_maps)
+      cfg.copy_rules.build_cfg(name)
+    end
+
+    def self.make_attribute_rules(cfg, attr_maps)
+      attr_maps.each do |i|
+        terms = if i[:terms].include? :All
+                  cfg.terms
+                else
+                  i[:terms]
+                end
+        terms.each do |t|
+          cfg.send(t).add_attributes(i)
+        end
+      end
     end
 
     #Output a context free grammar for the rules

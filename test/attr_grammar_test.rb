@@ -1,10 +1,11 @@
 require 'minitest/autorun'
 require 'minitest/pride'
+require_relative '../lib/eson/rule_seq.rb'
 require_relative '../lib/eson/eson_grammars.rb'
 
-describe "Eson::EsonGrammars" do
+describe "Eson::RuleSeq" do
   
-  subject {Eson::EsonGrammars}
+  subject {Eson::RuleSeq}
 
   before do
     SEvalMod = Module.new do
@@ -13,7 +14,7 @@ describe "Eson::EsonGrammars" do
       end
     end
     @synth_action = :s_eval
-    @cfg = subject.e5
+    @cfg = Eson::EsonGrammars.e5
     @attr_maps = [{
                     :attr => :value,
                     :type => :s_attr,

@@ -23,7 +23,7 @@ describe Eson::EsonGrammars do
       @lang = subject.e0
     end
     it "should be E0" do
-      @lang.class.must_equal Struct::E0
+      @lang.must_be_kind_of Struct::E0
     end
     it "should be aliased" do
       subject.method(:e0).must_equal subject.method(:tokenizer_lang)
@@ -43,7 +43,7 @@ describe Eson::EsonGrammars do
       @lang = subject.e4
     end
     it "should be E4" do
-      @lang.class.must_equal Struct::E4
+      @lang.must_be_kind_of Struct::E4
     end
     it "should be aliased" do
       subject.method(:e4).must_equal subject.method(:label_sub_string_lang)
@@ -65,7 +65,7 @@ describe Eson::EsonGrammars do
       @lang = subject.e5
     end
     it "should be E5" do
-      @lang.class.must_equal Struct::E5
+      @lang.must_be_kind_of Struct::E5
     end
     it "should be aliased" do
       subject.method(:e5).must_equal subject.method(:syntax_pass_lang)

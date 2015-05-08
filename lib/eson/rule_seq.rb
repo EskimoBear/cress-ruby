@@ -273,7 +273,7 @@ module Eson
 
     #Output a context free grammar for the rules
     #in the RuleSeq
-    #@param grammar_name [Symbol] name of the grammar
+    #@param grammar_name [String] name of the grammar
     #@return [Struct] a struct of class grammar_name
     #  representing a context free grammar
     def build_cfg(grammar_name, top_rule_name=nil)

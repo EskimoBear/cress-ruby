@@ -1,6 +1,7 @@
 require_relative './lexeme_capture.rb'
 require_relative './ebnf.rb'
 require_relative './abstract_syntax_tree.rb'
+require_relative './attribute_notation.rb'
 
 module Eson
 
@@ -9,13 +10,15 @@ module Eson
 
     include EBNF
     include LexemeCapture
-
+    include AttributeNotation
+    
     InvalidSequenceParsed = Class.new(StandardError)
     NoMatchingFirstSet = Class.new(StandardError)
     FirstSetNotDisjoint = Class.new(StandardError)
 
     attr_accessor :name, :first_set, :partial_status, :ebnf,
-                  :follow_set, :start_rxp
+                  :follow_set, :start_rxp, :s_attr, :i_attr,
+                  :actions
 
     #@param name [Symbol] name of the production rule
     #@param sequence [Array<Terminal, NonTerminal>] list of terms this
@@ -37,6 +40,9 @@ module Eson
       @first_set = terminal? ? [name] : []
       @partial_status = terminal? ? false : partial_status
       @follow_set = []
+      @s_attr = []
+      @i_attr = terminal? ? nil : []
+      @actions = []
     end
 
     def self.new_terminal_rule(name, start_rxp)

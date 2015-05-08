@@ -17,15 +17,6 @@ describe Eson::TokenPass::Tokenizer do
     @token_sequence.last.line_number.must_equal 6
     @token_sequence.find_all {|i| i.line_number == nil}.size.must_equal 0
   end
-  it "#tokenize_variable_identifier" do
-    @token_sequence.find_all {|i| i.name == :variable_identifier}.length.must_equal 1
-  end
-  it "tokenize_proc_identifier" do
-    @token_sequence.find_all {|i| i.name == :special_form_identifier}.length.must_equal 4
-  end
-  it "#tokenize_word_form" do
-    @token_sequence.find_all {|i| i.name == :word_form}.length.must_equal 26
-  end
   it "#label_sub_strings" do
     @token_sequence.find_all {|i| i.alternation_names.to_a.include?(:sub_string)}
       .length.must_equal 27

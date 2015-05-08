@@ -142,22 +142,11 @@ module Eson::TokenPass
     end
 
     def tokenize_special_forms
-      convert_name_to_type(LANG.special_form)
       tokenize_rule(LANG.special_form)
     end
 
     def tokenize_word_forms
       tokenize_rule(LANG.word_form)
-    end
-
-    def convert_name_to_type(rule)
-      token_names = rule.term_names
-      self.map! do |token|
-        if token_names.include?(token.name)
-          token.type = token.name
-        end
-        token
-      end
     end
 
     def tokenize_rule(rule)
@@ -317,11 +306,10 @@ module Eson::TokenPass
       line_no = Eson::TokenPass::TokenSeq
                 .new(tokens)
                 .get_next_line_number
-      type = tokens.reduce(nil) {|memo, t| memo == nil ? t.type : memo}
       combined_lexeme = tokens.each_with_object("") do |i, string|
         string.concat(i.lexeme.to_s)
       end
-      Token[combined_lexeme.intern, new_name, nil, line_no, type]
+      Token[combined_lexeme.intern, new_name, nil, line_no]
     end
 
     def get_next_line_number

@@ -278,6 +278,7 @@ module Eson
     #  representing a context free grammar
     def build_cfg(grammar_name, top_rule_name=nil)
       rules = self.clone
+      include_nullable_rule(rules)
       grammar_struct = Struct.new grammar_name, *rules.names do
         include GrammarOperations
       end
@@ -288,6 +289,12 @@ module Eson
         grammar
       else
         grammar.make_top_rule(top_rule_name)
+      end
+    end
+
+    def include_nullable_rule(rules)
+      unless rules.include_rule?(:nullable)
+        rules.make_terminal_rule(:nullable, //)
       end
     end
 

@@ -12,6 +12,7 @@ describe Eson::EsonGrammars do
     end
     it "should contain built rules" do
       @lang.nonterminals.must_be_empty
+      @lang.terminals.must_include :nullable
       @lang.terminals.must_include :special_form_identifier
       @lang.terminals.must_include :unreserved_procedure_identifier
       @lang.terminals.must_include :key_string

@@ -394,7 +394,10 @@ module Eson
         acc
       else
         begin
-          acc.merge(parse_many(acc[:rest], rules, acc[:tree])) do |key, old, new|
+          acc.merge(parse_many(
+                      acc[:rest],
+                      rules,
+                      acc[:tree])) do |key, old, new|
             case key
             when :parsed_seq
               old.concat(new)

@@ -15,7 +15,6 @@ describe Eson::TokenPass::Tokenizer do
     @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
   end
   it "#add_line_numbers" do
-    @token_sequence.print_program
     @token_sequence.last.get_attribute(:line_no).must_equal 17
     @token_sequence.all?{|i| i.get_attribute(:line_no)}
       .must_equal true

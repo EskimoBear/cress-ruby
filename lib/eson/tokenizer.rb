@@ -117,7 +117,8 @@ module Eson::TokenPass
 
     def json_symbols_to_tokens(json_symbol_seq, char_seq)
       envs = [{:attr => :line_no, :attr_value => 1},
-              {:attr => :indent, :attr_value => 0}]
+              {:attr => :indent, :attr_value => 0},
+              {:attr => :spaces_after, :attr_value => 1}]
       json_symbol_seq.each_with_object(Eson::TokenPass::TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start

@@ -336,6 +336,13 @@ module Eson
            :action_mod => Module.new,
            :actions => [:assign_attribute],
            :terms => [:All]
+         },
+         {
+           :attr => :spaces_after,
+           :type => :s_attr,
+           :action_mod => Module.new,
+           :actions => [:assign_attribute],
+           :terms => [:colon]
          }])
     end
 

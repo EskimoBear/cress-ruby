@@ -187,7 +187,7 @@ module Eson
         "Error while parsing #{@name}." \
         " Expected a symbol of type :#{expected_token} but got a" \
         " :#{actual_token.name} instead in line #{line_num}:" \
-        "\n #{line_num}. #{token_seq.get_program_line(line_num)}\n"
+        "\n #{line_num}. #{token_seq.get_program_snippet(line_num)}\n"
       else
         "Error while parsing #{@name}." \
         " Expected a symbol of type :#{expected_token} but got a" \

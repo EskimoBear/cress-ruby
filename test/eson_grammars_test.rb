@@ -86,6 +86,17 @@ describe Eson::EsonGrammars do
       @lang.values.all?{|i| i.s_attr.include? :line_no}
         .must_equal true
     end
+    it "rules have s_attr indent" do
+      @lang.values.all?{|i| i.s_attr.include? :indent}
+        .must_equal true
+    end
+    it "only colon has s_attr spaces_after" do
+      @lang.colon.s_attr.include?(:spaces_after)
+        .must_equal true
+      (@lang.terms - [:colon])
+        .none?{|i| @lang.send(i).s_attr.include? :spaces_after}
+        .must_equal true
+    end
   end
 end
 

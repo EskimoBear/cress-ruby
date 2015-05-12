@@ -16,12 +16,12 @@ module Eson::TokenPass
 
     include Eson::ErrorPass
 
-    def get_program_line(line_no)
-      take_while{|i| i.get_attribute(:line_no) == line_no}
-        .each_with_object(""){|i, acc| acc.concat(i.lexeme.to_s)}
+    def get_program_snippet(line_no)
+      TokenSeq.new(self.select{|i| i.get_attribute(:line_no) == line_no})
+        .display_program
     end
 
-    def print_program
+    def display_program
       if self.none?{|i| i.get_attribute(:line_no).nil?}
         program_lines =
           self.slice_when do |t0, t1|
@@ -32,13 +32,18 @@ module Eson::TokenPass
             ts.first.get_attribute(:indent),
             ts.each_with_object("") do |j, acc|
               acc.concat(j.lexeme.to_s)
+              unit = j.get_attribute(:spaces_after)
+              space = unit.nil? ? "" : get_spaces(unit)
+              acc.concat(space)
             end
           ]
         end
         max_line = program_lines.length
-        program_lines.each do |i|
-          puts "#{get_line(i[0], max_line)}#{get_indent(i[1])}#{i[2]}"
+        program_lines.map do |i|
+          "#{get_line(i[0], max_line)}#{get_indentation(i[1])}#{i[2]}\n"
         end
+          .reduce(:concat)
+          .prepend("\n")
       end
     end
 
@@ -51,7 +56,7 @@ module Eson::TokenPass
       repeat_string(units, " ")
     end
 
-    def get_indent(units)
+    def get_indentation(units)
       repeat_string(units, "  ")
     end
 

@@ -153,7 +153,7 @@ module Eson::TokenPass
             envs)
         when :array_comma
           update_json_and_char_seqs(
-            LANG.comma.make_token(symbol.lexeme, envs),
+            LANG.element_divider.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs)
@@ -186,7 +186,7 @@ module Eson::TokenPass
     def update_line_no_env(envs, token, token_seq)
       end_line_tokens = [:program_start,
                          :array_start,
-                         :comma,
+                         :element_divider,
                          :declaration_divider]
       start_line_tokens = [:program_end,
                            :array_end]

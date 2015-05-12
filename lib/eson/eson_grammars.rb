@@ -28,7 +28,7 @@ module Eson
       /#{string_delimiter}#{proc_prefix}(.+)#{string_delimiter}\z/
     end
 
-    #@return [R0] eson grammar for lexing keys
+    #@return [E0] eson grammar for lexing keys
     def keys
       reserved = [:let, :ref, :doc]
       RuleSeq.new(make_reserved_keys_rules(reserved))
@@ -74,11 +74,6 @@ module Eson
     def null_rxp
       /null\z/
     end
-    
-    # variable_prefix := "$";
-    def variable_prefix_rule
-      Rule.new_terminal_rule(:variable_prefix, variable_prefix_rxp)
-    end
 
     def variable_prefix_rxp
       /\$/
@@ -89,40 +84,26 @@ module Eson
       word = word_rxp.source
       /#{variable_prefix}#{word}/
     end
-    
-    # word := {JSON_char}; (*letters, numbers, '-', '_', '.'*)
-    def word_rule
-      Rule.new_terminal_rule(:word, word_rxp)
+
+    def word_form_rule
+      Rule.new_terminal_rule(:word_form, word_form_rxp)
+    end
+
+    def word_form_rxp
+      word = word_rxp.source
+      whitespace = whitespace_rxp.source
+      other_chars = other_chars_rxp.source
+      /#{word}|#{whitespace}|#{other_chars}/
     end
 
     def word_rxp
       /[a-zA-Z\-_.\d]+/
     end
     
-    # whitespace := {" "};
-    def whitespace_rule
-      Rule.new_terminal_rule(:whitespace, whitespace_rxp)
-    end
-
     def whitespace_rxp
       /[ ]+/
     end
 
-    # empty_word := "";
-    def empty_word_rule
-      Rule.new_terminal_rule(:empty_word, empty_word_rxp)
-    end
-    
-    def empty_word_rxp
-      /^$/
-    end
-
-    # other_chars := {JSON_char}; (*characters excluding those found
-    #   in variable_prefix, word and whitespace*)
-    def other_chars_rule
-      Rule.new_terminal_rule(:other_chars, other_chars_rxp)
-    end
-    
     def other_chars_rxp
       word = word_rxp.source
       variable_prefix = variable_prefix_rxp.source
@@ -217,32 +198,21 @@ module Eson
       /\}/
     end
     
-    #@return [E0] the initial eson grammar used for tokenization
-    def e0
-      rules = [word_rule,
-               whitespace_rule,
-               empty_word_rule,
-               other_chars_rule,
+    #@return [E1] eson grammar used for tokenization
+    def e1
+      rules = [word_form_rule,
                true_rule,
                false_rule,
                null_rule,
                number_rule,
                array_start_rule,
                array_end_rule,
-               comma_rule,
-               declaration_divider_rule,
                colon_rule,
                program_start_rule,
                program_end_rule]
       RuleSeq.new(keys.copy_rules.concat(rules))
         .make_terminal_rule(:variable_identifier,
                            variable_identifier_rxp)
-        .make_alternation_rule(:word_form,
-                               [:whitespace,
-                                :word,
-                                :empty_word,
-                                :other_chars])
-        .convert_to_terminal(:word_form)
         .make_alternation_rule(
           :sub_string,
           [:word_form, :variable_identifier])
@@ -257,16 +227,6 @@ module Eson
           [:string_delimiter,
            :sub_string_list,
            :string_delimiter])
-        .build_cfg("E0")
-    end
-
-    #@return [Struct] e5 the sixth language of the compiler
-    #@eskimobear.specification
-    # Prop : E5 is a struct of eson production rules of E4 with
-    #        recursive production rules such as 'value', 'array',
-    #        and 'program' added.
-    def e5
-      e0.copy_rules
         .make_alternation_rule(
           :value,
           [:variable_identifier,
@@ -277,9 +237,15 @@ module Eson
            :number,
            :array,
            :program])
+        .make_terminal_rule(
+          :declaration_divider,
+          comma_rxp)
+        .make_terminal_rule(
+          :element_divider,
+          comma_rxp)
         .make_concatenation_rule(
           :element_more_once,
-          [:comma, :value])
+          [:element_divider, :value])
         .make_repetition_rule(
           :element_more,
           :element_more_once)
@@ -314,15 +280,15 @@ module Eson
         .make_concatenation_rule(
           :program,
           [:program_start, :declaration_set, :program_end])
-        .build_cfg("E5", :program)
+        .build_cfg("E1", :program)
     end
 
-    #return [Struct] the attribute grammar: Format which applies the
-    #                default eson format
+    #Grammar which applies default eson formatting to programs.
+    #return [Struct] the attribute grammar Format
     def format
       RuleSeq.assign_attribute_grammar(
         "Format",
-        e5,
+        e1,
         [{
            :attr => :line_no,
            :type => :s_attr,
@@ -346,7 +312,6 @@ module Eson
          }])
     end
 
-    alias_method :tokenizer_lang, :e0
-    alias_method :syntax_pass_lang, :e5
+    alias_method :tokenizer_lang, :format
   end
 end

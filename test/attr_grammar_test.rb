@@ -9,7 +9,7 @@ describe "Eson::RuleSeq" do
   subject {Eson::RuleSeq}
 
   before do
-    @cfg = Eson::EsonGrammars.e5
+    @cfg = Eson::EsonGrammars.e1
     @attr_maps = [{
                     :attr => :value,
                     :type => :s_attr,

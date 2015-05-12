@@ -26,7 +26,10 @@ module TestHelpers
   end
 
   def get_token_sequence
-    Eson::TokenPass.tokenize_program(get_tokenizer_sample_program)
+    Eson::TokenPass
+      .tokenize_program(
+        get_tokenizer_sample_program,
+        Eson::EsonGrammars.tokenizer_lang)
       .verify_special_forms
   end
 

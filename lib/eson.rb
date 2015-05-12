@@ -9,13 +9,14 @@ module Eson
 
   SyntaxError = Class.new(StandardError)
 
+  LANG = Eson::EsonGrammars.format
   EMPTY_PROGRAM = "empty_program"
   MALFORMED_PROGRAM = "Program is malformed"
   MALFORMED_PROGRAM_RGX = /Program is malformed/
 
-  def compile(eson_program)
+  def compile(eson_program, grammar=LANG)
     if validate_json?(eson_program)
-      token_sequence = TokenPass.tokenize_program(eson_program)
+      token_sequence = TokenPass.tokenize_program(eson_program, grammar)
                        .verify_special_forms
       tree = SyntaxPass.build_tree(token_sequence)
     else

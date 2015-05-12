@@ -9,8 +9,6 @@ module Eson::TokenPass
     InvalidLexeme = Class.new(StandardError)
     TokenizationIncomplete = Class.new(StandardError)
     
-    LANG = Eson::EsonGrammars.format
-    
     JsonSymbol = Struct.new :lexeme, :name
     
     #Convert an eson program into a sequence of eson tokens
@@ -31,12 +29,12 @@ module Eson::TokenPass
     #        length(T) = 0
     # Next : et = P - 'P
     #        T' = T + label(et)
-    def tokenize_program(eson_program)
+    def tokenize_program(eson_program, grammar)
       eson_program.freeze
       program_json_hash = Oj.load(eson_program)
       program_char_seq = get_program_char_sequence(program_json_hash)
       json_symbol_seq = get_json_symbol_sequence(program_json_hash)
-      token_seq = json_symbols_to_tokens(json_symbol_seq, program_char_seq)
+      token_seq = json_symbols_to_tokens(json_symbol_seq, program_char_seq, grammar)
       unless program_char_seq.empty?
         raise TokenizationIncomplete,
               tokenization_incomplete_error_message
@@ -115,7 +113,7 @@ module Eson::TokenPass
       seq.push(JsonSymbol.new(:"]", :array_end))                     
     end
 
-    def json_symbols_to_tokens(json_symbol_seq, char_seq)
+    def json_symbols_to_tokens(json_symbol_seq, char_seq, grammar)
       envs = [{:attr => :line_no, :attr_value => 1},
               {:attr => :indent, :attr_value => 0},
               {:attr => :spaces_after, :attr_value => 1}]
@@ -123,50 +121,50 @@ module Eson::TokenPass
         case symbol.name
         when :object_start
           update_json_and_char_seqs(
-            LANG.program_start.make_token(symbol.lexeme, envs),
+            grammar.program_start.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs)
         when :object_end
           update_json_and_char_seqs(
-            LANG.program_end.make_token(symbol.lexeme, envs),
+            grammar.program_end.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs)
         when :array_start
           update_json_and_char_seqs(
-            LANG.array_start.make_token(symbol.lexeme, envs),
+            grammar.array_start.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs)
         when :array_end
           update_json_and_char_seqs(
-            LANG.array_end.make_token(symbol.lexeme, envs),
+            grammar.array_end.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs)
         when :colon
           update_json_and_char_seqs(
-            LANG.colon.make_token(symbol.lexeme, envs),
+            grammar.colon.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs)
         when :array_comma
           update_json_and_char_seqs(
-            LANG.element_divider.make_token(symbol.lexeme, envs),
+            grammar.element_divider.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs)
         when :member_comma
           update_json_and_char_seqs(
-            LANG.declaration_divider.make_token(symbol.lexeme, envs),
+            grammar.declaration_divider.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs)
         when :JSON_key
-          tokenize_json_key(symbol.lexeme, seq, char_seq, envs)
+          tokenize_json_key(symbol.lexeme, seq, char_seq, envs, grammar)
         when :JSON_value
-          tokenize_json_value(symbol.lexeme, seq, char_seq, envs)
+          tokenize_json_value(symbol.lexeme, seq, char_seq, envs, grammar)
         end
       end
     end
@@ -226,27 +224,28 @@ module Eson::TokenPass
       env[:attr_value] = env[:attr_value] - 1
     end
 
-    def tokenize_json_key(json_key, seq, char_seq, envs)
+    def tokenize_json_key(json_key, seq, char_seq, envs, grammar)
       lexer([:special_form_identifier,
              :unreserved_procedure_identifier,
              :attribute_name],
             get_delimited_string(json_key),
             seq,
             char_seq,
-            envs)
+            envs,
+            grammar)
     end
 
     def get_delimited_string(string)
       "\"".concat(string).concat("\"")
     end
 
-    def lexer(terminals, string, seq, char_seq, envs)
-      matched_terminal = terminals.detect{|i| LANG.send(i).match(string)}
+    def lexer(terminals, string, seq, char_seq, envs, grammar)
+      matched_terminal = terminals.detect{|i| grammar.send(i).match(string)}
       if matched_terminal.nil?
         raise InvalidLexeme, lexer_error_message(string)
       else
         update_json_and_char_seqs(
-          LANG.send(matched_terminal).match_token(string, envs),
+          grammar.send(matched_terminal).match_token(string, envs),
           seq,
           char_seq,
           envs)
@@ -258,28 +257,28 @@ module Eson::TokenPass
       " It does not match any of the valid tokens in eson."
     end
 
-    def tokenize_json_value(json_value, seq, char_seq, envs)
+    def tokenize_json_value(json_value, seq, char_seq, envs, grammar)
       if json_value.is_a? TrueClass
         update_json_and_char_seqs(
-          LANG.true.make_token(json_value.to_s, envs),
+          grammar.true.make_token(json_value.to_s, envs),
           seq,
           char_seq,
           envs)
       elsif json_value.is_a? FalseClass
         update_json_and_char_seqs(
-          LANG.false.make_token(json_value.to_s, envs),
+          grammar.false.make_token(json_value.to_s, envs),
           seq,
           char_seq,
           envs)
       elsif json_value.is_a? Numeric
         update_json_and_char_seqs(
-          LANG.number.make_token(json_value.to_s, envs),
+          grammar.number.make_token(json_value.to_s, envs),
           seq,
           char_seq,
           envs)
       elsif json_value.nil?
         update_json_and_char_seqs(
-          LANG.null.make_token(:null, envs),
+          grammar.null.make_token(:null, envs),
           seq,
           char_seq,
           envs)
@@ -288,11 +287,12 @@ module Eson::TokenPass
           get_delimited_string(json_value),
           seq,
           char_seq,
-          envs)
+          envs,
+          grammar)
       end
     end
 
-    def tokenize_json_string(json_string, seq, char_seq, envs)
+    def tokenize_json_string(json_string, seq, char_seq, envs, grammar)
       lexer(
         [:string_delimiter,
          :word_form,
@@ -300,10 +300,11 @@ module Eson::TokenPass
         json_string,
         seq,
         char_seq,
-        envs)
+        envs,
+        grammar)
       rest = get_rest(json_string, seq)
       unless rest.empty?
-        tokenize_json_string(rest, seq, char_seq, envs)
+        tokenize_json_string(rest, seq, char_seq, envs, grammar)
       end
     end
 

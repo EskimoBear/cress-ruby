@@ -312,6 +312,27 @@ module Eson
          }])
     end
 
+    def esonf
+      RuleSeq.assign_attribute_grammar(
+        "EsonfGen",
+        format,
+        [{
+           :attr => :line_feed,
+           :type => :s_attr,
+           :action_mod => Module.new,
+           :actions => [],
+           :terms => [:program_start, :array_start,
+                      :declaration_divider, :element_divider]
+         },
+         {
+           :attr => :to_s,
+           :type => :s_attr,
+           :action_mod => Module.new,
+           :actions => [],
+           :terms => [:All]
+         }])
+    end
+
     alias_method :tokenizer_lang, :format
   end
 end

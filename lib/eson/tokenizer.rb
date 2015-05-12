@@ -116,7 +116,8 @@ module Eson::TokenPass
     def json_symbols_to_tokens(json_symbol_seq, char_seq, grammar)
       envs = [{:attr => :line_no, :attr_value => 1},
               {:attr => :indent, :attr_value => 0},
-              {:attr => :spaces_after, :attr_value => 1}]
+              {:attr => :spaces_after, :attr_value => 1},
+              {:attr => :line_feed, :attr_value => false}]
       json_symbol_seq.each_with_object(Eson::TokenPass::TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start
@@ -179,6 +180,7 @@ module Eson::TokenPass
       char_seq.slice!(0, token.lexeme.size)
       update_line_no_env(envs, token, token_seq)
       update_indent_env(envs, token, token_seq)
+      set_line_feed_true(token, token_seq)
     end
 
     def update_line_no_env(envs, token, token_seq)
@@ -206,6 +208,20 @@ module Eson::TokenPass
       elsif start_line_tokens.include?(token_seq.last.name)
         dec_indent(envs)
         token_seq.last.eval_s_attributes(envs)
+      end
+    end
+
+    def set_line_feed_true(token, token_seq)
+      end_line_tokens = [:program_start,
+                         :array_start,
+                         :element_divider,
+                         :declaration_divider]
+      start_line_tokens = [:program_end,
+                           :array_end]
+      if end_line_tokens.include?(token.name)
+        token.store_attribute(:line_feed, true)
+      elsif start_line_tokens.include?(token.name)
+        token_seq.last.store_attribute(:line_feed, true)
       end
     end
 

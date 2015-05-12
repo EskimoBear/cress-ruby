@@ -320,9 +320,8 @@ module Eson
            :attr => :line_feed,
            :type => :s_attr,
            :action_mod => Module.new,
-           :actions => [],
-           :terms => [:program_start, :array_start,
-                      :declaration_divider, :element_divider]
+           :actions => [:assign_attribute],
+           :terms => [:All]
          },
          {
            :attr => :to_s,

@@ -69,22 +69,6 @@ describe Eson::EsonGrammars do
         .must_equal true
     end
   end
-
-  describe "validate_esonf" do
-    before do
-      @lang = subject.esonf
-    end
-    it "rules have s_attr line_feed" do
-      [:program_start, :array_start,
-       :element_divider, :declaration_divider]
-        .all?{|i| @lang.send(i).s_attr.include? :line_feed}
-        .must_equal true
-    end
-    it "rules have s_attr to_s" do
-      @lang.values.all?{|i| i.s_attr.include? :to_s}
-        .must_equal true
-    end
-  end
 end
 
 describe Eson::Rule do

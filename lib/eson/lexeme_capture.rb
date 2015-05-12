@@ -1,4 +1,5 @@
 require_relative './respondent'
+require_relative './attribute_actions'
 
 module Eson
 
@@ -8,16 +9,50 @@ module Eson
   module LexemeCapture
 
     extend Respondent
-
+    
     WrongLexemeType = Class.new(StandardError)
 
-    Token = Struct.new :lexeme, :name, :alternation_names, :line_number, :type
+    Token = Struct.new :lexeme, :name, :alternation_names,
+                       :attributes, :comp_rules do
 
-    uses :name, :start_rxp
+      include AttributeActions
 
-    def match_token(string)
+      def attribute_list
+        self.attributes.nil? ? [] : self.attributes.keys
+      end
+
+      def build_s_attributes(s_attrs)
+        self.attributes =
+          s_attrs.each_with_object({}) do |i, a|
+          a.store(i, nil)
+        end
+        self
+      end
+
+      def build_actions(comp_rules)
+        self.comp_rules = comp_rules
+        self
+      end
+
+      def get_attribute(attr_name)
+        if attribute_list.include?(attr_name)
+          self.attributes[attr_name]
+        else
+          nil
+        end
+      end
+
+      def store_attribute(attr_name, attr_value)
+        self.attributes.store(attr_name, attr_value)
+      end
+      AttributeActions.validate self
+    end
+
+    uses :name, :start_rxp, :s_attr, :actions
+
+    def match_token(string, env=nil)
       lexeme = match(string).to_s.intern
-      make_token(lexeme)
+      make_token(lexeme, env)
     end
 
     def match(string)
@@ -28,14 +63,17 @@ module Eson
       apply_at_start(self.start_rxp)
     end
 
-    def make_token(lexeme)
-      if lexeme.instance_of? Symbol
-        Token.new(lexeme, self.name)
-      elsif lexeme.instance_of? String
-        Token.new(lexeme.intern, self.name)
-      else
-        raise WrongLexemeType, lexeme_type_error_message(lexeme)
-      end
+    def make_token(lexeme, env=nil)
+      lexeme = if lexeme.is_a?(Symbol) || lexeme.is_a?(String)
+                 lexeme.intern
+               else
+                 raise WrongLexemeType,
+                       lexeme_type_error_message(lexeme)
+               end
+      Token.new(lexeme, self.name, nil, nil)
+        .build_s_attributes(self.s_attr)
+        .build_actions(self.comp_rules)
+        .eval_s_attributes(env)
     end
 
     def lexeme_type_error_message(lexeme)

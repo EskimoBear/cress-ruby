@@ -10,108 +10,62 @@ module Eson::TokenPass
   Token = Eson::LexemeCapture::Token
   TokenSeq = TypedSeq.new_seq(Token)
   
-  LANG = Eson::EsonGrammars.tokenizer_lang
+  LANG = Eson::EsonGrammars.format
 
   class TokenSeq
 
     include Eson::ErrorPass
 
-    def get_program_line(line_no)
-      take_while{|i| i.line_number == line_no}
-        .each_with_object(""){|i, acc| acc.concat(i.lexeme.to_s)}
+    def get_program_snippet(line_no)
+      TokenSeq.new(self.select{|i| i.get_attribute(:line_no) == line_no})
+        .display_program
     end
 
-    def print_program
-      if self.none?{|i| i.line_number.nil?}
-        self.slice_when{|i, j| i.line_number != j.line_number}
-          .map{|i| i.each_with_object(""){|j, acc| acc.concat(j.lexeme.to_s)}}
-          .each_with_index{|item, i| puts "\t#{i+1}:  #{item}"}
-      end
-    end
-    
-    #Add line number metadata to each token
-    #@eskimobear.specification
-    # T, input token sequence
-    # O, output token sequence
-    # t, end_of_line token
-    # ets, sequence beginning at the head of T and
-    # ending with the end_of_line token
-    # L, line number integer
-    #
-    # Init : length(T) > 0
-    #      : length(O) = 0
-    #        L = 1
-    # Next : when T contains end_of_line
-    #        T' = T - ets
-    #        O' = O + label(ets, L)
-    #        L' = L + 1
-    #        when T does not contain end_of_line
-    #        T' = []
-    #        O' = O + label(T, L)
-    def add_line_numbers
-      self.replace add_line_numbers_recur(1, self.clone)        
-    end
-
-    def add_line_numbers_recur(line_no, input_seq,
-                               output_seq = Eson::TokenPass::TokenSeq.new)
-      if input_seq.include_token?(:end_of_line)
-        scanned, unscanned = input_seq.split_after_token(:end_of_line)
-        scanned.map{|i| i.line_number = line_no}
-        add_line_numbers_recur(line_no + 1, unscanned,
-                               output_seq.concat(scanned))
-      else
-        lined_seq = input_seq.each{|i| i.line_number = line_no}
-        output_seq.concat(lined_seq)
+    def display_program
+      if self.none?{|i| i.get_attribute(:line_no).nil?}
+        program_lines =
+          self.slice_when do |t0, t1|
+          t0.get_attribute(:line_no) != t1.get_attribute(:line_no)
+        end
+          .map do |ts|
+          [ ts.first.get_attribute(:line_no),
+            ts.first.get_attribute(:indent),
+            ts.each_with_object("") do |j, acc|
+              acc.concat(j.lexeme.to_s)
+              unit = j.get_attribute(:spaces_after)
+              space = unit.nil? ? "" : get_spaces(unit)
+              acc.concat(space)
+            end
+          ]
+        end
+        max_line = program_lines.length
+        program_lines.map do |i|
+          "#{get_line(i[0], max_line)}#{get_indentation(i[1])}#{i[2]}\n"
+        end
+          .reduce(:concat)
+          .prepend("\n")
       end
     end
 
-    #Add a string_delimiter token before and after each sequence of
-    #  possible sub_strings
-    #@eskimobear.specification
-    #T, inpuut token sequence
-    #O, output token sequence
-    #ets, sequence between T start and sub_string
-    #ss, sequence of sub_string tokens
-    #
-    # Init : length(T) > 0
-    #        length(O) = 0
-    # Next : when T contains sub_string
-    #        T' = T - ets
-    #        O' = O + ets + string_delimiter
-    #        when head(T) = ss
-    #        T' = T - ss
-    #        O' = O + ss + string_delimiter
-    #        when T does not contain sub_string
-    #        T' = []
-    #        O' = O + T
-    def insert_string_delimiters
-      self.replace insert_string_delimiters_recur(
-                     Eson::EsonGrammars.e4.sub_string,
-                     self.clone)  
+    def get_line(line_no, max_line_no)
+      padding = max_line_no.to_s.size - line_no.to_s.size
+      "#{get_spaces(padding)}#{line_no}:"
     end
 
-    def insert_string_delimiters_recur(rule, input_sequence,
-                                       output_sequence = Eson::TokenPass::TokenSeq.new)
-      if input_sequence.include_alt_name?(rule)
-        scanned, unscanned = input_sequence.split_before_alt_name(rule)
-        
-        delimiter = Eson::EsonGrammars.e4.string_delimiter.make_token("\"")
-        delimiter.line_number = scanned.get_next_line_number
-        output_sequence.concat(scanned).push(delimiter)
-        head = unscanned.take_while{|i| i.alternation_names.to_a.include?(rule.name)}
-        new_input = unscanned.drop(head.length)
-        insert_string_delimiters_recur(rule,
-                                       new_input,
-                                       output_sequence.concat(head).push(delimiter))
-      else
-        output_sequence.concat(input_sequence)
-      end        
+    def get_spaces(units)
+      repeat_string(units, " ")
     end
-    
-    def label_sub_strings
-      assign_alternation_names(Eson::EsonGrammars.e4.sub_string)
+
+    def get_indentation(units)
+      repeat_string(units, "  ")
     end
-    
+
+    def repeat_string(reps, string)
+      acc = String.new
+      reps.times{acc.concat(string)}
+      acc
+    end
+
     #Given an alternation rule add rule.name to each referenced
     #  token's alternation_names array.
     #
@@ -123,40 +77,6 @@ module Eson::TokenPass
           old_token.alternation_names = [].push(rule.name)
         end
         old_token
-      end
-    end
-    
-    def tokenize_variable_identifiers
-      tokenize_rule(LANG.variable_identifier)
-    end
-
-    def tokenize_proc_identifiers
-      tokenize_special_forms
-      tokenize_rule(LANG.proc_identifier)
-      self.each do |i|
-        if i.name == :proc_identifier
-          old_lexeme = i.lexeme.to_s
-          i.lexeme = "\"#{old_lexeme}\""
-        end
-      end
-    end
-
-    def tokenize_special_forms
-      convert_name_to_type(LANG.special_form)
-      tokenize_rule(LANG.special_form)
-    end
-
-    def tokenize_word_forms
-      tokenize_rule(LANG.word_form)
-    end
-
-    def convert_name_to_type(rule)
-      token_names = rule.term_names
-      self.map! do |token|
-        if token_names.include?(token.name)
-          token.type = token.name
-        end
-        token
       end
     end
 
@@ -316,21 +236,45 @@ module Eson::TokenPass
     def reduce_tokens(new_name, *tokens)
       line_no = Eson::TokenPass::TokenSeq
                 .new(tokens)
-                .get_next_line_number
-      type = tokens.reduce(nil) {|memo, t| memo == nil ? t.type : memo}
+                .get_next_line_no
+      indent = Eson::TokenPass::TokenSeq
+               .new(tokens)
+               .get_next_indent
       combined_lexeme = tokens.each_with_object("") do |i, string|
         string.concat(i.lexeme.to_s)
       end
-      Token[combined_lexeme.intern, new_name, nil, line_no, type]
+      LANG.send(new_name)
+        .make_token(combined_lexeme.intern,
+                    [{:attr => :line_no,
+                      :attr_value => line_no},
+                     {:attr => :indent,
+                      :attr_value => line_no}])
     end
 
-    def get_next_line_number
-      end_token = self.last
-      if end_token.name == :end_of_line       
-        end_token.line_number + 1
-      else
-        end_token.line_number
+    def get_next_line_no
+      line_no = self.last.get_attribute(:line_no)
+      if self.last.name == :declaration_divider ||
+         self.last.name == :array_start ||
+         self.last.name == :program_start ||
+         self.last.name == :comma
+        line_no = line_no + 1
       end
+      line_no
+    end
+
+    def get_next_indent
+      indent = self.last.get_attribute(:indent)
+      if indent.nil?
+      elsif self.last.name == :array_start ||
+         self.last.name == :program_start ||
+         indent = indent + 1
+      elsif self.last.name == :array_end ||
+            self.last.name == :program_end
+        indent = indent - 1
+      elsif self.last.name == :whitespace
+        print "whitespace here"
+      end
+      indent
     end
     
     def swap_tail(tail_length, new_tail)

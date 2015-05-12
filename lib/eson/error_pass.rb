@@ -5,7 +5,6 @@ module Eson
     
     UnknownSpecialForm = Class.new(StandardError)
 
-    #Detect unknown_special_forms Token in self
     #@return [TokenSeq] self when Token is not found
     #@raise [UnknownSpecialForm] unknown_special_forms Token found
     def verify_special_forms
@@ -22,15 +21,10 @@ module Eson
     private
 
     def unknown_special_form_error_message(token)
-      line_num = token.line_number
+      line_num = token.get_attribute(:line_no)
       "'#{token.lexeme}' is not a known special_form in" \
-      " line #{line_num}:\n #{line_num}." \
-      " #{get_program_snippet(line_num)}"
-    end
-    
-    def get_program_snippet(line_num)
-      "\n #{line_num}." \
-      " #{self.get_program_line(line_num)}"
+      " line #{line_num}: " \
+      "#{get_program_snippet(line_num)}"
     end
   end
 end

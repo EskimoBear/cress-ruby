@@ -11,7 +11,11 @@ module Eson
     MissingRule = Class.new(StandardError)
     CannotMakeTerminal = Class.new(StandardError)
 
-    module GrammarOperations
+    module CFGOperations
+
+      def terms
+        self.members
+      end
 
       def productions
         self.values.select{|i| i.nonterminal?}
@@ -271,15 +275,39 @@ module Eson
       " in the sequence."
     end
 
+    #Modifies a context free grammar with the properties of
+    #an attribute grammar described by attr_map.
+    #@param name [String] class of the Struct representing the grammar
+    #@param cfg [Struct] a context free grammar containing terms
+    #                    referenced in @attr_maps and @action_maps
+    #@param attr_maps [Array<Hash>] array of attr_map describing an
+    #                               attribute grammar
+    #return [Struct] cfg with attribute grammar translation rules
+    #                included
+    def self.assign_attribute_grammar(name, cfg, attr_maps)
+      attr_maps.each do |i|
+        terms = if i[:terms].include? :All
+                  cfg.terms
+                else
+                  i[:terms]
+                end
+        terms.each do |t|
+          cfg.send(t).add_attributes(i)
+        end
+      end
+      cfg
+    end
+
     #Output a context free grammar for the rules
     #in the RuleSeq
-    #@param grammar_name [Symbol] name of the grammar
+    #@param grammar_name [String] name of the grammar
     #@return [Struct] a struct of class grammar_name
     #  representing a context free grammar
     def build_cfg(grammar_name, top_rule_name=nil)
       rules = self.clone
+      include_nullable_rule(rules)
       grammar_struct = Struct.new grammar_name, *rules.names do
-        include GrammarOperations
+        include CFGOperations
       end
       complete_partial_first_sets(rules)
       compute_follow_sets(rules, top_rule_name)
@@ -288,6 +316,12 @@ module Eson
         grammar
       else
         grammar.make_top_rule(top_rule_name)
+      end
+    end
+
+    def include_nullable_rule(rules)
+      unless rules.include_rule?(:nullable)
+        rules.make_terminal_rule(:nullable, //)
       end
     end
 

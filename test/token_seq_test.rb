@@ -39,7 +39,7 @@ end
 
 describe Eson::TokenPass::TokenSeq do
   before do
-    @alternation_rule = Eson::EsonGrammars.e5.sub_string
+    @alternation_rule = Eson::EsonGrammars.e4.sub_string
     @concatenation_rule = Eson::EsonGrammars.e0.variable_identifier
     @token_seq = Eson::TokenPass::TokenSeq.new(4) {Eson::LexemeCapture::Token.new}
   end

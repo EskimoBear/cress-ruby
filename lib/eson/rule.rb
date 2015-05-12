@@ -18,7 +18,7 @@ module Eson
 
     attr_accessor :name, :first_set, :partial_status, :ebnf,
                   :follow_set, :start_rxp, :s_attr, :i_attr,
-                  :actions
+                  :comp_rules
 
     #@param name [Symbol] name of the production rule
     #@param sequence [Array<Terminal, NonTerminal>] list of terms this
@@ -42,7 +42,7 @@ module Eson
       @follow_set = []
       @s_attr = []
       @i_attr = terminal? ? nil : []
-      @actions = []
+      @comp_rules = []
     end
 
     def self.new_terminal_rule(name, start_rxp)
@@ -153,7 +153,7 @@ module Eson
     #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
     #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
     #  tokens as :parsed_seq and the rest of the Token sequence as :rest
-    #@raise [InvalidSequenceParsed] if no legal sub-sequence can be foungg189d
+    #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
     def parse_terminal(tokens, tree)
       lookahead = tokens.first
       if @name == lookahead.name
@@ -182,11 +182,17 @@ module Eson
     def parse_terminal_error_message(expected_token,
                                      actual_token,
                                      token_seq)
-      line_num = actual_token.line_number
-      "Error while parsing #{@name}." \
-      " Expected a symbol of type :#{expected_token} but got a" \
-      " :#{actual_token.name} instead in line #{line_num}:"
-      "\n #{line_num}. #{token_seq.get_program_line(line_num)}\n"
+      if actual_token.valid_attribute?(:line_no)
+        line_num = actual_token.get_attribute(:line_no)
+        "Error while parsing #{@name}." \
+        " Expected a symbol of type :#{expected_token} but got a" \
+        " :#{actual_token.name} instead in line #{line_num}:" \
+        "\n #{line_num}. #{token_seq.get_program_line(line_num)}\n"
+      else
+        "Error while parsing #{@name}." \
+        " Expected a symbol of type :#{expected_token} but got a" \
+        " :#{actual_token.name} instead."
+      end
     end
 
     #Return a Token sequence that is a legal instance of

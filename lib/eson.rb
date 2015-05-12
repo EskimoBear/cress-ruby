@@ -16,10 +16,7 @@ module Eson
   def compile(eson_program)
     if validate_json?(eson_program)
       token_sequence = TokenPass.tokenize_program(eson_program)
-                       .add_line_numbers
                        .verify_special_forms
-                       .label_sub_strings
-                       .insert_string_delimiters
       tree = SyntaxPass.build_tree(token_sequence)
     else
       validation_pass(eson_program)
@@ -37,5 +34,4 @@ module Eson
       raise SyntaxError, validate_json(eson_program, options)
     end
   end
-  
 end

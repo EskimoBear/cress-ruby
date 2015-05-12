@@ -1,4 +1,5 @@
 require_relative './respondent'
+require_relative './attribute_actions'
 
 module Eson
 
@@ -8,18 +9,50 @@ module Eson
   module LexemeCapture
 
     extend Respondent
-
-    WrongLexemeType = Class.new(StandardError)
-    SAttrMissing = Class.new(StandardError)
     
+    WrongLexemeType = Class.new(StandardError)
+
     Token = Struct.new :lexeme, :name, :alternation_names,
-                       :line_number, :attributes
+                       :attributes, :comp_rules do
+
+      include AttributeActions
+
+      def attribute_list
+        self.attributes.nil? ? [] : self.attributes.keys
+      end
+
+      def build_s_attributes(s_attrs)
+        self.attributes =
+          s_attrs.each_with_object({}) do |i, a|
+          a.store(i, nil)
+        end
+        self
+      end
+
+      def build_actions(comp_rules)
+        self.comp_rules = comp_rules
+        self
+      end
+
+      def get_attribute(attr_name)
+        if attribute_list.include?(attr_name)
+          self.attributes[attr_name]
+        else
+          nil
+        end
+      end
+
+      def store_attribute(attr_name, attr_value)
+        self.attributes.store(attr_name, attr_value)
+      end
+      AttributeActions.validate self
+    end
 
     uses :name, :start_rxp, :s_attr, :actions
 
-    def match_token(string)
+    def match_token(string, env=nil)
       lexeme = match(string).to_s.intern
-      apply_s_attr_actions(make_token(lexeme))
+      make_token(lexeme, env)
     end
 
     def match(string)
@@ -30,45 +63,19 @@ module Eson
       apply_at_start(self.start_rxp)
     end
 
-    def apply_s_attr_actions(token)
-      self.actions.each{|i| self.send(i, token)}
-      token
-    end
-    
-    def make_token(lexeme)
-      attributes = make_attributes_hash
-      if lexeme.instance_of? Symbol
-        Token.new(lexeme, self.name, nil, nil, attributes)
-      elsif lexeme.instance_of? String
-        Token.new(lexeme.intern, self.name, nil, nil, attributes)
-      else
-        raise WrongLexemeType, lexeme_type_error_message(lexeme)
-      end
+    def make_token(lexeme, env=nil)
+      lexeme = if lexeme.is_a?(Symbol) || lexeme.is_a?(String)
+                 lexeme.intern
+               else
+                 raise WrongLexemeType,
+                       lexeme_type_error_message(lexeme)
+               end
+      Token.new(lexeme, self.name, nil, nil)
+        .build_s_attributes(self.s_attr)
+        .build_actions(self.comp_rules)
+        .eval_s_attributes(env)
     end
 
-    def make_attributes_hash
-      self.s_attr
-        .each_with_object({:s_attr => {}}) do |i, a|
-        a[:s_attr].store(i, nil)
-      end
-    end
-
-    #Set attr_name to attr_value if and only if
-    #attr_name is present in the attributes.
-    def add_s_attr_item(token, attr_name, attr_value)
-      if s_attr_hash(token).include?(attr_name)
-        s_attr_hash(token).store(attr_name, attr_value)
-        token
-      else
-        raise SAttrMissing,
-              "#{attr_name} is not an s_attribute of #{token.name}"
-      end
-    end
-
-    def s_attr_hash(token)
-      token.attributes[:s_attr]
-    end
-    
     def lexeme_type_error_message(lexeme)
       "Lexeme provided to method #{caller_locations[0].label}" \
       "must be either a Symbol or a String but the given lexeme" \

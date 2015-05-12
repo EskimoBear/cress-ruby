@@ -11,7 +11,7 @@ module Eson
     MissingRule = Class.new(StandardError)
     CannotMakeTerminal = Class.new(StandardError)
 
-    module GrammarOperations
+    module CFGOperations
 
       def terms
         self.members
@@ -275,21 +275,16 @@ module Eson
       " in the sequence."
     end
 
-    #Builds an attribute grammar. An attribute grammar is a Struct
-    #with rules which identify synthesized and inherited attributes
-    #and action rules for computing attributes on tokens and ASTs.
+    #Modifies a context free grammar with the properties of
+    #an attribute grammar described by attr_map.
     #@param name [String] class of the Struct representing the grammar
     #@param cfg [Struct] a context free grammar containing terms
     #                    referenced in @attr_maps and @action_maps
-    #@param attr_maps [Array<Hash>] maps of attributes to terms and
-    #                               computation rules
-    #return [Struct] an attribute grammar
-    def self.build_attr_grammar(name, cfg, attr_maps)
-      make_attribute_rules(cfg, attr_maps)
-      cfg.copy_rules.build_cfg(name)
-    end
-
-    def self.make_attribute_rules(cfg, attr_maps)
+    #@param attr_maps [Array<Hash>] array of attr_map describing an
+    #                               attribute grammar
+    #return [Struct] cfg with attribute grammar translation rules
+    #                included
+    def self.assign_attribute_grammar(name, cfg, attr_maps)
       attr_maps.each do |i|
         terms = if i[:terms].include? :All
                   cfg.terms
@@ -300,6 +295,7 @@ module Eson
           cfg.send(t).add_attributes(i)
         end
       end
+      cfg
     end
 
     #Output a context free grammar for the rules
@@ -311,7 +307,7 @@ module Eson
       rules = self.clone
       include_nullable_rule(rules)
       grammar_struct = Struct.new grammar_name, *rules.names do
-        include GrammarOperations
+        include CFGOperations
       end
       complete_partial_first_sets(rules)
       compute_follow_sets(rules, top_rule_name)

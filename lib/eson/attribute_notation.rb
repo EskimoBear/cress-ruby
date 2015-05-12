@@ -9,7 +9,18 @@ module AttributeNotation
 
   def add_attributes(attr_map)
     self.add_attribute_lists(attr_map)
-    self.add_actions(attr_map)
+    unless attr_map[:actions].nil?
+      self.add_actions(attr_map)
+      self.add_comp_rules(attr_map)
+    end
+  end
+
+  def add_comp_rules(attr_map)
+    attr_map[:actions].each do |i|
+      comp_rule = {:method => i,
+                   :attr => attr_map[:attr]}
+      self.comp_rules.push comp_rule
+    end
   end
 
   def add_attribute_lists(attr_map)
@@ -23,9 +34,6 @@ module AttributeNotation
   end
 
   def add_actions(attr_map)
-    unless attr_map[:actions].nil?
-      self.actions.concat(attr_map[:actions])
-      self.extend(attr_map[:action_mod])
-    end
+    self.extend(attr_map[:action_mod])
   end
 end

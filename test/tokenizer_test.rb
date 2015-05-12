@@ -1,5 +1,6 @@
 require 'minitest/autorun'
 require 'minitest/pride'
+require 'pp'
 require_relative './test_helpers.rb'
 require_relative '../lib/eson/tokenizer.rb'
 
@@ -14,14 +15,12 @@ describe Eson::TokenPass::Tokenizer do
     @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
   end
   it "#add_line_numbers" do
-    @token_sequence.last.line_number.must_equal 6
-    @token_sequence.find_all {|i| i.line_number == nil}.size.must_equal 0
-  end
-  it "#label_sub_strings" do
-    @token_sequence.find_all {|i| i.alternation_names.to_a.include?(:sub_string)}
-      .length.must_equal 27
+    @token_sequence.print_program
+    @token_sequence.last.get_attribute(:line_no).must_equal 17
+    @token_sequence.all?{|i| i.get_attribute(:line_no)}
+      .must_equal true
   end
   it "#insert_string_delimiters" do
-    @token_sequence.find_all {|i| i.name == :string_delimiter}.length.must_equal 12
+    @token_sequence.find_all{|i| i.name == :string_delimiter}.length.must_equal 12
   end
 end

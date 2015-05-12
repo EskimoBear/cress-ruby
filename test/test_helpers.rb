@@ -27,10 +27,7 @@ module TestHelpers
 
   def get_token_sequence
     Eson::TokenPass.tokenize_program(get_tokenizer_sample_program)
-      .add_line_numbers
       .verify_special_forms
-      .label_sub_strings
-      .insert_string_delimiters
   end
 
   def get_ast

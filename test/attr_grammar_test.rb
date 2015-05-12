@@ -1,5 +1,6 @@
 require 'minitest/autorun'
 require 'minitest/pride'
+require 'pp'
 require_relative '../lib/eson/rule_seq.rb'
 require_relative '../lib/eson/eson_grammars.rb'
 
@@ -8,18 +9,12 @@ describe "Eson::RuleSeq" do
   subject {Eson::RuleSeq}
 
   before do
-    SEvalMod = Module.new do
-      def s_eval(token)
-        add_s_attr_item(token, :value, token.lexeme.to_s)
-      end
-    end
-    @synth_action = :s_eval
     @cfg = Eson::EsonGrammars.e5
     @attr_maps = [{
                     :attr => :value,
                     :type => :s_attr,
-                    :action_mod => SEvalMod,
-                    :actions => [:s_eval],
+                    :action_mod => Module.new,
+                    :actions => [:assign_attribute],
                     :terms => [:string, :variable_identifier]
                   },
                   {
@@ -27,7 +22,10 @@ describe "Eson::RuleSeq" do
                     :type => :i_attr,
                     :terms => [:All]
                   }]
-    @attr_grammar = subject.build_attr_grammar(
+    @synth_action = {:method => :assign_attribute,
+                     :attr => :value}
+    @env = [{:attr_value => "$var", :attr => :value}]
+    @attr_grammar = subject.assign_attribute_grammar(
       "Formatter",
       @cfg,
       @attr_maps)
@@ -40,7 +38,7 @@ describe "Eson::RuleSeq" do
 
   describe "valid_attribute_grammar" do
     it "create successfully" do
-      @attr_grammar.must_be_kind_of Struct::Formatter
+      @attr_grammar.must_be_kind_of @cfg.class
     end
     it "has s_attr list" do
       @attr_grammar.string.s_attr.must_include :value
@@ -56,14 +54,13 @@ describe "Eson::RuleSeq" do
         .must_equal true
     end
     it "s_attr computation rules" do
-      @attr_grammar.string.actions.must_include @synth_action
-      @attr_grammar.string.must_respond_to @synth_action
-      @attr_grammar.variable_identifier.actions.must_include @synth_action
-      @attr_grammar.variable_identifier.must_respond_to @synth_action
+      @attr_grammar.string.comp_rules.must_include @synth_action
+      @attr_grammar.variable_identifier.comp_rules.must_include @synth_action
     end
     it "apply s-attributes" do
-      token = @attr_grammar.variable_identifier.match_token("$var")
-      token.attributes[:s_attr][:value].must_equal "$var"
+      token = @attr_grammar.variable_identifier
+              .match_token("$var", @env)
+      token.attributes[:value].must_equal "$var"
     end
   end
 

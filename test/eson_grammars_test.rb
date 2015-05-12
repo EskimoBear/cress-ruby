@@ -1,21 +1,22 @@
 require 'minitest/autorun'
 require 'minitest/pride'
+require 'pp'
 require_relative '../lib/eson/eson_grammars.rb'
 
 describe Eson::EsonGrammars do
   
   subject {Eson::EsonGrammars}
 
-  describe "validate_r0" do
+  describe "validate_keys" do
     before do
-      @lang = subject.reserved_keys
+      @lang = subject.keys
     end
     it "should contain built rules" do
-      @lang.nonterminals.must_be_empty
-      @lang.terminals.must_include :nullable
+      @lang.nonterminals.must_include :proc_identifier
+      @lang.terminals.must_include :attribute_name
       @lang.terminals.must_include :special_form_identifier
       @lang.terminals.must_include :unreserved_procedure_identifier
-      @lang.terminals.must_include :key_string
+      @lang.terminals.must_include :nullable
     end
   end
   
@@ -30,27 +31,8 @@ describe Eson::EsonGrammars do
       subject.method(:e0).must_equal subject.method(:tokenizer_lang)
     end
     it "should contain built rules" do
-      @lang.nonterminals.must_include :proc_identifier
       @lang.terminals.must_include :word_form
       @lang.terminals.must_include :variable_identifier
-    end
-    it "has no partial rules" do
-      @lang.values.none?{|x| x.partial_status}.must_equal true
-    end
-  end
-
-  describe "validate_e4" do
-    before do
-      @lang = subject.e4
-    end
-    it "should be E4" do
-      @lang.must_be_kind_of Struct::E4
-    end
-    it "should be aliased" do
-      subject.method(:e4).must_equal subject.method(:label_sub_string_lang)
-      subject.method(:e4).must_equal subject.method(:insert_string_delimiter_lang)
-    end
-    it "should contain new rules" do
       @lang.terminals.must_include :string_delimiter
       @lang.nonterminals.must_include :sub_string
       @lang.nonterminals.must_include :sub_string_list
@@ -95,38 +77,50 @@ describe Eson::EsonGrammars do
       @lang.values.none?{|x| x.partial_status}.must_equal true
     end
   end
+
+  describe "validate_format" do
+    before do
+      @lang = subject.format
+    end
+    it "rules have s_attr line_no" do
+      @lang.values.all?{|i| i.s_attr.include? :line_no}
+        .must_equal true
+    end
+  end
 end
 
 describe Eson::Rule do
-    
+  before do
+    @lang = Eson::EsonGrammars.format
+  end
   describe "#to_s" do
     it "is a terminal rule" do
-      Eson::EsonGrammars::e0.comma.to_s.must_match /( := )/ 
+      @lang.comma.to_s.must_match /( := )/ 
     end
     it "is a concatenation rule" do
-      Eson::EsonGrammars::e0.variable_identifier.to_s.must_match /( := )/
+      @lang.variable_identifier.to_s.must_match /( := )/
     end
     it "is a alternation rule" do
-      Eson::EsonGrammars::e0.special_form_identifier.to_s.must_match /( := )/
+      @lang.special_form_identifier.to_s.must_match /( := )/
     end
     it "is a repetition rule" do
-      Eson::EsonGrammars::e4.sub_string_list.to_s.must_match /( := )/
+      @lang.sub_string_list.to_s.must_match /( := )/
     end
     it "is an option rule" do
-      Eson::EsonGrammars::e5.element_set.to_s.must_match /( := )/
+      @lang.element_set.to_s.must_match /( := )/
     end
   end
   
   it "is terminal rule" do
-    Eson::EsonGrammars::e0.number.partial_status.must_equal false
-    first_set = Eson::EsonGrammars::e0.number.first_set
+    @lang.number.partial_status.must_equal false
+    first_set = @lang.number.first_set
     first_set.must_be_instance_of Array
     first_set.length.must_equal 1
     first_set.must_equal [:number]
   end
   it "has non-terminals" do
-    Eson::EsonGrammars::e5.value.partial_status.must_equal false
-    first_set = Eson::EsonGrammars::e5.value.first_set
+    @lang.value.partial_status.must_equal false
+    first_set = @lang.value.first_set
     first_set.must_be_instance_of Array
     first_set.length.must_equal 8
     first_set.must_include :variable_identifier
@@ -140,8 +134,8 @@ describe Eson::Rule do
   end
   describe "starts with nonterminal" do
     it "is option rule" do
-      Eson::EsonGrammars::e5.element_set.partial_status.must_equal false
-      first_set = Eson::EsonGrammars::e5.element_set.first_set
+      @lang.element_set.partial_status.must_equal false
+      first_set = @lang.element_set.first_set
       first_set.must_be_instance_of Array
       first_set.length.must_equal 9
       first_set.must_include :variable_identifier

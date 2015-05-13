@@ -324,6 +324,13 @@ module Eson
            :terms => [:All]
          },
          {
+           :attr => :line_start,
+           :type => :s_attr,
+           :action_mod => Module.new,
+           :actions => [],
+           :terms => [:All]
+         },
+         {
            :attr => :to_s,
            :type => :s_attr,
            :action_mod => Module.new,

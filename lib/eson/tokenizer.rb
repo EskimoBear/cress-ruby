@@ -116,8 +116,7 @@ module Eson::TokenPass
     def json_symbols_to_tokens(json_symbol_seq, char_seq, grammar)
       envs = [{:attr => :line_no, :attr_value => 1},
               {:attr => :indent, :attr_value => 0},
-              {:attr => :spaces_after, :attr_value => 1},
-              {:attr => :line_feed, :attr_value => false}]
+              {:attr => :spaces_after, :attr_value => 1}]
       json_symbol_seq.each_with_object(Eson::TokenPass::TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start
@@ -180,7 +179,44 @@ module Eson::TokenPass
       char_seq.slice!(0, token.lexeme.size)
       update_line_no_env(envs, token, token_seq)
       update_indent_env(envs, token, token_seq)
+      set_line_start_true(token, token_seq)
       set_line_feed_true(token, token_seq)
+      set_to_s(token)
+    end
+
+    def set_to_s(token)
+      lexeme = token.lexeme.to_s
+      indent = token.get_attribute(:indent)
+      spaces_after = token.get_attribute(:spaces_after)
+      line_feed = token.get_attribute(:line_feed)
+      line_start = token.get_attribute(:line_feed)
+      string = "#{get_indentation(indent, line_start)}" \
+               "#{lexeme}" \
+               "#{spaces_after.nil? ? "" : " "}" \
+               "#{line_feed.eql?(true) ? "\n" : ""}"
+      token.store_attribute(:to_s, string)
+    end
+
+    def get_indentation(indent, line_start)
+      if line_start
+        acc = String.new
+        indent.times{acc.concat("  ")}
+        acc
+      else
+        ""
+      end
+    end
+
+    def set_line_start_true(token, token_seq)
+      if token_seq[-2].nil?
+        token.store_attribute(:line_start, true)
+      else
+        current_line = token.get_attribute(:line_no)
+        last_line = token_seq[-2].get_attribute(:line_no)
+        if current_line != last_line
+          token.store_attribute(:line_start, true)
+        end
+      end
     end
 
     def update_line_no_env(envs, token, token_seq)
@@ -222,6 +258,7 @@ module Eson::TokenPass
         token.store_attribute(:line_feed, true)
       elsif start_line_tokens.include?(token.name)
         token_seq.last.store_attribute(:line_feed, true)
+        set_to_s(token_seq.last)
       end
     end
 

@@ -175,13 +175,13 @@ module Eson::TokenPass
     #@param token_seq [TokenSeq]
     #@param char_seq [Array]
     def update_json_and_char_seqs(token, token_seq, char_seq, envs)
-      token_seq.push(token)
       char_seq.slice!(0, token.lexeme.size)
-      update_line_no_env(envs, token, token_seq)
-      update_indent_env(envs, token, token_seq)
-      set_line_start_true(token, token_seq)
+      update_line_no_env(envs, token)
+      update_indent_env(envs, token)
       set_line_feed_true(token, token_seq)
+      set_line_start_true(token, token_seq)
       set_to_s(token)
+      token_seq.push(token)
     end
 
     def set_to_s(token)
@@ -189,7 +189,7 @@ module Eson::TokenPass
       indent = token.get_attribute(:indent)
       spaces_after = token.get_attribute(:spaces_after)
       line_feed = token.get_attribute(:line_feed)
-      line_start = token.get_attribute(:line_feed)
+      line_start = token.get_attribute(:line_start)
       string = "#{get_indentation(indent, line_start)}" \
                "#{lexeme}" \
                "#{spaces_after.nil? ? "" : " "}" \
@@ -208,18 +208,18 @@ module Eson::TokenPass
     end
 
     def set_line_start_true(token, token_seq)
-      if token_seq[-2].nil?
+      if token_seq.last.nil?
         token.store_attribute(:line_start, true)
       else
         current_line = token.get_attribute(:line_no)
-        last_line = token_seq[-2].get_attribute(:line_no)
+        last_line = token_seq.last.get_attribute(:line_no)
         if current_line != last_line
           token.store_attribute(:line_start, true)
         end
       end
     end
 
-    def update_line_no_env(envs, token, token_seq)
+    def update_line_no_env(envs, token)
       end_line_tokens = [:program_start,
                          :array_start,
                          :element_divider,
@@ -227,23 +227,23 @@ module Eson::TokenPass
       start_line_tokens = [:program_end,
                            :array_end]
       if end_line_tokens.include?(token.name)
-        inc_line_no(envs)
-      elsif start_line_tokens.include?(token_seq.last.name)
-        inc_line_no(envs)
-        token_seq.last.eval_s_attributes(envs)
+        increment_env_attr(envs, :line_no, 1)
+      elsif start_line_tokens.include?(token.name)
+        increment_env_attr(envs, :line_no, 1)
+        token.eval_s_attributes(envs)
       end
     end
 
-    def update_indent_env(envs, token, token_seq)
+    def update_indent_env(envs, token)
       end_line_tokens = [:program_start,
                          :array_start]
       start_line_tokens = [:program_end,
                            :array_end]
       if end_line_tokens.include?(token.name)
-        inc_indent(envs)
-      elsif start_line_tokens.include?(token_seq.last.name)
-        dec_indent(envs)
-        token_seq.last.eval_s_attributes(envs)
+        increment_env_attr(envs, :indent, 1)
+      elsif start_line_tokens.include?(token.name)
+        increment_env_attr(envs, :indent, -1)
+        token.eval_s_attributes(envs)
       end
     end
 
@@ -262,19 +262,9 @@ module Eson::TokenPass
       end
     end
 
-    def inc_line_no(envs)
-      env = envs.find{|i| i[:attr] == :line_no}
-      env[:attr_value] = env[:attr_value] + 1
-    end
-
-    def inc_indent(envs)
-      env = envs.find{|i| i[:attr] == :indent}
-      env[:attr_value] = env[:attr_value] + 1
-    end
-
-    def dec_indent(envs)
-      env = envs.find{|i| i[:attr] == :indent}
-      env[:attr_value] = env[:attr_value] - 1
+    def increment_env_attr(envs, attr, inc)
+      env = envs.find{|i| i[:attr] == attr}
+      env[:attr_value] = env[:attr_value] + inc
     end
 
     def tokenize_json_key(json_key, seq, char_seq, envs, grammar)

@@ -25,16 +25,17 @@ module TestHelpers
     "{\"invalid\": (}"
   end
 
-  def get_token_sequence(grammar=Eson::EsonGrammars.tokenizer_lang)
+  def get_token_sequence(grammar=Eson::EsonGrammars.tokenizer_lang,
+                         program=get_tokenizer_sample_program)
     Eson::TokenPass
       .tokenize_program(
-        get_tokenizer_sample_program,
+        program,
         grammar)
       .verify_special_forms
   end
 
-  def get_ast
-    Eson::SyntaxPass.build_tree(get_token_sequence)
+  def get_ast(token_sequence=get_token_sequence)
+    Eson::SyntaxPass.build_tree(token_sequence)
   end
   
   private

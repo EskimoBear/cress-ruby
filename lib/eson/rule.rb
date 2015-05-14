@@ -2,6 +2,7 @@ require_relative './lexeme_capture.rb'
 require_relative './ebnf.rb'
 require_relative './abstract_syntax_tree.rb'
 require_relative './attribute_notation.rb'
+require_relative './program_errors'
 
 module Eson
 
@@ -11,8 +12,8 @@ module Eson
     include EBNF
     include LexemeCapture
     include AttributeNotation
+    include ProgramErrors
     
-    InvalidSequenceParsed = Class.new(StandardError)
     NoMatchingFirstSet = Class.new(StandardError)
     FirstSetNotDisjoint = Class.new(StandardError)
 
@@ -179,22 +180,6 @@ module Eson
       result = {:parsed_seq => parsed_seq, :rest => rest, :tree => tree}
     end
 
-    def parse_terminal_error_message(expected_token,
-                                     actual_token,
-                                     token_seq)
-      if actual_token.valid_attribute?(:line_no)
-        line_num = actual_token.get_attribute(:line_no)
-        "Error while parsing #{@name}." \
-        " Expected a symbol of type :#{expected_token} but got a" \
-        " :#{actual_token.name} instead in line #{line_num}:" \
-        "\n #{line_num}. #{token_seq.get_program_snippet(line_num)}\n"
-      else
-        "Error while parsing #{@name}." \
-        " Expected a symbol of type :#{expected_token} but got a" \
-        " :#{actual_token.name} instead."
-      end
-    end
-
     #Return a Token sequence that is a legal instance of
     #  an alternation rule
     #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
@@ -308,6 +293,11 @@ module Eson
     def parse_and_then(tokens, rules, tree)
       result = build_parse_result([], tokens, tree)
       @ebnf.term_list.each_with_object(result) do |i, acc|
+        if acc[:rest].empty?
+          raise InvalidSequenceParsed,
+                exhausted_tokens_error_message(i.rule_name,
+                                               acc[:parsed_seq])
+        end
         rule = rules.get_rule(i.rule_name)
         parse_result = rule.parse(acc[:rest], rules, acc[:tree])
         acc[:parsed_seq].concat(parse_result[:parsed_seq])

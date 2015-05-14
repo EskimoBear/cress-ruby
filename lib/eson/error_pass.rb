@@ -1,10 +1,12 @@
+require_relative './program_errors'
+
 module Eson
   module ErrorPass
 
+    include ProgramErrors
+
     LANG = Eson::EsonGrammars.tokenizer_lang
     
-    UnknownSpecialForm = Class.new(StandardError)
-
     #@return [TokenSeq] self when Token is not found
     #@raise [UnknownSpecialForm] unknown_special_forms Token found
     def verify_special_forms
@@ -13,18 +15,9 @@ module Eson
       end
       unless error_token.nil?
         raise UnknownSpecialForm,
-	      unknown_special_form_error_message(error_token)
+	      unknown_special_form_error_message(error_token, self)
       end
       return self
-    end
-
-    private
-
-    def unknown_special_form_error_message(token)
-      line_num = token.get_attribute(:line_no)
-      "'#{token.lexeme}' is not a known special_form in" \
-      " line #{line_num}: " \
-      "#{get_program_snippet(line_num)}"
     end
   end
 end

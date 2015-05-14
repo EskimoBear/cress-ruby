@@ -217,6 +217,7 @@ describe Eson::Rule do
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
         @valid_token_seq = token_seq.new(@sequence)
         @invalid_token_seq = token_seq.new @sequence.reverse
+        @incomplete_token_seq = @valid_token_seq.first(1)
       end
       describe "with_only_terminals" do
         before do
@@ -271,8 +272,12 @@ describe Eson::Rule do
             end
           end
         end
-        it "with invalid token" do
+        it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
+            .must_raise Eson::Rule::InvalidSequenceParsed
+        end
+        it "exhausted tokens while parsing" do
+          proc {@rule.parse(@incomplete_token_seq, @rules)}
             .must_raise Eson::Rule::InvalidSequenceParsed
         end
       end

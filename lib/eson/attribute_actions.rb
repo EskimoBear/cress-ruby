@@ -15,15 +15,30 @@ module Eson
         envs = []
       end
       self.comp_rules.each do |cr|
-        env = envs.find{|i| i[:attr] == cr[:attr]}
-        env_arg = env.nil? ? cr : cr.merge(env)
-        self.send(cr[:method], env_arg)
+        if self.respond_to? cr[:method]
+          env = envs.find{|i| i[:attr] == cr[:attr]}
+          env_arg = env.nil? ? cr : cr.merge(env)
+          self.send(cr[:method], env_arg)
+        end
       end
       self
     end
     
     def valid_attribute?(attribute)
       attribute_list.include?(attribute) ? true : false
+    end
+
+    def assign_envs(envs=nil)
+      if envs.nil?
+        envs = []
+      else
+        envs.each do |i|
+          if valid_attribute?(i[:attr])
+            self.assign_attribute(i)
+          end
+        end
+      end
+      self
     end
 
     def assign_attribute(param)

@@ -293,23 +293,83 @@ module Eson
            :attr => :line_no,
            :type => :s_attr,
            :action_mod => Module.new,
-           :actions => [:assign_attribute],
+           :actions => [],
            :terms => [:All]
          },
          {
            :attr => :indent,
            :type => :s_attr,
            :action_mod => Module.new,
-           :actions => [:assign_attribute],
+           :actions => [],
            :terms => [:All]
          },
          {
            :attr => :spaces_after,
            :type => :s_attr,
-           :action_mod => Module.new,
-           :actions => [:assign_attribute],
+           :action_mod => Format,
+           :actions => [],
            :terms => [:colon]
          }])
+    end
+
+    module Format
+
+      def env_init
+        [{:attr => :line_no, :attr_value => 1},
+         {:attr => :indent, :attr_value => 0},
+         {:attr => :spaces_after, :attr_value => 1}]
+      end
+
+      def eval_s_attributes(envs, token, token_seq)
+        update_line_no_env(envs, token)
+        update_indent_env(envs, token)
+        set_line_start_true(token, token_seq)
+      end
+
+      def update_line_no_env(envs, token)
+        end_line_tokens = [:program_start,
+                           :array_start,
+                           :element_divider,
+                           :declaration_divider]
+        start_line_tokens = [:program_end,
+                             :array_end]
+        if end_line_tokens.include?(token.name)
+          increment_env_attr(envs, :line_no, 1)
+        elsif start_line_tokens.include?(token.name)
+          increment_env_attr(envs, :line_no, 1)
+          token.assign_envs(envs)
+        end
+      end
+
+      def increment_env_attr(envs, attr, inc)
+        env = envs.find{|i| i[:attr] == attr}
+        env[:attr_value] = env[:attr_value] + inc
+      end
+
+      def update_indent_env(envs, token)
+        end_line_tokens = [:program_start,
+                           :array_start]
+        start_line_tokens = [:program_end,
+                             :array_end]
+        if end_line_tokens.include?(token.name)
+          increment_env_attr(envs, :indent, 1)
+        elsif start_line_tokens.include?(token.name)
+          increment_env_attr(envs, :indent, -1)
+          token.assign_envs(envs)
+        end
+      end
+
+      def set_line_start_true(token, token_seq)
+        if token_seq.last.nil?
+          token.store_attribute(:line_start, true)
+        else
+          current_line = token.get_attribute(:line_no)
+          last_line = token_seq.last.get_attribute(:line_no)
+          if current_line != last_line
+            token.store_attribute(:line_start, true)
+          end
+        end
+      end
     end
 
     def esonf
@@ -320,7 +380,7 @@ module Eson
            :attr => :line_feed,
            :type => :s_attr,
            :action_mod => Module.new,
-           :actions => [:assign_attribute],
+           :actions => [],
            :terms => [:All]
          },
          {
@@ -333,10 +393,56 @@ module Eson
          {
            :attr => :to_s,
            :type => :s_attr,
-           :action_mod => Module.new,
+           :action_mod => EsonF,
            :actions => [],
            :terms => [:All]
          }])
+    end
+
+    module EsonF
+      def eval_s_attributes(envs, token, token_seq)
+        super
+        set_line_feed_true(token, token_seq)
+        set_to_s(token)
+      end
+
+      def set_line_feed_true(token, token_seq)
+        end_line_tokens = [:program_start,
+                           :array_start,
+                           :element_divider,
+                           :declaration_divider]
+        start_line_tokens = [:program_end,
+                             :array_end]
+        if end_line_tokens.include?(token.name)
+          token.store_attribute(:line_feed, true)
+        elsif start_line_tokens.include?(token.name)
+          token_seq.last.store_attribute(:line_feed, true)
+          set_to_s(token_seq.last)
+        end
+      end
+
+      def set_to_s(token)
+        lexeme = token.lexeme.to_s
+        indent = token.get_attribute(:indent)
+        spaces_after = token.get_attribute(:spaces_after)
+        line_feed = token.get_attribute(:line_feed)
+        line_start = token.get_attribute(:line_start)
+        string = "#{get_indentation(indent, line_start)}" \
+                 "#{lexeme}" \
+                 "#{spaces_after.nil? ? "" : " "}" \
+                 "#{line_feed.eql?(true) ? "\n" : ""}"
+        token.store_attribute(:to_s, string)
+      end
+
+      def get_indentation(indent, line_start)
+        if line_start
+          acc = String.new
+          indent.times{acc.concat("  ")}
+          acc
+        else
+          ""
+        end
+      end
     end
 
     alias_method :tokenizer_lang, :format

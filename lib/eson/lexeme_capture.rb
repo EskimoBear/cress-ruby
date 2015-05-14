@@ -72,8 +72,7 @@ module Eson
                end
       Token.new(lexeme, self.name, nil, nil)
         .build_s_attributes(self.s_attr)
-        .build_actions(self.comp_rules)
-        .eval_s_attributes(env)
+        .assign_envs(env)
     end
 
     def lexeme_type_error_message(lexeme)

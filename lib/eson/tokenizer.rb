@@ -114,53 +114,59 @@ module Eson::TokenPass
     end
 
     def json_symbols_to_tokens(json_symbol_seq, char_seq, grammar)
-      envs = [{:attr => :line_no, :attr_value => 1},
-              {:attr => :indent, :attr_value => 0},
-              {:attr => :spaces_after, :attr_value => 1}]
-      json_symbol_seq.each_with_object(Eson::TokenPass::TokenSeq.new) do |symbol, seq|
+      envs = grammar.env_init
+      json_symbol_seq
+        .each_with_object(Eson::TokenPass::TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start
           update_json_and_char_seqs(
             grammar.program_start.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
-            envs)
+            envs,
+            grammar)
         when :object_end
           update_json_and_char_seqs(
             grammar.program_end.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
-            envs)
+            envs,
+            grammar)
         when :array_start
           update_json_and_char_seqs(
             grammar.array_start.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
-            envs)
+            envs,
+            grammar)
         when :array_end
           update_json_and_char_seqs(
             grammar.array_end.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
-            envs)
+            envs,
+            grammar)
         when :colon
           update_json_and_char_seqs(
             grammar.colon.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
-            envs)
+            envs,
+            grammar)
         when :array_comma
           update_json_and_char_seqs(
             grammar.element_divider.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
-            envs)
+            envs,
+            grammar)
         when :member_comma
           update_json_and_char_seqs(
             grammar.declaration_divider.make_token(symbol.lexeme, envs),
             seq,
             char_seq,
-            envs)
+            envs,
+            grammar)
         when :JSON_key
           tokenize_json_key(symbol.lexeme, seq, char_seq, envs, grammar)
         when :JSON_value
@@ -174,97 +180,10 @@ module Eson::TokenPass
     #@param token [Token]
     #@param token_seq [TokenSeq]
     #@param char_seq [Array]
-    def update_json_and_char_seqs(token, token_seq, char_seq, envs)
+    def update_json_and_char_seqs(token, token_seq, char_seq, envs, grammar)
       char_seq.slice!(0, token.lexeme.size)
-      update_line_no_env(envs, token)
-      update_indent_env(envs, token)
-      set_line_feed_true(token, token_seq)
-      set_line_start_true(token, token_seq)
-      set_to_s(token)
+      grammar.eval_s_attributes(envs, token, token_seq)
       token_seq.push(token)
-    end
-
-    def set_to_s(token)
-      lexeme = token.lexeme.to_s
-      indent = token.get_attribute(:indent)
-      spaces_after = token.get_attribute(:spaces_after)
-      line_feed = token.get_attribute(:line_feed)
-      line_start = token.get_attribute(:line_start)
-      string = "#{get_indentation(indent, line_start)}" \
-               "#{lexeme}" \
-               "#{spaces_after.nil? ? "" : " "}" \
-               "#{line_feed.eql?(true) ? "\n" : ""}"
-      token.store_attribute(:to_s, string)
-    end
-
-    def get_indentation(indent, line_start)
-      if line_start
-        acc = String.new
-        indent.times{acc.concat("  ")}
-        acc
-      else
-        ""
-      end
-    end
-
-    def set_line_start_true(token, token_seq)
-      if token_seq.last.nil?
-        token.store_attribute(:line_start, true)
-      else
-        current_line = token.get_attribute(:line_no)
-        last_line = token_seq.last.get_attribute(:line_no)
-        if current_line != last_line
-          token.store_attribute(:line_start, true)
-        end
-      end
-    end
-
-    def update_line_no_env(envs, token)
-      end_line_tokens = [:program_start,
-                         :array_start,
-                         :element_divider,
-                         :declaration_divider]
-      start_line_tokens = [:program_end,
-                           :array_end]
-      if end_line_tokens.include?(token.name)
-        increment_env_attr(envs, :line_no, 1)
-      elsif start_line_tokens.include?(token.name)
-        increment_env_attr(envs, :line_no, 1)
-        token.eval_s_attributes(envs)
-      end
-    end
-
-    def update_indent_env(envs, token)
-      end_line_tokens = [:program_start,
-                         :array_start]
-      start_line_tokens = [:program_end,
-                           :array_end]
-      if end_line_tokens.include?(token.name)
-        increment_env_attr(envs, :indent, 1)
-      elsif start_line_tokens.include?(token.name)
-        increment_env_attr(envs, :indent, -1)
-        token.eval_s_attributes(envs)
-      end
-    end
-
-    def set_line_feed_true(token, token_seq)
-      end_line_tokens = [:program_start,
-                         :array_start,
-                         :element_divider,
-                         :declaration_divider]
-      start_line_tokens = [:program_end,
-                           :array_end]
-      if end_line_tokens.include?(token.name)
-        token.store_attribute(:line_feed, true)
-      elsif start_line_tokens.include?(token.name)
-        token_seq.last.store_attribute(:line_feed, true)
-        set_to_s(token_seq.last)
-      end
-    end
-
-    def increment_env_attr(envs, attr, inc)
-      env = envs.find{|i| i[:attr] == attr}
-      env[:attr_value] = env[:attr_value] + inc
     end
 
     def tokenize_json_key(json_key, seq, char_seq, envs, grammar)
@@ -291,7 +210,8 @@ module Eson::TokenPass
           grammar.send(matched_terminal).match_token(string, envs),
           seq,
           char_seq,
-          envs)
+          envs,
+          grammar)
       end
     end
 
@@ -306,25 +226,29 @@ module Eson::TokenPass
           grammar.true.make_token(json_value.to_s, envs),
           seq,
           char_seq,
-          envs)
+          envs,
+          grammar)
       elsif json_value.is_a? FalseClass
         update_json_and_char_seqs(
           grammar.false.make_token(json_value.to_s, envs),
           seq,
           char_seq,
-          envs)
+          envs,
+          grammar)
       elsif json_value.is_a? Numeric
         update_json_and_char_seqs(
           grammar.number.make_token(json_value.to_s, envs),
           seq,
           char_seq,
-          envs)
+          envs,
+          grammar)
       elsif json_value.nil?
         update_json_and_char_seqs(
           grammar.null.make_token(:null, envs),
           seq,
           char_seq,
-          envs)
+          envs,
+          grammar)
       elsif json_value.is_a? String
         tokenize_json_string(
           get_delimited_string(json_value),

@@ -294,6 +294,9 @@ module Eson
         terms.each do |t|
           cfg.send(t).add_attributes(i)
         end
+        unless i[:action_mod].nil?
+          cfg.extend(i[:action_mod])
+        end
       end
       cfg
     end

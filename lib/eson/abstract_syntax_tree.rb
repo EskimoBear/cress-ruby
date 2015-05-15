@@ -1,5 +1,6 @@
 require 'forwardable'
 require_relative './typed_seq'
+require_relative './attribute_actions'
 
 module Eson
 
@@ -139,10 +140,56 @@ module Eson
       def_delegators :@root_tree, :root_value, :degree, :closed?,
                      :open?, :leaf?, :ensure_open, :has_child?,
                      :has_children?, :rule, :children, :level,
-                     :empty_tree?, :contains?
+                     :empty_tree?, :contains?, :attribute_list,
+                     :get_attribute, :store_attribute
 
       #Struct class for a tree node
-      Tree = Struct.new :value, :children, :parent, :open_state, :level do
+      Tree = Struct.new :value, :children, :parent, :open_state,
+                        :level, :name, :attributes do
+
+        include AttributeActions
+
+        def attribute_list
+          if self.attributes.nil?
+            []
+          else
+            s_attributes.concat(i_attributes)
+          end
+        end
+
+        def get_attribute(attr_name)
+          if valid_attribute?(attr_name)
+            if s_attributes.include?(attr_name)
+              attributes[:s_attr][attr_name]
+            else
+              attributes[:i_attr][attr_name]
+            end
+          else
+            nil
+          end
+        end
+
+        def s_attributes
+          s_attrs = attributes[:s_attr]
+          s_attrs.nil? ? [] : s_attrs.keys
+        end
+
+        def i_attributes
+          i_attrs = attributes[:i_attr]
+          i_attrs.nil? ? [] : i_attrs.keys
+        end
+
+        def store_attribute(attr_name, attr_value)
+          if valid_attribute?(attr_name)
+            if s_attributes.include?(attr_name)
+              attributes[:s_attr].store(attr_name, attr_value)
+            else
+              attributes[:i_attr].store(attr_name, attr_value)
+            end
+          else
+            nil
+          end
+        end
         
         #The value of the root node
         #@return [Eson::Rule]

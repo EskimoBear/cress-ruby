@@ -7,7 +7,7 @@ module Eson
 
     MissingAttribute = Class.new(StandardError)
     
-    uses :name, :attributes, :comp_rules, :attribute_list,
+    uses :name, :attributes, :attribute_list,
          :get_attribute, :store_attribute
     
     def eval_s_attributes(envs=nil)

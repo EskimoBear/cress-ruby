@@ -77,13 +77,13 @@ describe Eson::Rule do
   end
   describe "#to_s" do
     it "is a terminal rule" do
-      @lang.element_divider.to_s.must_match /( := )/ 
+      @lang.element_divider.to_s.must_match /element_divider/
     end
     it "is a concatenation rule" do
-      @lang.variable_identifier.to_s.must_match /( := )/
+      @lang.program.to_s.must_match /( := )/
     end
     it "is a alternation rule" do
-      @lang.special_form_identifier.to_s.must_match /( := )/
+      @lang.proc_identifier.to_s.must_match /( := )/
     end
     it "is a repetition rule" do
       @lang.sub_string_list.to_s.must_match /( := )/

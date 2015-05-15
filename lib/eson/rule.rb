@@ -98,5 +98,7 @@ module Eson
         rules.get_rule(i).start_rxp.source
       end
     end
+
+    Parser.validate self
   end
 end

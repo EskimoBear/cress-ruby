@@ -1,86 +1,61 @@
 require_relative './respondent'
-require_relative './ebnf'
 require_relative './abstract_syntax_tree'
 require_relative './program_errors'
-require_relative './lexeme_capture'
 
 module Parser
 
   include ProgramErrors
-  extend Eson::LexemeCapture
-  extend Eson::EBNF
   extend Respondent
 
   NoMatchingFirstSet = Class.new(StandardError)
   FirstSetNotDisjoint = Class.new(StandardError)
+
+  uses :name, :term_names, :terminal?, :follow_set
   
-  #Return a Token sequence that is a legal instance of
-  #  the rule
+  #Return a legal instance of a rule
   #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
   #@param rules [Eson::RuleSeq] list of possible rules
   #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence in
   #                                 tokens as :parsed_seq, as a tree
   #                                 in :tree and the rest as :rest
   #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
-  #@eskimobear.specification
-  # T, input token sequence
-  # S, sub-sequence matching rule
-  # E, sequence of error tokens
-  # r_def, definition of rule
-  # et, token at the head of T
-  #
-  # Init : length(T) > 0
-  #        length(S) = 0
-  #        length(E) = 0
-  # Next : T' = T - et
-  #        when r_def.terminal?
-  #          when r_def.name = et.name
-  #            S' = S + et
-  #          otherwise
-  #            E' = E + et
-  #        when r_def.alternation?
-  #          when match_any(r_def, T)
-  #            S' = S + match_any(r_def, T)
-  #          otherwise
-  #            E' = E + et
-  #        when r_def.concatenation?
-  #          when match_and_then(r_def, T)
-  #            S' = S + match_and_then(r_def, T)
-  #          otherwise
-  #            E' = E + et
-  #        when r_def.option?
-  #          when match_one(r_def, T)
-  #            S' = S + match_one(r_def, T)
-  #          otherwise
-  #            S' = S + match_none(r_def, T)
-  #          otherwise
-  #            E' = E + et
-  #        when r_def.repetition?
-  #          when match_many(r_def, T)
-  #            S' = S + match_many(r_def, T)
-  #          otherwise
-  #            S' = S + match_none(r_def, T)
-  #          otherwise
-  #            E' = E + et
   def parse(tokens, rules, tree=nil)
-    if terminal?
+    if self.terminal?
       acc = parse_terminal(tokens, tree)
     else
       if tree.nil?
         tree = Eson::Rule::AbstractSyntaxTree.new
       end
       tree.insert(self)
-      acc = if alternation_rule?
+      acc = if self.alternation_rule?
               parse_any(tokens, rules, tree)
-            elsif concatenation_rule?
+            elsif self.concatenation_rule?
               parse_and_then(tokens, rules, tree)
-            elsif option_rule?
+            elsif self.option_rule?
               parse_maybe(tokens, rules, tree)
-            elsif repetition_rule?
+            elsif self.repetition_rule?
               parse_many(tokens, rules, tree)
             end
       acc[:tree].close_active
       acc
+    end
+  end
+
+  #Return a Token sequence with one Token representing the terminal rule
+  #@see parse
+  def parse_terminal(tokens, tree)
+    lookahead = tokens.first
+    if self.name == lookahead.name
+      leaf = Eson::Rule::AbstractSyntaxTree.new(lookahead)
+      tree = if tree.nil?
+               leaf
+             else
+               tree.merge(leaf)
+             end
+      build_parse_result([lookahead], tokens.drop(1), tree)
+    else
+      raise InvalidSequenceParsed,
+            parse_terminal_error_message(self.name, lookahead, tokens)
     end
   end
 
@@ -93,37 +68,8 @@ module Parser
     result = {:parsed_seq => parsed_seq, :rest => rest, :tree => tree}
   end
 
-  #Return a Token sequence with one Token representing the terminal rule
-  #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
-  #@param rules [Eson::RuleSeq] list of possible rules
-  #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence in
-  #                                 tokens as :parsed_seq, as a tree
-  #                                 in :tree and the rest as :rest
-  #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
-  def parse_terminal(tokens, tree)
-    lookahead = tokens.first
-    if @name == lookahead.name
-      leaf = Eson::Rule::AbstractSyntaxTree.new(lookahead)
-      tree = if tree.nil?
-               leaf
-             else
-               tree.merge(leaf)
-             end
-      build_parse_result([lookahead], tokens.drop(1), tree)
-    else
-      raise InvalidSequenceParsed,
-            parse_terminal_error_message(@name, lookahead, tokens)
-    end
-  end
-
-  #Return a Token sequence that is a legal instance of
-  #  an alternation rule
-  #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
-  #@param rules [Eson::RuleSeq] list of possible rules
-  #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence in
-  #                                 tokens as :parsed_seq, as a tree
-  #                                 in :tree and the rest as :rest
-  #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found  
+  #Return a legal instance of an alternation rule
+  #@see parse
   #@eskimobear.specification
   # T, input token sequence
   # et, token at the head of T
@@ -154,59 +100,42 @@ module Parser
   #          E' = E + et
   def parse_any(tokens, rules, tree)
     lookahead = tokens.first
-    if matched_any_first_sets?(lookahead, rules)
-      term = first_set_match(lookahead, rules)
-      rule = rules.get_rule(term.rule_name)
-      t = rule.parse(tokens, rules, tree)
-      return t
-    end
+    term = first_set_match(lookahead, rules)
+    rule = rules.get_rule(term)
+    rule.parse(tokens, rules, tree)
+  rescue NoMatchingFirstSet => e
     raise InvalidSequenceParsed,
-          parse_terminal_error_message(@name, lookahead, tokens)
-  end
-
-  #@param token [Eson::LexemeCapture::Token] token
-  #@param rules [Eson::RuleSeq] list of possible rules
-  #@return [Boolean] true if token is part of the first set of any
-  #  of the rule's terms.
-  def matched_any_first_sets?(token, rules)
-    terms = get_matching_first_sets(token, rules)
-    terms.length.eql?(1)
-  end
-
-  def get_matching_first_sets(token, rules)
-    @ebnf.term_set.find_all do |i|
-      rule = rules.get_rule(i.rule_name)
-      rule.first_set.include? token.name
-    end
+          first_set_error_message(lookahead, tokens)
   end
 
   #@param token [Eson::LexemeCapture::Token] token
   #@param rules [Eson::RuleSeq] list of possible rules
   #@return [Terminal, NonTerminal] term that has a first_set
-  #  which includes the given token. Works with alternation rules only.
-  #@raise [FirstSetNotDisjoint] if more than one term found
-  #@raise [NoMatchingFirstSet] if no terms found
+  #  which includes the given token.
+  #@raise [FirstSetNotDisjoint] if more than one term matches
+  #@raise [NoMatchingFirstSet] if no terms match
   def first_set_match(token, rules)
     terms = get_matching_first_sets(token, rules)
     case terms.length
     when 1
       terms.first
     when 0
-      raise NoMatchingFirstSet,
-            "None of the first_sets of #{@name} contain #{token.name}"
+      raise NoMatchingFirstSet
     else
       raise FirstSetNotDisjoint,
-            "The first_sets of #{@name} are not disjoint."
+            "The first_sets of #{self.name} are not disjoint."
     end
   end
 
-  #Return a Token sequence that is a legal instance of
-  #  a concatenation rule
-  #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
-  #@param rules [Eson::RuleSeq] list of possible rules
-  #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
-  #  tokens as :parsed_seq and the rest of the Token sequence as :rest
-  #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
+  def get_matching_first_sets(token, rules)
+    self.term_names.find_all do |i|
+      rule = rules.get_rule(i)
+      rule.first_set.include? token.name
+    end
+  end
+
+  #Return a legal instance of a concatenation rule
+  #@see parse
   #@eskimobear.specification
   # T, input token sequence
   # et, token at the head of T
@@ -251,13 +180,8 @@ module Parser
     end
   end
 
-  #Return a Token sequence that is a legal instance of
-  #  an option rule
-  #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
-  #@param rules [Eson::RuleSeq] list of possible rules
-  #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
-  #  tokens as :parsed_seq and the rest of the Token sequence as :rest
-  #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
+  #Return a legal instance of an option rule
+  #@see parse
   #@eskimobear.specification
   # T, input token sequence
   # et, token at the head of T
@@ -283,8 +207,8 @@ module Parser
   #        otherwise
   #          E + et
   def parse_maybe(tokens, rules, tree)
-    term = @ebnf.term
-    term_rule = rules.get_rule(term.rule_name)
+    term = self.term_names.first
+    term_rule = rules.get_rule(term)
     begin
       acc = term_rule.parse(tokens, rules)
       acc.store(:tree, tree.merge(acc[:tree]))
@@ -294,20 +218,19 @@ module Parser
     end
   end
 
+  #Raise the given exception if the next token
+  #is not in the followset of the rule
   def parse_none(tokens, exception, tree)
     lookahead = tokens.first
-    if @follow_set.include? lookahead.name
+    if self.follow_set.include? lookahead.name
       return build_parse_result([], tokens, tree)
     else
       raise exception
     end
   end
 
-  #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
-  #@param rules [Eson::RuleSeq] list of possible rules
-  #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence of
-  #  tokens as :parsed_seq and the rest of the Token sequence as :rest
-  #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
+  #Return a legal instance of a repetition rule
+  #@see parse
   #@eskimobear.specification
   # T, input token sequence
   # et, token at the head of T
@@ -336,10 +259,8 @@ module Parser
       acc
     else
       begin
-        acc.merge(parse_many(
-                    acc[:rest],
-                    rules,
-                    acc[:tree])) do |key, old, new|
+        partial = parse_many(acc[:rest], rules, acc[:tree])
+        acc.merge(partial) do |key, old, new|
           case key
           when :parsed_seq
             old.concat(new)
@@ -352,5 +273,4 @@ module Parser
       end
     end
   end
-  
 end

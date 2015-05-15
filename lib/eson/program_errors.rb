@@ -31,6 +31,13 @@ module ProgramErrors
       .concat(print_error_line(actual_token, token_seq))
   end
 
+  def first_set_error_message(token, token_seq)
+    "Error while parsing :#{@name}." \
+    " None of the first_sets of :#{@name} contain" \
+    " the term :#{token.name}."
+      .concat(print_error_line(token, token_seq))
+  end
+
   def unknown_special_form_error_message(token, token_seq)
     "'#{token.lexeme}' is not a known special_form." \
       .concat(print_error_line(token, token_seq))

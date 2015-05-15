@@ -46,16 +46,6 @@ describe Eson::TokenPass::TokenSeq do
   end
   
   describe "#tokenize_rule" do
-    it "with-alternation-rule" do
-      @token_seq[1].name = :variable_identifier
-      @token_seq[1].lexeme = :word_1
-      @token_seq[2].name = :word_form
-      @token_seq[2].lexeme = :word_1
-      @token_seq[3].name = :word
-      @token_seq[3].lexeme = :word_1
-      @token_seq.tokenize_rule(@alternation_rule)
-      @token_seq.any?{|i| i.name == @alternation_rule.name}.must_equal true
-    end
     it "with concatenation rule" do
       @token_seq[0].name = :variable_prefix
       @token_seq[0].lexeme = :word_1
@@ -67,16 +57,6 @@ describe Eson::TokenPass::TokenSeq do
       @token_seq[3].lexeme = :word_2
       @token_seq.all?{|i| i.name == @concatenation_rule.name}
       @token_seq.must_be_instance_of Eson::TokenPass::TokenSeq
-    end
-  end
-  describe "#assign_alternation_names" do
-    it "succeeds" do
-      @token_seq[0].name = :word_form
-      @token_seq[1].name = :variable_identifier
-      @token_seq[2].name = :variable_identifier
-      @token_seq[3].name = :word_form
-      @token_seq.assign_alternation_names(@alternation_rule)
-      @token_seq.all?{|i| i.alternation_names.include?(@alternation_rule.name)}.must_equal true
     end
   end
 end

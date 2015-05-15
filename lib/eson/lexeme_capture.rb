@@ -12,8 +12,7 @@ module Eson
     
     WrongLexemeType = Class.new(StandardError)
 
-    Token = Struct.new :lexeme, :name, :alternation_names,
-                       :attributes, :comp_rules do
+    Token = Struct.new :lexeme, :name, :attributes, :comp_rules do
 
       include AttributeActions
 

@@ -9,7 +9,12 @@ describe "Eson::EsonGrammars::esonf" do
   include TestHelpers
   
   subject {Eson::EsonGrammars.esonf}
-  
+
+  before do
+    @ts = get_token_sequence(subject)
+    @tree = get_ast(@ts)
+  end
+
   describe "validate_esonf" do
     it "rules have s_attr line_feed" do
       subject.values.all?{|i| i.s_attr.include? :line_feed}
@@ -26,9 +31,6 @@ describe "Eson::EsonGrammars::esonf" do
   end
 
   describe "validate_tokens" do
-    before do
-      @ts = get_token_sequence(subject)
-    end
     it "line_feed evaluated" do
       @ts.find_all{|i| i.get_attribute(:line_feed) == true}
         .length.must_equal 16

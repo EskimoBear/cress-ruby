@@ -61,6 +61,8 @@ module Eson
 
       def make_tree_node(rule)
         tree = Tree.new(rule, TreeSeq.new, active_node, true)
+               .build_s_attributes(rule.s_attr)
+               .build_i_attributes(rule.i_attr)
                .set_level
       end
       
@@ -170,13 +172,16 @@ module Eson
         end
 
         def s_attributes
-          s_attrs = attributes[:s_attr]
-          s_attrs.nil? ? [] : s_attrs.keys
+          attribute_type_list(:s_attr)
         end
 
         def i_attributes
-          i_attrs = attributes[:i_attr]
-          i_attrs.nil? ? [] : i_attrs.keys
+          attribute_type_list(:i_attr)
+        end
+
+        def attribute_type_list(attr_type)
+          attrs = attributes[attr_type]
+          attrs.nil? ? [] : attrs.keys
         end
 
         def store_attribute(attr_name, attr_value)
@@ -189,6 +194,26 @@ module Eson
           else
             nil
           end
+        end
+
+        def build_s_attributes(s_attrs)
+          if attributes.nil?
+            init_attributes
+          end
+          s_attrs.each{|i| attributes[:s_attr].store(i, nil)}
+          self
+        end
+
+        def build_i_attributes(i_attrs)
+          if attributes.nil?
+            init_attributes
+          end
+          i_attrs.each{|i| attributes[:i_attr].store(i, nil)}
+          self
+        end
+
+        def init_attributes
+          self.attributes = {:s_attr => {}, :i_attr => {}}
         end
         
         #The value of the root node
@@ -273,6 +298,7 @@ module Eson
             children.each{|t| t.set_level}
           end
         end
+        AttributeActions.validate self
       end
 
       TreeSeq = TypedSeq.new_seq(Tree)

@@ -11,12 +11,14 @@ describe Eson::Rule::AbstractSyntaxTree do
                      .new_terminal_rule(
                        @terminal_name,
                        /rule/)
-    @nonterminal_rule = Eson::Rule.
+    @production = Eson::Rule.
                         new(
                           :nonterminal,
                           /rule/,
                           false,
                           ["test"])
+    @production.s_attr.push :s_val
+    @production.i_attr.push :i_val
     @token = @terminal_rule.make_token(:var)
   end
 
@@ -56,13 +58,16 @@ describe Eson::Rule::AbstractSyntaxTree do
           must_raise Eson::Rule::AbstractSyntaxTree::CannotConvertTypeToTree
       end
     end
-    describe "nonterminal_rule" do
+    describe "production" do
       before do
-        @tree = subject.new @nonterminal_rule
+        @tree = subject.new @production
       end
       it "root is rule" do
         @tree.must_be_instance_of subject
-        @tree.root_value.must_equal @nonterminal_rule
+        @tree.root_value.must_equal @production
+      end
+      it "root has attributes" do
+        @tree.attribute_list.must_equal [:s_val, :i_val]
       end
       it "root is open" do
         @tree.closed?.must_equal false
@@ -78,7 +83,7 @@ describe Eson::Rule::AbstractSyntaxTree do
 
   describe "#insert" do
     before do
-      @tree = subject.new @nonterminal_rule
+      @tree = subject.new @production
     end
     it "node is invalid type" do
       proc {@tree.insert("foo")}
@@ -91,12 +96,12 @@ describe Eson::Rule::AbstractSyntaxTree do
       child_nodes.first.value.name.must_equal @token.name
     end
     it "inserted rule is active node" do
-      @tree.insert(@nonterminal_rule).insert(@token)
+      @tree.insert(@production).insert(@token)
       @tree.height.must_equal 3
-      @tree.active_node.value.must_equal @nonterminal_rule
+      @tree.active_node.value.must_equal @production
     end
     it "inserted rule has root as parent" do
-      @tree.insert(@nonterminal_rule)
+      @tree.insert(@production)
       @tree.active_node.parent.must_equal @tree.get
     end
     it "fails on closed tree" do
@@ -122,8 +127,8 @@ describe Eson::Rule::AbstractSyntaxTree do
 
   describe "#merge" do
     before do
-      @root_tree = subject.new @nonterminal_rule
-      @tree = subject.new(@nonterminal_rule).insert(@token).close_tree
+      @root_tree = subject.new @production
+      @tree = subject.new(@production).insert(@token).close_tree
       @root_tree.merge(@tree)
     end
     it "tree is child node" do
@@ -141,8 +146,8 @@ describe Eson::Rule::AbstractSyntaxTree do
   
   describe "#close_active" do
     before do
-      @tree = subject.new @nonterminal_rule
-      @tree.insert(@nonterminal_rule)
+      @tree = subject.new @production
+      @tree.insert(@production)
       @tree.insert(@token)
     end
     it "active node is closed" do
@@ -158,8 +163,8 @@ describe Eson::Rule::AbstractSyntaxTree do
 
   describe "#contains?" do
     before do
-      @tree = subject.new @nonterminal_rule
-      @tree.insert(@nonterminal_rule)
+      @tree = subject.new @production
+      @tree.insert(@production)
     end
     it "contains token" do
       @tree.insert(@terminal_rule.make_token(:token))

@@ -12,7 +12,7 @@ describe "Eson::EsonGrammars::esonf" do
 
   before do
     @ts = get_token_sequence(subject)
-    @tree = get_ast(@ts)
+    @tree = get_ast(@ts, subject)
   end
 
   describe "validate_esonf" do
@@ -42,6 +42,13 @@ describe "Eson::EsonGrammars::esonf" do
     it "line_start evaluated" do
       @ts.find_all{|i| i.get_attribute(:line_start) == true}
         .length.must_equal 17
+    end
+  end
+
+  describe "validate_tree" do
+    it "to_s evaluated" do
+      @tree.get_attribute(:to_s)
+        .must_equal get_tokenizer_sample_program
     end
   end
 end

@@ -10,8 +10,8 @@ module Eson::SyntaxPass
   #Produce AbstractSyntaxTree for eson program
   #@param token_seq [TokenSeq]  
   #@return [AbstractSyntaxTree]
-  def build_tree(token_seq)
-    rules = tokenizer_lang.copy_rules
-    tokenizer_lang.top_rule.parse(token_seq, rules)[:tree]
+  def build_tree(token_seq, grammar)
+    ast = grammar.top_rule.parse(token_seq, grammar)[:tree]
+    grammar.eval_tree_attributes(ast)
   end
 end

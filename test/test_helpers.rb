@@ -34,8 +34,11 @@ module TestHelpers
       .verify_special_forms
   end
 
-  def get_ast(token_sequence=get_token_sequence)
-    Eson::SyntaxPass.build_tree(token_sequence)
+  def get_ast(token_sequence=get_token_sequence,
+              grammar=Eson::EsonGrammars.tokenizer_lang)
+    Eson::SyntaxPass.build_tree(
+      token_sequence,
+      grammar)
   end
   
   private

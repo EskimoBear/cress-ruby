@@ -1,6 +1,7 @@
 require 'minitest'
 require 'minitest/autorun'
 require 'minitest/pride'
+require 'pp'
 require_relative '../lib/eson/rule.rb'
 
 describe Eson::Rule::AbstractSyntaxTree do
@@ -11,6 +12,7 @@ describe Eson::Rule::AbstractSyntaxTree do
                      .new_terminal_rule(
                        @terminal_name,
                        /rule/)
+    @terminal_rule.s_attr.push :s_val
     @production = Eson::Rule.
                         new(
                           :nonterminal,
@@ -20,6 +22,8 @@ describe Eson::Rule::AbstractSyntaxTree do
     @production.s_attr.push :s_val
     @production.i_attr.push :i_val
     @token = @terminal_rule.make_token(:var)
+    @token_attr = "s_val value"
+    @token.store_attribute(:s_val, @token_attr)
   end
 
   subject {Eson::Rule::AbstractSyntaxTree}
@@ -45,6 +49,14 @@ describe Eson::Rule::AbstractSyntaxTree do
       it "root_is_leaf" do
         @tree.leaf?.must_equal true
       end
+      it "root has name" do
+        @tree.name.must_equal @token.name
+      end
+      it "root has attributes" do
+        @tree.attribute_list.must_equal [:s_val, :lexeme]
+        @tree.get_attribute(:s_val).must_equal @token_attr
+        @tree.get_attribute(:lexeme).must_equal :var
+      end
       it "root_is_closed" do
         @tree.closed?.must_equal true
       end
@@ -65,6 +77,9 @@ describe Eson::Rule::AbstractSyntaxTree do
       it "root is rule" do
         @tree.must_be_instance_of subject
         @tree.root_value.must_equal @production
+      end
+      it "root has name" do
+        @tree.name.must_equal @production.name
       end
       it "root has attributes" do
         @tree.attribute_list.must_equal [:s_val, :i_val]
@@ -172,6 +187,22 @@ describe Eson::Rule::AbstractSyntaxTree do
     end
     it "doesn't contain token" do
       @tree.contains?(@terminal_name).must_equal false
+    end
+  end
+
+  describe "#post_order_traversal" do
+    before do
+      @root_tree = subject.new(@production).insert(@token)
+      @tree = subject.new(@production).insert(@token).close_tree
+      @root_tree.merge(@tree)
+    end
+    it "get bottom left" do
+      @root_tree.bottom_left_node.value.name.must_equal @token.name
+    end
+    it "post order trace" do
+      @root_tree.post_order_trace
+        .must_equal [@token.name, @token.name,
+                     @production.name ,@production.name]
     end
   end
 end

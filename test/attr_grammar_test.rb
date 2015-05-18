@@ -58,7 +58,10 @@ describe "Eson::RuleSeq" do
       terms.all?{|i| @attr_grammar.send(i).i_attr.nil?}
         .must_equal true
     end
-    it "apply s-attributes" do
+  end
+
+  describe "evaluated attributes" do
+    it "token s-attributes" do
       token = @attr_grammar.variable_identifier
               .match_token("$var", @env)
       token.attributes[:value].must_equal "$var"

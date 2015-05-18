@@ -18,7 +18,7 @@ module Eson
     if validate_json?(eson_program)
       token_sequence = TokenPass.tokenize_program(eson_program, grammar)
                        .verify_special_forms
-      tree = SyntaxPass.build_tree(token_sequence)
+      tree = SyntaxPass.build_tree(token_sequence, grammar)
     else
       validation_pass(eson_program)
     end

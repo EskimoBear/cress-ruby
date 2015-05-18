@@ -262,8 +262,8 @@ module Eson::TokenPass
     def tokenize_json_string(json_string, seq, char_seq, envs, grammar)
       lexer(
         [:string_delimiter,
-         :word_form,
-         :variable_identifier],
+         :variable_identifier,
+         :word_form],
         json_string,
         seq,
         char_seq,

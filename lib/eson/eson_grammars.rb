@@ -320,6 +320,10 @@ module Eson
          {:attr => :spaces_after, :attr_value => 1}]
       end
 
+      def eval_tree_attributes(tree)
+        tree
+      end
+
       def eval_s_attributes(envs, token, token_seq)
         update_line_no_env(envs, token)
         update_indent_env(envs, token)
@@ -451,6 +455,13 @@ module Eson
     end
 
     module EsonF
+
+      def eval_tree_attributes(tree)
+        super
+        build_tree_to_s(tree)
+        tree
+      end
+
       def eval_s_attributes(envs, token, token_seq)
         super
         set_line_feed_true(token, token_seq)
@@ -492,6 +503,16 @@ module Eson
           acc
         else
           ""
+        end
+      end
+
+      def build_tree_to_s(tree)
+        tree.post_order_traversal do |t|
+          unless t.leaf?
+            string = t.children.map{|i| i.get_attribute(:to_s)}
+                     .reduce(:concat)
+            t.store_attribute(:to_s, string)
+          end
         end
       end
     end

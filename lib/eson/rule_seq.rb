@@ -43,9 +43,11 @@ module Eson
       end
 
       def to_s
-        rule_list = rule_seq.map{|i| i.to_s}
+        rule_list = productions.map{|i| i.to_s}
         "#{self.class.to_s.gsub(/Struct::/, "")}" \
-        " has the following production rules:" \
+        " has the following terminals:\n" \
+        "\n#{terminals.join(", ")}" \
+        "\n\nand the following productions:\n" \
         "\n#{rule_list.join("\n")}"
       end
 
@@ -293,6 +295,9 @@ module Eson
                 end
         terms.each do |t|
           cfg.send(t).add_attributes(i)
+        end
+        unless i[:action_mod].nil?
+          cfg.extend(i[:action_mod])
         end
       end
       cfg

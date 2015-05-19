@@ -9,12 +9,16 @@ describe "Eson::RuleSeq" do
   subject {Eson::RuleSeq}
 
   before do
-    @cfg = Eson::EsonGrammars.e5
+    module Custom
+      def custom_action
+      end
+    end
+    @cfg = Eson::EsonGrammars.e1
     @attr_maps = [{
                     :attr => :value,
                     :type => :s_attr,
-                    :action_mod => Module.new,
-                    :actions => [:assign_attribute],
+                    :action_mod => Custom,
+                    :actions => [],
                     :terms => [:string, :variable_identifier]
                   },
                   {
@@ -22,8 +26,6 @@ describe "Eson::RuleSeq" do
                     :type => :i_attr,
                     :terms => [:All]
                   }]
-    @synth_action = {:method => :assign_attribute,
-                     :attr => :value}
     @env = [{:attr_value => "$var", :attr => :value}]
     @attr_grammar = subject.assign_attribute_grammar(
       "Formatter",
@@ -40,6 +42,9 @@ describe "Eson::RuleSeq" do
     it "create successfully" do
       @attr_grammar.must_be_kind_of @cfg.class
     end
+    it "inherits functions" do
+      @attr_grammar.must_respond_to :custom_action
+    end
     it "has s_attr list" do
       @attr_grammar.string.s_attr.must_include :value
       @attr_grammar.variable_identifier.s_attr.must_include :value
@@ -53,11 +58,10 @@ describe "Eson::RuleSeq" do
       terms.all?{|i| @attr_grammar.send(i).i_attr.nil?}
         .must_equal true
     end
-    it "s_attr computation rules" do
-      @attr_grammar.string.comp_rules.must_include @synth_action
-      @attr_grammar.variable_identifier.comp_rules.must_include @synth_action
-    end
-    it "apply s-attributes" do
+  end
+
+  describe "evaluated attributes" do
+    it "token s-attributes" do
       token = @attr_grammar.variable_identifier
               .match_token("$var", @env)
       token.attributes[:value].must_equal "$var"

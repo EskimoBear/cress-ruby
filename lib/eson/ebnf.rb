@@ -45,13 +45,15 @@ module Eson
     #FIXME this no longer works as terminals which have been
     #converted from nonterminals have an undefined @start_rxp
     def to_s
-      "#{name} := #{self.ebnf_to_s};"
+      if terminal?
+        "#{self.name}"
+      else
+        "#{name} := #{self.ebnf_to_s};"
+      end
     end
 
     def ebnf_to_s
-      if terminal?
-        "\"#{@start_rxp.source.gsub(/\\/, "")}\""
-      elsif alternation_rule?
+      if alternation_rule?
         terms = ebnf.term_set
         join_rule_names(terms, " | ")
       elsif concatenation_rule?

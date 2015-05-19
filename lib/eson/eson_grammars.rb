@@ -28,7 +28,7 @@ module Eson
       /#{string_delimiter}#{proc_prefix}(.+)#{string_delimiter}\z/
     end
 
-    #@return [R0] eson grammar for lexing keys
+    #@return [E0] eson grammar for lexing keys
     def keys
       reserved = [:let, :ref, :doc]
       RuleSeq.new(make_reserved_keys_rules(reserved))
@@ -74,11 +74,6 @@ module Eson
     def null_rxp
       /null\z/
     end
-    
-    # variable_prefix := "$";
-    def variable_prefix_rule
-      Rule.new_terminal_rule(:variable_prefix, variable_prefix_rxp)
-    end
 
     def variable_prefix_rxp
       /\$/
@@ -89,40 +84,26 @@ module Eson
       word = word_rxp.source
       /#{variable_prefix}#{word}/
     end
-    
-    # word := {JSON_char}; (*letters, numbers, '-', '_', '.'*)
-    def word_rule
-      Rule.new_terminal_rule(:word, word_rxp)
+
+    def word_form_rule
+      Rule.new_terminal_rule(:word_form, word_form_rxp)
+    end
+
+    def word_form_rxp
+      word = word_rxp.source
+      whitespace = whitespace_rxp.source
+      other_chars = other_chars_rxp.source
+      /#{word}|#{whitespace}|#{other_chars}/
     end
 
     def word_rxp
       /[a-zA-Z\-_.\d]+/
     end
     
-    # whitespace := {" "};
-    def whitespace_rule
-      Rule.new_terminal_rule(:whitespace, whitespace_rxp)
-    end
-
     def whitespace_rxp
       /[ ]+/
     end
 
-    # empty_word := "";
-    def empty_word_rule
-      Rule.new_terminal_rule(:empty_word, empty_word_rxp)
-    end
-    
-    def empty_word_rxp
-      /^$/
-    end
-
-    # other_chars := {JSON_char}; (*characters excluding those found
-    #   in variable_prefix, word and whitespace*)
-    def other_chars_rule
-      Rule.new_terminal_rule(:other_chars, other_chars_rxp)
-    end
-    
     def other_chars_rxp
       word = word_rxp.source
       variable_prefix = variable_prefix_rxp.source
@@ -217,32 +198,21 @@ module Eson
       /\}/
     end
     
-    #@return [E0] the initial eson grammar used for tokenization
-    def e0
-      rules = [word_rule,
-               whitespace_rule,
-               empty_word_rule,
-               other_chars_rule,
+    #@return [E1] eson grammar used for tokenization
+    def e1
+      rules = [word_form_rule,
                true_rule,
                false_rule,
                null_rule,
                number_rule,
                array_start_rule,
                array_end_rule,
-               comma_rule,
-               declaration_divider_rule,
                colon_rule,
                program_start_rule,
                program_end_rule]
       RuleSeq.new(keys.copy_rules.concat(rules))
         .make_terminal_rule(:variable_identifier,
                            variable_identifier_rxp)
-        .make_alternation_rule(:word_form,
-                               [:whitespace,
-                                :word,
-                                :empty_word,
-                                :other_chars])
-        .convert_to_terminal(:word_form)
         .make_alternation_rule(
           :sub_string,
           [:word_form, :variable_identifier])
@@ -257,16 +227,6 @@ module Eson
           [:string_delimiter,
            :sub_string_list,
            :string_delimiter])
-        .build_cfg("E0")
-    end
-
-    #@return [Struct] e5 the sixth language of the compiler
-    #@eskimobear.specification
-    # Prop : E5 is a struct of eson production rules of E4 with
-    #        recursive production rules such as 'value', 'array',
-    #        and 'program' added.
-    def e5
-      e0.copy_rules
         .make_alternation_rule(
           :value,
           [:variable_identifier,
@@ -277,9 +237,15 @@ module Eson
            :number,
            :array,
            :program])
+        .make_terminal_rule(
+          :declaration_divider,
+          comma_rxp)
+        .make_terminal_rule(
+          :element_divider,
+          comma_rxp)
         .make_concatenation_rule(
           :element_more_once,
-          [:comma, :value])
+          [:element_divider, :value])
         .make_repetition_rule(
           :element_more,
           :element_more_once)
@@ -314,39 +280,243 @@ module Eson
         .make_concatenation_rule(
           :program,
           [:program_start, :declaration_set, :program_end])
-        .build_cfg("E5", :program)
+        .build_cfg("E1", :program)
     end
 
-    #return [Struct] the attribute grammar: Format which applies the
-    #                default eson format
+    #Grammar which applies default eson formatting to programs.
+    #return [Struct] the attribute grammar Format
     def format
       RuleSeq.assign_attribute_grammar(
         "Format",
-        e5,
+        e1,
         [{
            :attr => :line_no,
            :type => :s_attr,
            :action_mod => Module.new,
-           :actions => [:assign_attribute],
+           :actions => [],
            :terms => [:All]
          },
          {
            :attr => :indent,
            :type => :s_attr,
            :action_mod => Module.new,
-           :actions => [:assign_attribute],
+           :actions => [],
            :terms => [:All]
          },
          {
            :attr => :spaces_after,
            :type => :s_attr,
-           :action_mod => Module.new,
-           :actions => [:assign_attribute],
+           :action_mod => Format,
+           :actions => [],
            :terms => [:colon]
          }])
     end
 
-    alias_method :tokenizer_lang, :e0
-    alias_method :syntax_pass_lang, :e5
+    module Format
+
+      def env_init
+        [{:attr => :line_no, :attr_value => 1},
+         {:attr => :indent, :attr_value => 0},
+         {:attr => :spaces_after, :attr_value => 1}]
+      end
+
+      def eval_tree_attributes(tree)
+        tree
+      end
+
+      def eval_s_attributes(envs, token, token_seq)
+        update_line_no_env(envs, token)
+        update_indent_env(envs, token)
+        set_line_start_true(token, token_seq)
+      end
+
+      def update_line_no_env(envs, token)
+        end_line_tokens = [:program_start,
+                           :array_start,
+                           :element_divider,
+                           :declaration_divider]
+        start_line_tokens = [:program_end,
+                             :array_end]
+        if end_line_tokens.include?(token.name)
+          increment_env_attr(envs, :line_no, 1)
+        elsif start_line_tokens.include?(token.name)
+          increment_env_attr(envs, :line_no, 1)
+          token.assign_envs(envs)
+        end
+      end
+
+      def increment_env_attr(envs, attr, inc)
+        env = envs.find{|i| i[:attr] == attr}
+        env[:attr_value] = env[:attr_value] + inc
+      end
+
+      def update_indent_env(envs, token)
+        end_line_tokens = [:program_start,
+                           :array_start]
+        start_line_tokens = [:program_end,
+                             :array_end]
+        if end_line_tokens.include?(token.name)
+          increment_env_attr(envs, :indent, 1)
+        elsif start_line_tokens.include?(token.name)
+          increment_env_attr(envs, :indent, -1)
+          token.assign_envs(envs)
+        end
+      end
+
+      def set_line_start_true(token, token_seq)
+        if token_seq.last.nil?
+          token.store_attribute(:line_start, true)
+        else
+          current_line = token.get_attribute(:line_no)
+          last_line = token_seq.last.get_attribute(:line_no)
+          if current_line != last_line
+            token.store_attribute(:line_start, true)
+          end
+        end
+      end
+
+      def get_program_snippet(line_no, token_seq)
+        display_program(
+          TokenSeq.new(
+          token_seq.select{|i| i.get_attribute(:line_no) == line_no}))
+      end
+
+      def display_program(token_seq)
+        if token_seq.none?{|i| i.get_attribute(:line_no).nil?}
+          program_lines =
+            token_seq.slice_when do |t0, t1|
+            t0.get_attribute(:line_no) != t1.get_attribute(:line_no)
+          end
+            .map do |ts|
+            [ ts.first.get_attribute(:line_no),
+              ts.first.get_attribute(:indent),
+              ts.each_with_object("") do |j, acc|
+                acc.concat(j.lexeme.to_s)
+                unit = j.get_attribute(:spaces_after)
+                space = unit.nil? ? "" : get_spaces(unit)
+                acc.concat(space)
+              end
+            ]
+          end
+          max_line = program_lines.length
+          program_lines.map do |i|
+            "#{get_line(i[0], max_line)}#{get_indentation(i[1])}#{i[2]}\n"
+          end
+            .reduce(:concat)
+            .prepend("\n")
+        end
+      end
+
+      def get_line(line_no, max_line_no)
+        padding = max_line_no.to_s.size - line_no.to_s.size
+        "#{get_spaces(padding)}#{line_no}:"
+      end
+
+      def get_spaces(units)
+        repeat_string(units, " ")
+      end
+
+      def get_indentation(units)
+        repeat_string(units, "  ")
+      end
+
+      def repeat_string(reps, string)
+        acc = String.new
+        reps.times{acc.concat(string)}
+        acc
+      end
+    end
+
+    def esonf
+      RuleSeq.assign_attribute_grammar(
+        "EsonfGen",
+        format,
+        [{
+           :attr => :line_feed,
+           :type => :s_attr,
+           :action_mod => Module.new,
+           :actions => [],
+           :terms => [:All]
+         },
+         {
+           :attr => :line_start,
+           :type => :s_attr,
+           :action_mod => Module.new,
+           :actions => [],
+           :terms => [:All]
+         },
+         {
+           :attr => :to_s,
+           :type => :s_attr,
+           :action_mod => EsonF,
+           :actions => [],
+           :terms => [:All]
+         }])
+    end
+
+    module EsonF
+
+      def eval_tree_attributes(tree)
+        super
+        build_tree_to_s(tree)
+        tree
+      end
+
+      def eval_s_attributes(envs, token, token_seq)
+        super
+        set_line_feed_true(token, token_seq)
+        set_to_s(token)
+      end
+
+      def set_line_feed_true(token, token_seq)
+        end_line_tokens = [:program_start,
+                           :array_start,
+                           :element_divider,
+                           :declaration_divider]
+        start_line_tokens = [:program_end,
+                             :array_end]
+        if end_line_tokens.include?(token.name)
+          token.store_attribute(:line_feed, true)
+        elsif start_line_tokens.include?(token.name)
+          token_seq.last.store_attribute(:line_feed, true)
+          set_to_s(token_seq.last)
+        end
+      end
+
+      def set_to_s(token)
+        lexeme = token.lexeme.to_s
+        indent = token.get_attribute(:indent)
+        spaces_after = token.get_attribute(:spaces_after)
+        line_feed = token.get_attribute(:line_feed)
+        line_start = token.get_attribute(:line_start)
+        string = "#{get_indentation(indent, line_start)}" \
+                 "#{lexeme}" \
+                 "#{spaces_after.nil? ? "" : " "}" \
+                 "#{line_feed.eql?(true) ? "\n" : ""}"
+        token.store_attribute(:to_s, string)
+      end
+
+      def get_indentation(indent, line_start)
+        if line_start
+          acc = String.new
+          indent.times{acc.concat("  ")}
+          acc
+        else
+          ""
+        end
+      end
+
+      def build_tree_to_s(tree)
+        tree.post_order_traversal do |t|
+          unless t.leaf?
+            string = t.children.map{|i| i.get_attribute(:to_s)}
+                     .reduce(:concat)
+            t.store_attribute(:to_s, string)
+          end
+        end
+      end
+    end
+
+    alias_method :tokenizer_lang, :format
   end
 end

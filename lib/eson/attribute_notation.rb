@@ -10,7 +10,6 @@ module AttributeNotation
   def add_attributes(attr_map)
     self.add_attribute_lists(attr_map)
     unless attr_map[:actions].nil?
-      self.add_actions(attr_map)
       self.add_comp_rules(attr_map)
     end
   end
@@ -31,9 +30,5 @@ module AttributeNotation
     elsif attr_type == :i_attr && self.nonterminal?
       self.i_attr.push(attribute)
     end
-  end
-
-  def add_actions(attr_map)
-    self.extend(attr_map[:action_mod])
   end
 end

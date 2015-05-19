@@ -34,7 +34,10 @@ describe Eson::Rule do
   
   describe "#parse" do
     before do
-      @rules = rule_seq.make_alternation_rule(:root_rule, [:rule_2, :rule_1])
+      @rules = rule_seq.make_alternation_rule(
+        :root_rule,
+        [:rule_2, :rule_1])
+               .make_terminal_rule(:nullable, /""/)
       @root_rule = @rules.get_rule(:root_rule)
       @init_tree = ast.new(@root_rule)
     end
@@ -217,6 +220,7 @@ describe Eson::Rule do
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
         @valid_token_seq = token_seq.new(@sequence)
         @invalid_token_seq = token_seq.new @sequence.reverse
+        @incomplete_token_seq = @valid_token_seq.first(1)
       end
       describe "with_only_terminals" do
         before do
@@ -271,8 +275,12 @@ describe Eson::Rule do
             end
           end
         end
-        it "with invalid token" do
+        it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
+            .must_raise Eson::Rule::InvalidSequenceParsed
+        end
+        it "exhausted tokens while parsing" do
+          proc {@rule.parse(@incomplete_token_seq, @rules)}
             .must_raise Eson::Rule::InvalidSequenceParsed
         end
       end
@@ -538,8 +546,8 @@ describe Eson::Rule do
           it "has root" do
             @tree.root_value.must_equal @rule
           end
-          it "is leaf" do
-            @tree.leaf?.must_equal true
+          it "contains nullable" do
+            @tree.contains?(:nullable).must_equal true
           end
           it "is closed" do
             @tree.closed?.must_equal true
@@ -555,6 +563,7 @@ describe Eson::Rule do
       before do
         @rules = rule_seq
                  .make_option_rule(:terminal_rule, :rule_1)
+                 .make_terminal_rule(:nullable, /""/)
         @lang = @rules.build_cfg("LANG")
         @rule = @lang.terminal_rule
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
@@ -595,9 +604,12 @@ describe Eson::Rule do
       describe "with_nonterminals" do
         before do
           @rules = rule_seq
-                   .make_concatenation_rule(:c_rule, [:rule_1, :rule_2])
+                   .make_concatenation_rule(:c_rule,
+                                            [:rule_1, :rule_2])
                    .make_option_rule(:nonterminal_rule, :c_rule)
-                   .make_concatenation_rule(:top, [:nonterminal_rule, :rule_3])
+                   .make_concatenation_rule(:top,
+                                            [:nonterminal_rule,
+                                             :rule_3])
           @lang = @rules.build_cfg("LANG", :top)
           @rule = @lang.nonterminal_rule
         end
@@ -662,7 +674,7 @@ describe Eson::Rule do
           end
         end
         describe "nulled instance" do
-          before do 
+          before do
             @parse_result =  @rule.parse(@valid_nulled_seq, @rules)
             @tree = @parse_result[:tree]
           end
@@ -675,8 +687,8 @@ describe Eson::Rule do
           it "has root" do
             @tree.root_value.must_equal @rule
           end
-          it "is leaf" do
-            @tree.leaf?.must_equal true
+          it "contains nullable" do
+            @tree.contains?(:nullable).must_equal true
           end
           it "is closed" do
             @tree.closed?.must_equal true

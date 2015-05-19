@@ -14,12 +14,19 @@ describe Eson::TokenPass::Tokenizer do
   it "is a TokenSeq" do
     @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
   end
-  it "#add_line_numbers" do
+  it "eval :line_no" do
     @token_sequence.last.get_attribute(:line_no).must_equal 17
     @token_sequence.all?{|i| i.get_attribute(:line_no)}
       .must_equal true
   end
-  it "#insert_string_delimiters" do
-    @token_sequence.find_all{|i| i.name == :string_delimiter}.length.must_equal 12
+  it "eval :indent" do
+    @token_sequence.map{|i| i.get_attribute(:indent)}.max
+      .must_equal 3
+    @token_sequence.all?{|i| i.get_attribute(:indent)}
+      .must_equal true
+  end
+  it "eval :spaces_after" do
+    @token_sequence.select{|i| i.get_attribute(:spaces_after)}
+      .length.must_equal 8
   end
 end

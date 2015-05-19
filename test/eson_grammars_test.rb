@@ -20,53 +20,24 @@ describe Eson::EsonGrammars do
     end
   end
   
-  describe "validate_e0" do
+  describe "validate_e1" do
     before do
-      @lang = subject.e0
+      @lang = subject.e1
     end
-    it "should be E0" do
-      @lang.must_be_kind_of Struct::E0
+    it "should be E1" do
+      @lang.must_be_kind_of Struct::E1
     end
-    it "should be aliased" do
-      subject.method(:e0).must_equal subject.method(:tokenizer_lang)
-    end
-    it "should contain built rules" do
+    it "should contain new rules" do
       @lang.terminals.must_include :word_form
       @lang.terminals.must_include :variable_identifier
-      @lang.terminals.must_include :string_delimiter
       @lang.nonterminals.must_include :sub_string
       @lang.nonterminals.must_include :sub_string_list
       @lang.nonterminals.must_include :string
-    end
-    it "has no partial rules" do
-      @lang.values.none?{|x| x.partial_status}.must_equal true
-    end
-  end
-
-  describe "validate_e5" do
-    before do
-      @lang = subject.e5
-    end
-    it "should be E5" do
-      @lang.must_be_kind_of Struct::E5
-    end
-    it "should be aliased" do
-      subject.method(:e5).must_equal subject.method(:syntax_pass_lang)
-    end
-    it "should contain new rules" do
       @lang.nonterminals.must_include :value
-      @lang.nonterminals.must_include :element_more_once
-      @lang.nonterminals.must_include :element_more
-      @lang.nonterminals.must_include :element_list
-      @lang.nonterminals.must_include :element_set
       @lang.nonterminals.must_include :array
       @lang.nonterminals.must_include :attribute
       @lang.nonterminals.must_include :call
       @lang.nonterminals.must_include :declaration
-      @lang.nonterminals.must_include :declaration_more_once
-      @lang.nonterminals.must_include :declaration_more
-      @lang.nonterminals.must_include :declaration_list
-      @lang.nonterminals.must_include :declaration_set
       @lang.nonterminals.must_include :program
     end
     it "should have top rule" do
@@ -106,13 +77,13 @@ describe Eson::Rule do
   end
   describe "#to_s" do
     it "is a terminal rule" do
-      @lang.comma.to_s.must_match /( := )/ 
+      @lang.element_divider.to_s.must_match /element_divider/
     end
     it "is a concatenation rule" do
-      @lang.variable_identifier.to_s.must_match /( := )/
+      @lang.program.to_s.must_match /( := )/
     end
     it "is a alternation rule" do
-      @lang.special_form_identifier.to_s.must_match /( := )/
+      @lang.proc_identifier.to_s.must_match /( := )/
     end
     it "is a repetition rule" do
       @lang.sub_string_list.to_s.must_match /( := )/

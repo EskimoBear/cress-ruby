@@ -1,5 +1,6 @@
 require 'forwardable'
 require_relative './typed_seq'
+require_relative './attribute_actions'
 
 module Eson
 
@@ -54,12 +55,23 @@ module Eson
       end
 
       def make_leaf(token)
+        if token.attributes.nil?
+          attributes = {:s_attr => {}}
+        else
+          attributes = {:s_attr => token.attributes}
+        end
+        attributes[:s_attr].update({:lexeme => token.lexeme})
         tree = Tree.new(token, TreeSeq.new, active_node, false)
+               .init_attributes(attributes)
+               .set_name(token.name)
                .set_level
       end
 
       def make_tree_node(rule)
         tree = Tree.new(rule, TreeSeq.new, active_node, true)
+               .build_s_attributes(rule.s_attr)
+               .build_i_attributes(rule.i_attr)
+               .set_name(rule.name)
                .set_level
       end
       
@@ -139,11 +151,116 @@ module Eson
       def_delegators :@root_tree, :root_value, :degree, :closed?,
                      :open?, :leaf?, :ensure_open, :has_child?,
                      :has_children?, :rule, :children, :level,
-                     :empty_tree?, :contains?
+                     :empty_tree?, :contains?, :attribute_list,
+                     :get_attribute, :store_attribute, :bottom_left_node,
+                     :post_order_trace, :post_order_traversal,
+                     :attributes, :name
 
       #Struct class for a tree node
-      Tree = Struct.new :value, :children, :parent, :open_state, :level do
-        
+      Tree = Struct.new :value, :children, :parent, :open_state,
+                        :level, :name, :attributes do
+
+        include AttributeActions
+
+        def bottom_left_node
+          if leaf?
+            self
+          else
+            self.children.first.bottom_left_node
+          end
+        end
+
+        #Sequentialization of the post-order traversal of the tree
+        #@return [Array] names of the nodes visited in traversal
+        def post_order_trace(acc=[])
+          post_order_traversal{|tree| acc.push tree.value.name}
+        end
+
+        #@yield [a] gives tree to the block
+        def post_order_traversal(&block)
+          unless leaf?
+            children.each{|i| i.post_order_traversal(&block)}
+          end
+          yield self
+        end
+
+        def attribute_list
+          if self.attributes.nil?
+            []
+          else
+            s_attributes.concat(i_attributes)
+          end
+        end
+
+        def set_name(name)
+          self.name = name
+          self
+        end
+
+        def get_attribute(attr_name)
+          if valid_attribute?(attr_name)
+            if s_attributes.include?(attr_name)
+              attributes[:s_attr][attr_name]
+            else
+              attributes[:i_attr][attr_name]
+            end
+          else
+            nil
+          end
+        end
+
+        def s_attributes
+          attribute_type_list(:s_attr)
+        end
+
+        def i_attributes
+          attribute_type_list(:i_attr)
+        end
+
+        def attribute_type_list(attr_type)
+          attrs = attributes[attr_type]
+          attrs.nil? ? [] : attrs.keys
+        end
+
+        def store_attribute(attr_name, attr_value)
+          if valid_attribute?(attr_name)
+            if s_attributes.include?(attr_name)
+              attributes[:s_attr].store(attr_name, attr_value)
+            else
+              attributes[:i_attr].store(attr_name, attr_value)
+            end
+          else
+            nil
+          end
+        end
+
+        def build_s_attributes(s_attrs)
+          if attributes.nil?
+            init_attributes
+          end
+          s_attrs.each{|i| attributes[:s_attr].store(i, nil)}
+          self
+        end
+
+        def build_i_attributes(i_attrs)
+          if attributes.nil?
+            init_attributes
+          end
+          i_attrs.each{|i| attributes[:i_attr].store(i, nil)}
+          self
+        end
+
+        def init_attributes(params=nil)
+          if params.nil?
+            self.attributes = {:s_attr => {}, :i_attr => {}}
+          else
+            s_attr = params[:s_attr].nil? ? {} : params[:s_attr]
+            i_attr = params[:i_attr].nil? ? {} : params[:i_attr]
+            self.attributes = {:s_attr => s_attr, :i_attr => i_attr}
+          end
+          self
+        end
+
         #The value of the root node
         #@return [Eson::Rule]
         def root_value
@@ -226,6 +343,7 @@ module Eson
             children.each{|t| t.set_level}
           end
         end
+        AttributeActions.validate self
       end
 
       TreeSeq = TypedSeq.new_seq(Tree)

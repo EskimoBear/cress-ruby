@@ -45,6 +45,25 @@ module Eson
       @comp_rules = []
     end
 
+    def to_tree
+      if terminal?
+        nil
+      else
+        Parser::ParseTree::Tree.new(@name)
+          .make_tree_node
+          .init_attributes(build_tree_attributes)
+      end
+    end
+
+    def build_tree_attributes
+      {:s_attr => build_attributes(@s_attr),
+       :i_attr => build_attributes(@i_attr)}
+    end
+
+    def build_attributes(attrs)
+      attrs.each_with_object({}){|i, h| h.store(i, nil)}
+    end
+
     def self.new_terminal_rule(name, start_rxp)
       self.new(name, start_rxp)
     end

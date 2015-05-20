@@ -1,5 +1,6 @@
 require_relative './respondent'
 require_relative './attribute_actions'
+require_relative './parser.rb'
 
 module Eson
 
@@ -15,6 +16,20 @@ module Eson
     Token = Struct.new :lexeme, :name, :attributes, :comp_rules do
 
       include AttributeActions
+
+      def to_tree
+        Parser::ParseTree::Tree.new(self.name)
+          .make_leaf_node
+          .init_attributes(build_tree_attributes)
+      end
+
+      def build_tree_attributes
+        if self.attributes.nil?
+          {:s_attr => {}}
+        else
+          {:s_attr => self.attributes.merge({:lexeme => self.lexeme})}
+        end
+      end
 
       def attribute_list
         self.attributes.nil? ? [] : self.attributes.keys

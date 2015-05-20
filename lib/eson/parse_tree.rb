@@ -41,37 +41,19 @@ module Parser
     #@raise [CannotConvertTypeToTree] if the object is neither
     #  a Token or a nonterminal Rule
     def convert_to_tree(obj)
-      if obj.instance_of?(Eson::LexemeCapture::Token)
-        make_leaf(obj)
-      elsif obj.instance_of?(Eson::Rule) && obj.nonterminal?
-        make_tree_node(obj)
+      tree = obj.to_tree
+      if tree.instance_of? Tree
+        tree.parent = active_node
+        tree.set_level
       else
         raise CannotConvertTypeToTree,
               invalid_input_type_error_message(obj)
       end
+    rescue NoMethodError => e
+      raise CannotConvertTypeToTree,
+            invalid_input_type_error_message(obj)
     end
 
-    def make_leaf(token)
-      if token.attributes.nil?
-        attributes = {:s_attr => {}}
-      else
-        attributes = {:s_attr => token.attributes}
-      end
-      attributes[:s_attr].update({:lexeme => token.lexeme})
-      tree = Tree.new(TreeSeq.new, active_node, false)
-             .init_attributes(attributes)
-             .set_name(token.name)
-             .set_level
-    end
-
-    def make_tree_node(rule)
-      tree = Tree.new(TreeSeq.new, active_node, true)
-             .build_s_attributes(rule.s_attr)
-             .build_i_attributes(rule.i_attr)
-             .set_name(rule.name)
-             .set_level
-    end
-    
     #Insert an object into the active tree node. Tokens are
     #added as leaf nodes and Rules are added as the active tree
     #node.
@@ -155,10 +137,22 @@ module Parser
                    :attributes, :name
 
     #Struct class for a tree node
-    Tree = Struct.new :children, :parent, :open_state,
-                      :level, :name, :attributes do
+    Tree = Struct.new :name, :open_state, :attributes,
+                      :children, :parent, :level do
 
       include Eson::AttributeActions
+
+      def make_tree_node
+        self.children = TreeSeq.new
+        self.open_state = true
+        self
+      end
+
+      def make_leaf_node
+        self.children = TreeSeq.new
+        self.open_state = false
+        self
+      end
 
       def bottom_left_node
         if leaf?

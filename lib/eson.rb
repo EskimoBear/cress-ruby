@@ -1,6 +1,7 @@
 require 'vert'
 require_relative 'eson/token_pass'
 require_relative 'eson/syntax_pass'
+require_relative 'eson/code_gen'
 
 module Eson
 

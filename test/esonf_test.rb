@@ -11,7 +11,8 @@ describe "Eson::EsonGrammars::esonf" do
   subject {Eson::EsonGrammars.esonf}
 
   before do
-    @ts = get_token_sequence(subject)
+    @program = get_tokenizer_sample_program
+    @ts = get_token_sequence(@program, subject)
     @tree = get_ast(@ts, subject)
   end
 
@@ -49,6 +50,19 @@ describe "Eson::EsonGrammars::esonf" do
     it "to_s evaluated" do
       @tree.get_attribute(:to_s)
         .must_equal get_tokenizer_sample_program
+    end
+  end
+
+  describe "validate_generated_code" do
+    before do
+      @code_path = File.join(get_code_gen_dir, "code.eson")
+    end
+    it "outputs a file" do
+      @code = get_code(@tree, subject)
+      FileTest.exist?(@code_path).must_equal true
+    end
+    after do
+      FileUtils.rm_rf(get_code_gen_dir)
     end
   end
 end

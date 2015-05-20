@@ -25,8 +25,8 @@ module TestHelpers
     "{\"invalid\": (}"
   end
 
-  def get_token_sequence(grammar=Eson::EsonGrammars.tokenizer_lang,
-                         program=get_tokenizer_sample_program)
+  def get_token_sequence(program=get_tokenizer_sample_program,
+                         grammar=Eson::EsonGrammars.tokenizer_lang)
     Eson::TokenPass
       .tokenize_program(
         program,
@@ -39,6 +39,21 @@ module TestHelpers
     Eson::SyntaxPass.build_tree(
       token_sequence,
       grammar)
+  end
+
+  def get_code(tree=get_ast,
+               grammar=Eson::EsonGrammars.tokenizer_lang,
+               path=get_code_gen_dir)
+    Eson::CodeGen.make_file(tree, grammar, path)
+  end
+
+  def get_code_gen_dir
+    test_dir = File.expand_path(File.dirname(__FILE__))
+    path = File.join(test_dir, "code_gen_tmp")
+    unless File.directory?(path)
+      FileUtils.mkdir(path)
+    end
+    path
   end
   
   private

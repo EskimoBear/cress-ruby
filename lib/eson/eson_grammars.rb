@@ -456,6 +456,13 @@ module Eson
 
     module EsonF
 
+      def generate_source(tree, path)
+        default_filename = "code.eson"
+        File.open(File.join(path, default_filename), "w") do |f|
+          f.write tree.get_attribute(:to_s)
+        end
+      end
+
       def eval_tree_attributes(tree)
         super
         build_tree_to_s(tree)

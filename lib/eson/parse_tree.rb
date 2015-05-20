@@ -29,17 +29,16 @@ module Parser
       unless obj.nil?      
         @root_tree = @active = convert_to_tree(obj)
         @height = 1
-        if obj.instance_of?(Eson::LexemeCapture::Token)
+        if @active.leaf?
           close_active
         end
       end
     end
 
-    #Converts Rule or Token to a Tree
-    #@param obj [Rule, Token] the Rule or Token to be converted
-    #@return [Eson::Rule::AbstractSyntax::Tree] the resulting tree
-    #@raise [CannotConvertTypeToTree] if the object is neither
-    #  a Token or a nonterminal Rule
+    #@param obj [#to_tree] the object to be converted to a tree node
+    #@return [Parser::ParseTree::Tree] the resulting tree
+    #@raise [CannotConvertTypeToTree] if the object cannot return
+    #  a tree with #to_tree
     def convert_to_tree(obj)
       tree = obj.to_tree
       if tree.instance_of? Tree
@@ -54,10 +53,9 @@ module Parser
             invalid_input_type_error_message(obj)
     end
 
-    #Insert an object into the active tree node. Tokens are
-    #added as leaf nodes and Rules are added as the active tree
-    #node.
-    #@param obj [Token, Rule] eson token or production rule
+    #Insert an object into the active tree node. If the object is
+    # a tree node it becomes the new active node.
+    #@param obj [#to_tree] object to be added as a Tree node
     #@raise [UnallowedMethodForClosedTree] If the tree is closed
     def insert(obj)
       if empty_tree?
@@ -67,7 +65,7 @@ module Parser
         new_tree = convert_to_tree(obj)
         active_node.children.push new_tree
         update_height(new_tree)
-        if obj.instance_of? Eson::Rule
+        unless new_tree.leaf?
           @active = new_tree
         end
       end
@@ -83,8 +81,7 @@ module Parser
     def invalid_input_type_error_message(obj)
       "The class #{obj.class} of '#{obj}' is not a" \
       " valid input for the #{self.class}. Input" \
-      " must be a #{Eson::LexemeCapture::Token} or" \
-      " a nonterminal #{Eson::Rule}."
+      " must be return a #{Parser::ParseTree} for :to_tree."
     end
 
     #Add a given tree to this tree's active node
@@ -102,7 +99,7 @@ module Parser
 
     #Get the active node of the tree. This is the open tree node to
     #the bottom right of the tree i.e. the last inserted tree node.
-    #@return [Eson::Rule::ParseTree::Tree] the active tree node
+    #@return [Parser::ParseTree::Tree] the active tree node
     def active_node
       @active
     end
@@ -118,7 +115,7 @@ module Parser
 
     #Closes the active node of the tree and makes the next
     #open ancestor the active node.
-    #@return [Eson::Rule::ParseTree]
+    #@return [Parser::ParseTree]
     def close_active
       new_active = @active.parent
       @active.close
@@ -149,7 +146,7 @@ module Parser
       end
 
       def make_leaf_node
-        self.children = TreeSeq.new
+        self.children = nil
         self.open_state = false
         self
       end
@@ -258,7 +255,7 @@ module Parser
       end
 
       #The open state of the tree.
-      #@return [Boolean]
+      #@return [false, true]
       def open?
         open_state
       end
@@ -272,7 +269,7 @@ module Parser
       end
 
       def leaf?
-        children.nil? || children.empty?
+        children.nil?
       end
 
       def empty_tree?
@@ -304,7 +301,7 @@ module Parser
 
       #Search tree for the presence of a name
       #@param name [Symbol] name of child node
-      #@return [Boolean] true if the name is present
+      #@return [true, false] true if the name is present
       def contains?(name)
         root_match = self.name == name
         if root_match || has_child?(name)

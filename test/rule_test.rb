@@ -77,7 +77,7 @@ describe Eson::Rule do
             @tree.closed?.must_equal false
           end
           it "has correct root" do
-            @tree.root_value.must_equal @root_rule
+            @tree.name.must_equal @root_rule.name
           end
           it "has :token_name child" do
             @tree.has_child?(:token_name).must_equal true
@@ -111,7 +111,7 @@ describe Eson::Rule do
           end
           describe "without tree" do
             it "has root" do
-              @tree.root_value.must_equal @rule
+              @tree.name.must_equal @rule.name
             end
             it "has :rule_1 child" do
               @tree.has_child?(:rule_1).must_equal true
@@ -126,7 +126,7 @@ describe Eson::Rule do
               @terminal_rule = @tree.children.first
             end
             it "has root" do
-              @tree.root_value.must_equal @root_rule
+              @tree.name.must_equal @root_rule.name
             end
             it "has :terminal_rule child" do
               @tree.has_child?(:terminal_rule).must_equal true
@@ -165,8 +165,8 @@ describe Eson::Rule do
             verify_accepted_tokens(@valid_token_seq, @parse_result, 1).must_equal true
           end
           it "has root" do
-            @tree.root_value.must_equal @rule
-            @tree.active_node.value.must_equal @rule
+            @tree.name.must_equal @rule.name
+            @tree.active_node.name.must_equal @rule.name
           end
           it "has three levels" do
             @tree.height.must_equal 3
@@ -189,8 +189,8 @@ describe Eson::Rule do
               @terminal_rule_node = @nonterminal_rule_node.children.first
             end
             it "has root" do
-              @tree.root_value.must_equal @root_rule
-              @tree.active_node.value.must_equal @root_rule
+              @tree.name.must_equal @root_rule.name
+              @tree.active_node.name.must_equal @root_rule.name
             end
             it "has four levels" do
               @tree.height.must_equal 4
@@ -236,7 +236,7 @@ describe Eson::Rule do
           end
           describe "without tree" do
             it "has correct root" do
-              @tree.root_value.must_equal @rule
+              @tree.name.must_equal @rule.name
             end
             it "has correct children" do
               @tree.has_child?(:rule_1).must_equal true
@@ -256,7 +256,7 @@ describe Eson::Rule do
               @terminal_rule_node = @tree.children.first
             end
             it "has correct root" do
-              @tree.root_value.must_equal @root_rule
+              @tree.name.must_equal @root_rule.name
             end
             it "has :terminal_rule child" do
               @tree.has_child?(:terminal_rule).must_equal true
@@ -307,7 +307,7 @@ describe Eson::Rule do
           end
           describe "without_tree" do
             it "has :nonterminal_rule root" do
-              @tree.root_value.must_equal @rule
+              @tree.name.must_equal @rule.name
             end
             it "has correct children" do
               @tree.has_child?(:terminal_rule).must_equal true
@@ -334,7 +334,7 @@ describe Eson::Rule do
               @terminal_rule_node = @nonterminal_rule_node.children.first
             end
             it "has correct root" do
-              @tree.root_value.must_equal @root_rule
+              @tree.name.must_equal @root_rule.name
             end
             it "has :nonterminal_rule child" do
               @tree.has_child?(:nonterminal_rule).must_equal true
@@ -385,7 +385,7 @@ describe Eson::Rule do
           end
           describe "without_tree" do
             it "has correct root" do
-              @tree.root_value.must_equal @rule
+              @tree.name.must_equal @rule.name
             end
             it "has correct children" do
               @tree.has_children?([:rule_1, :rule_1]).must_equal true
@@ -404,7 +404,7 @@ describe Eson::Rule do
               @terminal_rule_node = @tree.children.first
             end
             it "has correct root" do
-              @tree.root_value.must_equal @root_rule
+              @tree.name.must_equal @root_rule.name
             end
             it "has correct children" do
               @terminal_rule_node.has_children?([:rule_1, :rule_1]).must_equal true
@@ -452,7 +452,7 @@ describe Eson::Rule do
           end
           describe "without_tree" do
             it "has correct root" do
-              @tree.root_value.must_equal @rule
+              @tree.name.must_equal @rule.name
             end
             it "has :c_rule child" do
               @tree.has_child?(:c_rule).must_equal true
@@ -477,7 +477,7 @@ describe Eson::Rule do
               @c_rule_node = @non_terminal_node.children.first
             end
             it "has correct root" do
-              @tree.root_value.must_equal @root_rule
+              @tree.name.must_equal @root_rule.name
             end
             it "has :nonterminal_rule child" do
               @tree.has_child?(:nonterminal_rule).must_equal true
@@ -513,7 +513,7 @@ describe Eson::Rule do
             verify_accepted_tokens(@valid_many_seq, @parse_result, 4).must_equal true
           end
           it "has root" do
-            @tree.root_value.must_equal @rule
+            @tree.name.must_equal @rule.name
           end
           it "has :c_rule child" do
             @tree.has_child?(:c_rule).must_equal true
@@ -544,7 +544,7 @@ describe Eson::Rule do
             verify_accepted_tokens(@valid_nulled_seq, @parse_result, 0).must_equal true
           end
           it "has root" do
-            @tree.root_value.must_equal @rule
+            @tree.name.must_equal @rule.name
           end
           it "contains nullable" do
             @tree.contains?(:nullable).must_equal true
@@ -586,7 +586,7 @@ describe Eson::Rule do
           end
           describe "tree" do
             it "has root" do
-              @tree.root_value.must_equal @rule
+              @tree.name.must_equal @rule.name
             end
             it "has :rule_1 child" do
               @tree.has_child?(:rule_1).must_equal true
@@ -627,7 +627,7 @@ describe Eson::Rule do
           end
           describe "without_tree" do
             it "has root" do
-              @tree.root_value.must_equal @rule
+              @tree.name.must_equal @rule.name
             end
             it "has :c_rule child" do
               @tree.has_child?(:c_rule).must_equal true
@@ -651,7 +651,7 @@ describe Eson::Rule do
               @c_rule_node = @nonterminal_rule_node.children.first
             end
             it "has root" do
-              @tree.root_value.must_equal @root_rule
+              @tree.name.must_equal @root_rule.name
             end
             it "has :nonterminal_rule child" do
               @tree.has_child?(:nonterminal_rule).must_equal true
@@ -685,7 +685,7 @@ describe Eson::Rule do
             verify_accepted_tokens(@valid_nulled_seq, @parse_result, 0).must_equal true
           end
           it "has root" do
-            @tree.root_value.must_equal @rule
+            @tree.name.must_equal @rule.name
           end
           it "contains nullable" do
             @tree.contains?(:nullable).must_equal true

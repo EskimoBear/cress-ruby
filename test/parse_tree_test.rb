@@ -74,10 +74,6 @@ describe Parser::ParseTree do
       before do
         @tree = subject.new @production
       end
-      it "root is rule" do
-        @tree.must_be_instance_of subject
-        @tree.root_value.must_equal @production
-      end
       it "root has name" do
         @tree.name.must_equal @production.name
       end
@@ -108,12 +104,12 @@ describe Parser::ParseTree do
       @tree.insert(@token)
       @tree.height.must_equal 2
       child_nodes = @tree.active_node.children
-      child_nodes.first.value.name.must_equal @token.name
+      child_nodes.first.name.must_equal @token.name
     end
     it "inserted rule is active node" do
       @tree.insert(@production).insert(@token)
       @tree.height.must_equal 3
-      @tree.active_node.value.must_equal @production
+      @tree.active_node.name.must_equal @production.name
     end
     it "inserted rule has root as parent" do
       @tree.insert(@production)
@@ -130,7 +126,7 @@ describe Parser::ParseTree do
       end
       it "root inserted" do
         @empty_tree.insert(@token)
-        @empty_tree.root_value.must_equal @token
+        @empty_tree.name.must_equal @token.name
         @empty_tree.height.must_equal 1
       end
       it "root insertion failed" do
@@ -147,7 +143,7 @@ describe Parser::ParseTree do
       @root_tree.merge(@tree)
     end
     it "tree is child node" do
-      @root_tree.has_child?(@tree.root_value.name).must_equal true
+      @root_tree.has_child?(@tree.name).must_equal true
     end
     it "height is updated" do
       @root_tree.height.must_equal 3
@@ -197,7 +193,7 @@ describe Parser::ParseTree do
       @root_tree.merge(@tree)
     end
     it "get bottom left" do
-      @root_tree.bottom_left_node.value.name.must_equal @token.name
+      @root_tree.bottom_left_node.name.must_equal @token.name
     end
     it "post order trace" do
       @root_tree.post_order_trace

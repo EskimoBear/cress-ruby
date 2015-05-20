@@ -58,14 +58,14 @@ module Parser
         attributes = {:s_attr => token.attributes}
       end
       attributes[:s_attr].update({:lexeme => token.lexeme})
-      tree = Tree.new(token, TreeSeq.new, active_node, false)
+      tree = Tree.new(TreeSeq.new, active_node, false)
              .init_attributes(attributes)
              .set_name(token.name)
              .set_level
     end
 
     def make_tree_node(rule)
-      tree = Tree.new(rule, TreeSeq.new, active_node, true)
+      tree = Tree.new(TreeSeq.new, active_node, true)
              .build_s_attributes(rule.s_attr)
              .build_i_attributes(rule.i_attr)
              .set_name(rule.name)
@@ -146,7 +146,7 @@ module Parser
       self
     end
 
-    def_delegators :@root_tree, :root_value, :degree, :closed?,
+    def_delegators :@root_tree, :degree, :closed?,
                    :open?, :leaf?, :ensure_open, :has_child?,
                    :has_children?, :rule, :children, :level,
                    :empty_tree?, :contains?, :attribute_list,
@@ -155,7 +155,7 @@ module Parser
                    :attributes, :name
 
     #Struct class for a tree node
-    Tree = Struct.new :value, :children, :parent, :open_state,
+    Tree = Struct.new :children, :parent, :open_state,
                       :level, :name, :attributes do
 
       include Eson::AttributeActions
@@ -171,7 +171,7 @@ module Parser
       #Sequentialization of the post-order traversal of the tree
       #@return [Array] names of the nodes visited in traversal
       def post_order_trace(acc=[])
-        post_order_traversal{|tree| acc.push tree.value.name}
+        post_order_traversal{|tree| acc.push tree.name}
       end
 
       #@yield [a] gives tree to the block
@@ -259,12 +259,6 @@ module Parser
         self
       end
 
-      #The value of the root node
-      #@return [Eson::Rule]
-      def root_value
-        value
-      end
-      
       def close
         self.open_state = false
       end
@@ -288,7 +282,7 @@ module Parser
       end
 
       def empty_tree?
-        value.nil?
+        name.nil?
       end
 
       def ensure_open
@@ -305,20 +299,20 @@ module Parser
 
       #@param name [Symbol] name of child node
       def has_child?(name)
-        children.detect{|i| i.value.name == name} ? true : false
+        children.detect{|i| i.name == name} ? true : false
       end
 
       #@param names [Array<Symbol>] ordered list of the
       #names of child nodes
       def has_children?(names)
-        names == children.map{|i| i.value.name}
+        names == children.map{|i| i.name}
       end
 
-      #Search tree for the presence of a value
+      #Search tree for the presence of a name
       #@param name [Symbol] name of child node
       #@return [Boolean] true if the name is present
       def contains?(name)
-        root_match = root_value.name == name
+        root_match = self.name == name
         if root_match || has_child?(name)
           true
         else

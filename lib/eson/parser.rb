@@ -24,7 +24,7 @@ module Parser
       acc = parse_terminal(tokens, tree)
     else
       if tree.nil?
-        tree = Eson::ParseTree.new
+        tree = Parser::ParseTree.new
       end
       tree.insert(self)
       acc = if self.alternation_rule?
@@ -45,7 +45,7 @@ module Parser
   def parse_terminal(tokens, tree)
     lookahead = tokens.first
     if self.name == lookahead.name
-      leaf = Eson::ParseTree.new(lookahead)
+      leaf = Parser::ParseTree.new(lookahead)
       tree = if tree.nil?
                leaf
              else
@@ -238,7 +238,7 @@ module Parser
   def nullable_tree(grammar)
     nullable_token = grammar.get_rule(:nullable).make_token("")
     nullable_token.store_attribute(:to_s, "")
-    Eson::ParseTree.new(nullable_token)
+    Parser::ParseTree.new(nullable_token)
   end
 
   #Return a legal instance of a repetition rule

@@ -2,14 +2,14 @@ require 'forwardable'
 require_relative './typed_seq'
 require_relative './attribute_actions'
 
-module Eson
+module Parser
 
   class ParseTree
     CannotConvertTypeToTree = Class.new(StandardError)
     UnallowedMethodForClosedTree = Class.new(StandardError)
     
     extend Forwardable
-    include LexemeCapture
+    include Eson::LexemeCapture
 
     attr_reader :height
 
@@ -44,7 +44,7 @@ module Eson
     def convert_to_tree(obj)
       if obj.instance_of?(Token)
         make_leaf(obj)
-      elsif obj.instance_of?(Rule) && obj.nonterminal?
+      elsif obj.instance_of?(Eson::Rule) && obj.nonterminal?
         make_tree_node(obj)
       else
         raise CannotConvertTypeToTree,
@@ -86,7 +86,7 @@ module Eson
         new_tree = convert_to_tree(obj)
         active_node.children.push new_tree
         update_height(new_tree)
-        if obj.instance_of? Rule
+        if obj.instance_of? Eson::Rule
           @active = new_tree
         end
       end
@@ -102,11 +102,11 @@ module Eson
     def invalid_input_type_error_message(obj)
       "The class #{obj.class} of '#{obj}' is not a" \
       " valid input for the #{self.class}. Input" \
-      " must be a #{Token} or a nonterminal #{Rule}."
+      " must be a #{Token} or a nonterminal #{Eson::Rule}."
     end
 
     #Add a given tree to this tree's active node
-    #@param tree [Eson::Rule::ParseTree]
+    #@param tree [Parser::ParseTree]
     #@raise [MergeError] if tree is not closed before merging
     def merge(tree)
       if tree.closed?
@@ -158,7 +158,7 @@ module Eson
     Tree = Struct.new :value, :children, :parent, :open_state,
                       :level, :name, :attributes do
 
-      include AttributeActions
+      include Eson::AttributeActions
 
       def bottom_left_node
         if leaf?
@@ -341,7 +341,7 @@ module Eson
           children.each{|t| t.set_level}
         end
       end
-      AttributeActions.validate self
+      Eson::AttributeActions.validate self
     end
 
     TreeSeq = TypedSeq.new_seq(Tree)

@@ -13,7 +13,7 @@ describe "Eson::EsonGrammars::esonf" do
   before do
     @program = get_tokenizer_sample_program
     @ts = get_token_sequence(@program, subject)
-    @tree = get_ast(@ts, subject)
+    @tree = get_parse_tree(@ts, subject)
   end
 
   describe "validate_esonf" do

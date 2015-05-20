@@ -34,14 +34,14 @@ module TestHelpers
       .verify_special_forms
   end
 
-  def get_ast(token_sequence=get_token_sequence,
+  def get_parse_tree(token_sequence=get_token_sequence,
               grammar=Eson::EsonGrammars.tokenizer_lang)
     Eson::SyntaxPass.build_tree(
       token_sequence,
       grammar)
   end
 
-  def get_code(tree=get_ast,
+  def get_code(tree=get_parse_tree,
                grammar=Eson::EsonGrammars.tokenizer_lang,
                path=get_code_gen_dir)
     Eson::CodeGen.make_file(tree, grammar, path)

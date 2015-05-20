@@ -6,7 +6,7 @@ module Eson
 
   class Rule
 
-    class AbstractSyntaxTree
+    class ParseTree
       CannotConvertTypeToTree = Class.new(StandardError)
       UnallowedMethodForClosedTree = Class.new(StandardError)
       
@@ -108,7 +108,7 @@ module Eson
       end
 
       #Add a given tree to this tree's active node
-      #@param tree [Eson::Rule::AbstractSyntaxTree]
+      #@param tree [Eson::Rule::ParseTree]
       #@raise [MergeError] if tree is not closed before merging
       def merge(tree)
         if tree.closed?
@@ -122,7 +122,7 @@ module Eson
 
       #Get the active node of the tree. This is the open tree node to
       #the bottom right of the tree i.e. the last inserted tree node.
-      #@return [Eson::Rule::AbstractSyntaxTree::Tree] the active tree node
+      #@return [Eson::Rule::ParseTree::Tree] the active tree node
       def active_node
         @active
       end
@@ -138,7 +138,7 @@ module Eson
 
       #Closes the active node of the tree and makes the next
       #open ancestor the active node.
-      #@return [Eson::Rule::AbstractSyntaxTree]
+      #@return [Eson::Rule::ParseTree]
       def close_active
         new_active = @active.parent
         @active.close

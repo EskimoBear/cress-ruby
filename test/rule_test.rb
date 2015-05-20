@@ -7,7 +7,7 @@ require_relative '../lib/eson/token_pass'
 describe Eson::Rule do
 
   subject {Eson::Rule}
-  let(:ast) {Eson::Rule::ParseTree}
+  let(:ast) {Eson::ParseTree}
   let(:token) {Eson::LexemeCapture::Token}
   let(:token_seq) {Eson::TokenPass::TokenSeq}
   let(:rule_seq) {Eson::RuleSeq.new([subject.new(:rule_1, /RU/),

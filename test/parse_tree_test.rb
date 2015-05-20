@@ -4,7 +4,7 @@ require 'minitest/pride'
 require 'pp'
 require_relative '../lib/eson/rule.rb'
 
-describe Eson::Rule::ParseTree do
+describe Eson::ParseTree do
 
   before do
     @terminal_name = :terminal
@@ -26,13 +26,13 @@ describe Eson::Rule::ParseTree do
     @token.store_attribute(:s_val, @token_attr)
   end
 
-  subject {Eson::Rule::ParseTree}
-  let(:tree) {Eson::Rule::ParseTree::Tree}
+  subject {Eson::ParseTree}
+  let(:tree) {Eson::ParseTree::Tree}
   
   describe "create_ast" do
     it "incorrect parameter type" do
       proc {subject.new("error_type")}.
-        must_raise Eson::Rule::ParseTree::CannotConvertTypeToTree
+        must_raise Eson::ParseTree::CannotConvertTypeToTree
     end
     describe "empty" do
       before do
@@ -67,7 +67,7 @@ describe Eson::Rule::ParseTree do
     describe "terminal_rule" do
       it "incorrect parameter type" do
         proc {subject.new(@terminal_rule)}.
-          must_raise Eson::Rule::ParseTree::CannotConvertTypeToTree
+          must_raise Eson::ParseTree::CannotConvertTypeToTree
       end
     end
     describe "production" do
@@ -102,7 +102,7 @@ describe Eson::Rule::ParseTree do
     end
     it "node is invalid type" do
       proc {@tree.insert("foo")}
-        .must_raise Eson::Rule::ParseTree::CannotConvertTypeToTree
+        .must_raise Eson::ParseTree::CannotConvertTypeToTree
     end
     it "inserted token is leaf of active node" do
       @tree.insert(@token)
@@ -122,7 +122,7 @@ describe Eson::Rule::ParseTree do
     it "fails on closed tree" do
       @tree.close_active
       proc {@tree.insert(@rule)}
-        .must_raise Eson::Rule::ParseTree::UnallowedMethodForClosedTree
+        .must_raise Eson::ParseTree::UnallowedMethodForClosedTree
     end
     describe "empty_tree" do
       before do
@@ -135,7 +135,7 @@ describe Eson::Rule::ParseTree do
       end
       it "root insertion failed" do
         proc {@empty_tree.insert("error_string")}
-          .must_raise Eson::Rule::ParseTree::CannotConvertTypeToTree
+          .must_raise Eson::ParseTree::CannotConvertTypeToTree
       end
     end
   end

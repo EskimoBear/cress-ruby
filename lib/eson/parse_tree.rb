@@ -9,7 +9,6 @@ module Parser
     UnallowedMethodForClosedTree = Class.new(StandardError)
     
     extend Forwardable
-    include Eson::LexemeCapture
 
     attr_reader :height
 
@@ -30,7 +29,7 @@ module Parser
       unless obj.nil?      
         @root_tree = @active = convert_to_tree(obj)
         @height = 1
-        if obj.instance_of?(Token)
+        if obj.instance_of?(Eson::LexemeCapture::Token)
           close_active
         end
       end
@@ -42,7 +41,7 @@ module Parser
     #@raise [CannotConvertTypeToTree] if the object is neither
     #  a Token or a nonterminal Rule
     def convert_to_tree(obj)
-      if obj.instance_of?(Token)
+      if obj.instance_of?(Eson::LexemeCapture::Token)
         make_leaf(obj)
       elsif obj.instance_of?(Eson::Rule) && obj.nonterminal?
         make_tree_node(obj)
@@ -102,7 +101,8 @@ module Parser
     def invalid_input_type_error_message(obj)
       "The class #{obj.class} of '#{obj}' is not a" \
       " valid input for the #{self.class}. Input" \
-      " must be a #{Token} or a nonterminal #{Eson::Rule}."
+      " must be a #{Eson::LexemeCapture::Token} or" \
+      " a nonterminal #{Eson::Rule}."
     end
 
     #Add a given tree to this tree's active node

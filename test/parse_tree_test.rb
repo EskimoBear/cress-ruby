@@ -201,5 +201,24 @@ describe Parser::ParseTree do
                      @production.name ,@production.name]
     end
   end
+
+  describe "#each" do
+    before do
+      @root_tree = subject.new(@production).insert(@token).insert(@token)
+      @tree = subject.new(@production).insert(@token).close_tree
+      @root_tree.merge(@tree)
+      @all_names = @root_tree.each_with_object([]) do |i, a|
+        a.push i.name
+      end
+    end
+    it "yields all members" do
+      @all_names.length.must_equal 5
+      @all_names.all?{|i| i.instance_of?(Symbol)}.must_equal true
+    end
+    it "yields in pre-order" do
+      @all_names.must_equal [@production.name, @token.name, @token.name,
+                             @production.name, @token.name]
+    end
+  end
 end
 

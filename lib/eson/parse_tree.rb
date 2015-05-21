@@ -7,7 +7,8 @@ module Parser
   class ParseTree
     CannotConvertTypeToTree = Class.new(StandardError)
     UnallowedMethodForClosedTree = Class.new(StandardError)
-    
+
+    include Enumerable
     extend Forwardable
 
     attr_reader :height
@@ -125,7 +126,7 @@ module Parser
       self
     end
 
-    def_delegators :@root_tree, :degree, :closed?,
+    def_delegators :@root_tree, :each, :degree, :closed?,
                    :open?, :leaf?, :ensure_open, :has_child?,
                    :has_children?, :rule, :children, :level,
                    :empty_tree?, :contains?, :attribute_list,
@@ -137,6 +138,7 @@ module Parser
     Tree = Struct.new :name, :open_state, :attributes,
                       :children, :parent, :level do
 
+      include Enumerable
       include Eson::AttributeActions
 
       def make_tree_node
@@ -165,6 +167,18 @@ module Parser
         post_order_traversal{|tree| acc.push tree.name}
       end
 
+      #pre-order traversal of the tree
+      #@yield [a] gives tree to the block
+      def each(&block)
+        if leaf?
+          yield self
+        else
+          yield self
+          children.each{|i| i.each(&block)}
+        end
+      end
+
+      #post-order traversal of the tree
       #@yield [a] gives tree to the block
       def post_order_traversal(&block)
         unless leaf?

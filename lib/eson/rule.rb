@@ -1,6 +1,5 @@
 require_relative './lexeme_capture.rb'
 require_relative './ebnf.rb'
-require_relative './attribute_notation.rb'
 require_relative './parser'
 
 module Eson
@@ -10,7 +9,6 @@ module Eson
 
     include EBNF
     include LexemeCapture
-    include AttributeNotation
     include Parser
     
     NoMatchingFirstSet = Class.new(StandardError)

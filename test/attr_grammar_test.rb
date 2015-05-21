@@ -14,11 +14,10 @@ describe "Eson::RuleSeq" do
       end
     end
     @cfg = Eson::EsonGrammars.e1
+    @actions = [Custom]
     @attr_maps = [{
                     :attr => :value,
                     :type => :s_attr,
-                    :action_mod => Custom,
-                    :actions => [],
                     :terms => [:string, :variable_identifier]
                   },
                   {
@@ -30,12 +29,8 @@ describe "Eson::RuleSeq" do
     @attr_grammar = subject.assign_attribute_grammar(
       "Formatter",
       @cfg,
+      @actions,
       @attr_maps)
-    @bad_attr_maps = [{
-                        :attr => :value,
-                        :type => :i_attr,
-                        :terms => [:key_string]
-                      }]
   end
 
   describe "valid_attribute_grammar" do
@@ -65,11 +60,6 @@ describe "Eson::RuleSeq" do
       token = @attr_grammar.variable_identifier
               .match_token("$var", @env)
       token.attributes[:value].must_equal "$var"
-    end
-  end
-
-  describe "failing_attribute_grammars" do
-    it "actions" do
     end
   end
 end

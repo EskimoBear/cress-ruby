@@ -278,15 +278,17 @@ module Eson
     end
 
     #Modifies a context free grammar with the properties of
-    #an attribute grammar described by attr_map.
+    #an attribute grammar described by attr_map and actions.
     #@param name [String] class of the Struct representing the grammar
     #@param cfg [Struct] a context free grammar containing terms
-    #                    referenced in @attr_maps and @action_maps
+    #                    referenced in @attr_maps
+    #@param actions [Array<Module>] list of modules to include in grammar
     #@param attr_maps [Array<Hash>] array of attr_map describing an
     #                               attribute grammar
     #return [Struct] cfg with attribute grammar translation rules
     #                included
-    def self.assign_attribute_grammar(name, cfg, attr_maps)
+    def self.assign_attribute_grammar(name, cfg, actions, attr_maps)
+      actions.each{|i| cfg.extend(i)}
       attr_maps.each do |i|
         terms = if i[:terms].include? :All
                   cfg.terms
@@ -294,13 +296,20 @@ module Eson
                   i[:terms]
                 end
         terms.each do |t|
-          cfg.send(t).add_attributes(i)
-        end
-        unless i[:action_mod].nil?
-          cfg.extend(i[:action_mod])
+          add_attributes(cfg.get_rule(t), i)
         end
       end
       cfg
+    end
+
+    def self.add_attributes(rule, attr_map)
+      attribute = attr_map[:attr]
+      attr_type = attr_map[:type]
+      if attr_type == :s_attr
+        rule.s_attr.push(attribute)
+      elsif attr_type == :i_attr && rule.nonterminal?
+        rule.i_attr.push(attribute)
+      end
     end
 
     #Output a context free grammar for the rules

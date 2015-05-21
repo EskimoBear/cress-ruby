@@ -289,25 +289,20 @@ module Eson
       RuleSeq.assign_attribute_grammar(
         "Format",
         e1,
+        [Format],
         [{
            :attr => :line_no,
            :type => :s_attr,
-           :action_mod => Module.new,
-           :actions => [],
            :terms => [:All]
          },
          {
            :attr => :indent,
            :type => :s_attr,
-           :action_mod => Module.new,
-           :actions => [],
            :terms => [:All]
          },
          {
            :attr => :spaces_after,
            :type => :s_attr,
-           :action_mod => Format,
-           :actions => [],
            :terms => [:colon]
          }])
     end
@@ -431,25 +426,20 @@ module Eson
       RuleSeq.assign_attribute_grammar(
         "EsonfGen",
         format,
+        [EsonF],
         [{
            :attr => :line_feed,
            :type => :s_attr,
-           :action_mod => Module.new,
-           :actions => [],
            :terms => [:All]
          },
          {
            :attr => :line_start,
            :type => :s_attr,
-           :action_mod => Module.new,
-           :actions => [],
            :terms => [:All]
          },
          {
            :attr => :to_s,
            :type => :s_attr,
-           :action_mod => EsonF,
-           :actions => [],
            :terms => [:All]
          }])
     end

@@ -1,5 +1,6 @@
 require_relative 'rule_seq.rb'
 require_relative 'typed_seq.rb'
+require_relative 'variable_store'
 
 module Eson
   module EsonGrammars
@@ -512,6 +513,14 @@ module Eson
           end
         end
       end
+    end
+
+    def var_store
+      RuleSeq.assign_attribute_grammar(
+        "VariableStore",
+        format,
+        [VariableStore],
+        [])
     end
 
     alias_method :tokenizer_lang, :format

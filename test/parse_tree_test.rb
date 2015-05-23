@@ -2,23 +2,17 @@ require 'minitest'
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
+require_relative './test_helpers'
 require_relative '../lib/eson/rule.rb'
 
 describe Parser::ParseTree do
 
+  include TestHelpers
+
   before do
-    @terminal_name = :terminal
-    @terminal_rule = Eson::Rule
-                     .new_terminal_rule(
-                       @terminal_name,
-                       /rule/)
+    @terminal_rule = get_sample_terminal
     @terminal_rule.s_attr.push :s_val
-    @production = Eson::Rule.
-                        new(
-                          :nonterminal,
-                          /rule/,
-                          false,
-                          ["test"])
+    @production = get_sample_production
     @production.s_attr.push :s_val
     @production.i_attr.push :i_val
     @token = @terminal_rule.make_token(:var)
@@ -78,7 +72,7 @@ describe Parser::ParseTree do
         @tree.name.must_equal @production.name
       end
       it "root has attributes" do
-        @tree.attribute_list.must_equal [:s_val, :i_val]
+        @tree.attribute_list.must_equal [:s_val, :i_val, :production_type]
       end
       it "root is open" do
         @tree.closed?.must_equal false
@@ -179,10 +173,10 @@ describe Parser::ParseTree do
     end
     it "contains token" do
       @tree.insert(@terminal_rule.make_token(:token))
-      @tree.contains?(@terminal_name).must_equal true
+      @tree.contains?(@terminal_rule.name).must_equal true
     end
     it "doesn't contain token" do
-      @tree.contains?(@terminal_name).must_equal false
+      @tree.contains?(@terminal_rule.name).must_equal false
     end
   end
 

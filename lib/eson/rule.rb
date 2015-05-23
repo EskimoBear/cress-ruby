@@ -55,7 +55,20 @@ module Eson
 
     def build_tree_attributes
       {:s_attr => build_attributes(@s_attr),
-       :i_attr => build_attributes(@i_attr)}
+       :i_attr => build_attributes(@i_attr).merge(production_type_attribute)}
+    end
+
+    def production_type_attribute
+      type = if self.concatenation_rule?
+               :concatenation
+             elsif self.alternation_rule?
+               :alternation
+             elsif repetition_rule?
+               :repetition
+             elsif option_rule?
+               :option
+             end
+      {:production_type => type}
     end
 
     def build_attributes(attrs)

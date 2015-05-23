@@ -11,10 +11,10 @@ module VariableStore
 
   def add_attributes_to_store(tree, store)
     attribute_nodes = tree.find_all{|i| i.name == :attribute}
-    attribute_nodes.each do |node|
-      variable_name = var_name(
-        node.children.first.get_attribute(:lexeme))
-      store.store(variable_name, nil)
+    attribute_names = tree.find_all{|i| i.name == :attribute_name}
+                      .map{|t| t.get_attribute(:lexeme)}
+    attribute_names.each do |i|
+      store.store(var_name(i), nil)
     end
     store
   end

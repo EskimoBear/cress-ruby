@@ -9,7 +9,9 @@ describe VariableStore do
   subject {Eson::EsonGrammars.var_store}
 
   before do
-    @ts = get_tokens(subject)
+    @ts = get_token_sequence(
+      load_test_inputs('variable_sample'),
+      subject)
     @tree = get_parse_tree(@ts, subject)
     @tree_eval = get_semantic_eval(@tree, subject)
     @store = @tree_eval[:env][:store]

@@ -1,0 +1,9 @@
+{ "&let": [ "var", "var1"],
+  "&ref": "#/attribute",
+  "bool": true,
+  "attribute": 87,
+  "variable": "The value of values",
+  "procedure application": {
+    "&ref": "#/attribute"
+   }
+}

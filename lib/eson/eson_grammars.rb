@@ -230,8 +230,7 @@ module Eson
            :string_delimiter])
         .make_alternation_rule(
           :value,
-          [:variable_identifier,
-           :true,
+          [:true,
            :false,
            :null,
            :string,

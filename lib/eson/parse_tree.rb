@@ -132,7 +132,7 @@ module Parser
                    :empty_tree?, :contains?, :attribute_list,
                    :get_attribute, :store_attribute, :bottom_left_node,
                    :post_order_trace, :post_order_traversal,
-                   :attributes, :name
+                   :attributes, :name, :===
 
     #Struct class for a tree node
     Tree = Struct.new :name, :open_state, :attributes,
@@ -140,6 +140,18 @@ module Parser
 
       include Enumerable
       include Eson::AttributeActions
+
+      def ===(param)
+        if name == param
+          true
+        elsif get_attribute(:production_type)
+          if param == get_attribute(:production_type)
+            true
+          end
+        else
+          false
+        end
+      end
 
       def make_tree_node
         self.children = TreeSeq.new

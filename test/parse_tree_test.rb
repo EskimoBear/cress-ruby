@@ -86,6 +86,18 @@ describe Parser::ParseTree do
     end
   end
 
+  describe "#===" do
+    before do
+      @tree = subject.new @production
+    end
+    it "matches name" do
+      @tree.must_be :===, @production.name
+    end
+    it "matches :production_type" do
+      @tree.must_be :===, :alternation
+    end
+  end
+
   describe "#insert" do
     before do
       @tree = subject.new @production

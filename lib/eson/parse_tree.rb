@@ -72,9 +72,25 @@ module Parser
       end
       self
     end
+
+    def shift_root(tree_name=nil)
+      if tree_name.nil?
+        if degree == 1
+          new_root = children.first
+          new_root.parent = Tree.new
+          @root_tree = new_root
+          @height = @height - 1
+          self
+        end
+      else
+        find{|i| i === tree_name}.shift_root
+      end
+    end
     
-    def update_height(tree)
-      if tree.level > @height
+    def update_height(tree=nil)
+      if tree.nil?
+        #normalize height
+      elsif tree.level > @height
         @height = tree.level
       end
     end
@@ -140,6 +156,25 @@ module Parser
 
       include Enumerable
       include Eson::AttributeActions
+
+      def shift_root
+        if degree == 1
+          new_root = children.first
+          new_root.parent = parent
+          self.each{|i| i.set_level(-1)}
+          self.replace(new_root)
+        end
+      end
+
+      def replace(new_tree)
+        self.name = new_tree.name
+        self.open_state = new_tree.open_state
+        self.attributes = new_tree.attributes
+        self.parent = new_tree.parent
+        self.children = new_tree.children
+        self.level = new_tree.level
+        self
+      end
 
       def ===(param)
         if name == param

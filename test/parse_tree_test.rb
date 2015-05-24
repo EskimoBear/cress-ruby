@@ -226,5 +226,37 @@ describe Parser::ParseTree do
                              @production.name, @token.name]
     end
   end
+
+  describe "#shift_root" do
+    before do
+      @child_prod = @production.clone
+      @child_prod.name = :child_prod
+      @redundant_root_tree = subject.new(@production).insert(@child_prod).insert(@token)
+      @tree = subject.new(@production).insert(@token)
+      #@root_tree.merge(@tree)
+    end
+    it "alter ParseTree root" do
+      result = @redundant_root_tree.shift_root
+      #pp result
+      result.must_be :===, :child_prod  
+    end
+    it "height decremented" do
+      original_height = @redundant_root_tree.height
+      @redundant_root_tree.shift_root.height
+        .must_equal (original_height - 1)
+    end
+    it "retains active node" do
+      original_active = @redundant_root_tree.active_node
+      @redundant_root_tree.shift_root.active_node.must_equal original_active
+    end
+    it "alter Tree root" do
+      original_height = @redundant_root_tree.height
+      result = @redundant_root_tree.shift_root(@child_prod.name)
+      result.must_be :===, @token.name
+      #FIXME
+      #height does not change when a Tree node is altered
+      #@redundant_root_tree.height.must_equal (original_height - 1)
+    end
+  end
 end
 

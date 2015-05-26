@@ -54,8 +54,8 @@ module Eson
     end
 
     def build_tree_attributes
-      {:s_attr => build_attributes(@s_attr),
-       :i_attr => build_attributes(@i_attr).merge(production_type_attribute)}
+      {:s_attr => build_attributes(@s_attr).merge(production_type_attribute),
+       :i_attr => build_attributes(@i_attr)}
     end
 
     def production_type_attribute

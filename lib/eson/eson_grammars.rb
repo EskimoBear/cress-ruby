@@ -1,6 +1,7 @@
 require_relative 'rule_seq.rb'
 require_relative 'typed_seq.rb'
 require_relative 'variable_store'
+require_relative 'ast'
 
 module Eson
   module EsonGrammars
@@ -519,6 +520,14 @@ module Eson
         "VariableStore",
         format,
         [VariableStore],
+        [])
+    end
+
+    def ast
+      RuleSeq.assign_attribute_grammar(
+        "AST",
+        format,
+        [AST],
         [])
     end
 

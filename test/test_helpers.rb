@@ -4,6 +4,20 @@ require_relative '../lib/eson'
 module TestHelpers
 
   extend self
+
+  def get_sample_rules
+    Eson::RuleSeq.new
+      .make_terminal_rule(:terminal, /rule/)
+      .make_alternation_rule(:nonterminal, [:terminal])
+  end
+
+  def get_sample_terminal
+    get_sample_rules.get_rule(:terminal)
+  end
+
+  def get_sample_production
+    get_sample_rules.get_rule(:nonterminal)
+  end
   
   def get_valid_eson
     load_test_inputs('valid')
@@ -43,9 +57,12 @@ module TestHelpers
 
   def get_parse_tree(token_sequence=get_token_sequence,
               grammar=Eson::EsonGrammars.tokenizer_lang)
-    Eson::SyntaxPass.build_tree(
-      token_sequence,
-      grammar)
+    Eson::SyntaxPass.build_tree(token_sequence, grammar)
+  end
+
+  def get_ast(tree=get_parse_tree,
+              grammar=Eson::EsonGrammars.tokenizer_lang)
+    Eson::SyntaxPass.build_ast(tree, grammar)
   end
 
   def get_semantic_eval(tree=get_parse_tree,

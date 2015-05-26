@@ -14,4 +14,8 @@ module Eson::SyntaxPass
     ast = grammar.top_rule.parse(token_seq, grammar)[:tree]
     grammar.eval_tree_attributes(ast)
   end
+
+  def build_ast(tree, grammar)
+    grammar.convert_to_ast(tree)
+  end
 end

@@ -73,8 +73,23 @@ module Parser
       self
     end
 
-    def shift_root(tree_name=nil)
-      if tree_name.nil?
+    #If the root of tree_match has one child make it the new root
+    #of the ParseTree or Tree. When tree_match is nil
+    #the root of the ParseTree matches.
+    #@param tree_match [Symbol, nil] case match for Tree
+    #@return [ParseTree, ParseTree::Tree] the modified root tree
+    def reduce_root(tree_match=nil)
+      if tree_match.nil?
+        reduce_root_tree_var(@root_tree.name)
+      else
+        tree = find{|i| i === tree_match}.reduce_root
+        update_height()
+        tree
+      end
+    end
+
+    def reduce_root_tree_var(tree_match)
+      if @root_tree === tree_match
         if degree == 1
           new_root = children.first
           new_root.parent = Tree.new
@@ -82,14 +97,22 @@ module Parser
           @height = @height - 1
           self
         end
-      else
-        find{|i| i === tree_name}.shift_root
       end
+    end
+
+    def reduce_roots(tree_match)
+      reduce_root_tree_var(tree_match)
+      post_order_entries = []
+      self.post_order_traversal{|i| post_order_entries.push i}
+      post_order_entries.select{|i| i === tree_match}
+        .each{|tm| tm.reduce_root}
+      update_height
+     self
     end
     
     def update_height(tree=nil)
       if tree.nil?
-        #normalize height
+        @height = self.max_by{|t| t.level}.level
       elsif tree.level > @height
         @height = tree.level
       end
@@ -157,11 +180,11 @@ module Parser
       include Enumerable
       include Eson::AttributeActions
 
-      def shift_root
+      def reduce_root
         if degree == 1
           new_root = children.first
           new_root.parent = parent
-          self.each{|i| i.set_level(-1)}
+          new_root.increment_levels(0)
           self.replace(new_root)
         end
       end

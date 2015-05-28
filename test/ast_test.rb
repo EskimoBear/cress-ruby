@@ -20,4 +20,49 @@ describe AST do
       i === :alternation
     end.must_equal true
   end
+
+  it "has no option rules" do
+    @ast.none? do |i|
+      i === :option
+    end.must_equal true
+  end
+
+  it "has no repetition rules" do
+    @ast.none? do |i|
+      i === :repetition
+    end.must_equal true
+  end
+
+  it "reduced array node" do
+    array_children = @ast.find{|i| i === :array}.entries
+                     .map{|i| i.name}.uniq
+    array_children.wont_include :element_list
+    array_children.wont_include :element_more
+    array_children.wont_include :element_more_once
+    array_children.wont_include :element_divider
+    array_children.wont_include :array_start
+    array_children.wont_include :array_end
+    @ast.find{|i| i === :array}.children.
+      map{|i| i.name}.wont_include :nullable
+  end
+
+  it "reduced program node" do
+    program_children = @ast.find{|i| i === :program}.entries
+                       .map{|i| i.name}.uniq
+    program_children.wont_include :declaration_list
+    program_children.wont_include :declaration_more_once
+    program_children.wont_include :declaration_divider
+    program_children.wont_include :program_start
+    program_children.wont_include :program_end
+    @ast.find{|i| i === :program}.children.
+      map{|i| i.name}.wont_include :nullable
+  end
+
+  it "reduced string node" do
+    string_children = @ast.find{|i| i === :string}.entries
+                      .map{|i| i.name}.uniq
+    string_children.wont_include :string_delimiter
+    @ast.find{|i| i === :string}.children
+      .map{|i| i.name}.wont_include :nullable
+  end
 end

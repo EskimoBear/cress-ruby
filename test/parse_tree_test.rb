@@ -151,6 +151,11 @@ describe Parser::ParseTree do
     it "tree is child node" do
       @root_tree.has_child?(@tree.name).must_equal true
     end
+    it "parent updated" do
+      tree = @root_tree.children.first
+      tree.parent.wont_be :empty_tree?
+      tree.parent.must_be_same_as @root_tree.get
+    end
     it "height is updated" do
       @root_tree.height.must_equal 3
     end
@@ -232,7 +237,6 @@ describe Parser::ParseTree do
       @child_prod = @production.clone
       @child_prod.name = :child_prod
       @redundant_root_tree = subject.new(@production).insert(@child_prod).insert(@token)
-      @tree = subject.new(@production).insert(@token)
     end
     it "with ParseTree root" do
       result = @redundant_root_tree.reduce_root
@@ -266,6 +270,106 @@ describe Parser::ParseTree do
       result.must_be :===, @token.name
       result.must_be_same_as @redundant_root_tree
       result.height.must_equal 1
+    end
+  end
+
+  describe "#remove_root" do
+    before do
+      @child_prod = @production.clone
+      @child_prod.name = :child_prod
+      @single_root_tree = subject.new(@child_prod).insert(@token)
+                      .insert(@token).insert(@token).close_tree
+      @redundant_root_tree = subject.new(@production)
+                             .merge(@single_root_tree)
+      @triple_root_tree = subject.new(@production).insert(@production)
+                          .insert(@production).insert(@token)
+                          .insert(@token).insert(@token)
+      @child_token = @token.clone
+      @child_token.name = :child_token
+      @ordering_tree = subject.new(@production).insert(@production)
+                       .insert(@token).insert(@production).insert(@child_token)
+                       .insert(@child_token).close_active.insert(@token)
+    end
+    it "with single possible root" do
+      @single_root_tree.remove_root.must_equal nil
+    end
+    it "with possible replacement root" do
+      original_height = @redundant_root_tree.height
+      result = @redundant_root_tree.remove_root
+      result.must_be :===, @child_prod.name
+      result.height.must_equal (original_height - 1)
+    end
+    it "with tree name" do
+      original_height = @redundant_root_tree.height
+      result = @redundant_root_tree.remove_root(@production.name)
+      result.must_be :===, @child_prod.name 
+      result.height.must_equal (original_height - 1)
+    end
+    it "with :production_type" do
+      tree = subject.new(@child_prod).insert(@production)
+             .insert(@production).insert(@token)
+             .insert(@token).insert(@token)
+    end
+    it "matching Tree" do
+      original_height = @redundant_root_tree.height
+      result = @redundant_root_tree.remove_root(@child_prod.name)
+      @redundant_root_tree.children.find{|i| i === @child_prod.name}
+        .must_be_nil
+      @redundant_root_tree.children.first.parent
+        .must_be :===, @production.name
+      @redundant_root_tree.height.must_equal (original_height - 1)
+    end
+    it "remove_roots" do
+      result = @triple_root_tree.remove_roots(@production.name)
+      result.must_be_same_as @triple_root_tree#@production.name
+      @triple_root_tree.degree.must_equal 3
+      @triple_root_tree.height.must_equal 2
+    end
+    it "retain ParseTree root" do
+      result = @ordering_tree.remove_roots(@production.name)
+      result.must_be :===, @production.name
+    end
+    it "retain insertion ordering" do
+      result = @ordering_tree.remove_roots(@production.name)
+      result.must_be :has_children?,
+                     [@token.name, @child_token.name,
+                      @child_token.name, @token.name]
+    end
+  end
+
+  describe "#delete_node" do
+    before do
+      @single_root_tree = subject.new(@production).insert(@token)
+                          .insert(@token).insert(@token)
+                          .insert(@production).insert(@token)
+    end
+    it "delete leaf" do
+      degree = @single_root_tree.degree
+      @single_root_tree.delete_node(@token.name)
+      @single_root_tree.degree.must_equal degree - 1
+    end
+    it "delete tree node root" do
+      original_height = @single_root_tree.height
+      @single_root_tree.delete_node(@production.name)
+      @single_root_tree.height.must_equal original_height - 1
+      @single_root_tree.must_be :has_children?,
+                                [@token.name, @token.name,
+                                 @token.name, @token.name]
+    end
+    it "delete leaves" do
+      original_height = @single_root_tree.height
+      @single_root_tree.delete_nodes(@token.name)
+      @single_root_tree.degree.must_equal 1
+      @single_root_tree.height.must_equal original_height - 1
+    end
+    it "delete nodes" do
+      @single_root_tree.close_active.insert(@production)
+      original_height = @single_root_tree.height
+      @single_root_tree.delete_nodes(@production.name)
+      @single_root_tree.height.must_equal original_height - 1
+      @single_root_tree.must_be :has_children?,
+                                [@token.name, @token.name,
+                                 @token.name, @token.name]
     end
   end
 end

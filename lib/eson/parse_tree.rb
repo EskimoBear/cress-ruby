@@ -73,21 +73,71 @@ module Parser
       self
     end
 
+    #Delete the matching node from the tree
+    #@param (see #remove_root)
+    def delete_node(tree_match)
+      descendants.find{|i| i === tree_match}
+        .delete_node(tree_match)
+      update_height
+      self
+    end
+
+    #return [Array<Tree>] all nodes excluding the root
+    def descendants
+      @root_tree.entries.drop(1)
+    end
+
+    #Delete the matching nodes from the tree
+    #@param (see #remove_root)
+    def delete_nodes(tree_match)
+      descendants.find_all{|i| i === tree_match}
+        .each{|i| i.delete_node(tree_match)}
+      update_height
+      self
+    end
+
+    #Replace a root node with it's children
+    #@param tree_match [Symbol, nil] case match for Tree
+    #@return [ParseTree, Tree] the modified root tree
+    def remove_root(tree_match=nil)
+      if tree_match.nil?
+        reduce_root
+      elsif @root_tree === tree_match
+        reduce_root_tree_var(tree_match)
+      else
+        tree = find{|i| i === tree_match}.remove_root(tree_match)
+        update_height
+        tree
+      end
+    end
+
+    #@param (see #remove_root)
+    def remove_roots(tree_match)
+      if @root_tree === tree_match
+        reduce_root_tree_var(tree_match)
+      end
+      self.select{|i| i === tree_match}
+        .each{|i| i.remove_root(tree_match)}
+      update_height
+      self
+    end
+
     #If the root of tree_match has one child make it the new root
     #of the ParseTree or Tree. When tree_match is nil
     #the root of the ParseTree matches.
-    #@param tree_match [Symbol, nil] case match for Tree
-    #@return [ParseTree, ParseTree::Tree] the modified root tree
+    #@param (see #remove_root)
+    #@return (see #remove_root)
     def reduce_root(tree_match=nil)
       if tree_match.nil?
         reduce_root_tree_var(@root_tree.name)
       else
         tree = find{|i| i === tree_match}.reduce_root
-        update_height()
+        update_height
         tree
       end
     end
 
+    #@param (see #remove_root)
     def reduce_root_tree_var(tree_match)
       if @root_tree === tree_match
         if degree == 1
@@ -100,6 +150,7 @@ module Parser
       end
     end
 
+    #@param (see #remove_root)
     def reduce_roots(tree_match)
       reduce_root_tree_var(tree_match)
       post_order_entries = []
@@ -132,6 +183,7 @@ module Parser
         tree.get.increment_levels(active_node.level)
         possible_height = tree.height + active_node.level
         @height = @height < possible_height ? possible_height : @height
+        tree.get.parent = @active
         @active.children.push(tree.get)
         self
       end
@@ -180,6 +232,17 @@ module Parser
       include Enumerable
       include Eson::AttributeActions
 
+      #@param (see #remove_root)
+      def delete_node(tree_match)
+        if leaf?
+          leaf_index = parent.children
+                       .index{|cn| cn === tree_match}
+          parent.children.delete_at(leaf_index)
+        else
+          remove_root(tree_match)
+        end
+      end
+
       def reduce_root
         if degree == 1
           new_root = children.first
@@ -187,6 +250,27 @@ module Parser
           new_root.increment_levels(0)
           self.replace(new_root)
         end
+      end
+
+      #@param (see ParseTree#remove_root)
+      def remove_root(tree_match)
+        if !parent.empty_tree? && !leaf?
+          children.each{|cn| cn.parent = self.parent}
+          root_index = parent.children.index{|cn| cn === tree_match}
+          parent.children.replace insert_child_at_index(root_index, parent.children, self.children)
+          parent.increment_levels
+          parent
+        end
+      end
+
+      def insert_child_at_index(index, child_list, new_child_list)
+        original_size = child_list.length
+        child_list.concat new_child_list
+        start_list = child_list.take(index)
+        middle_list = child_list.drop(original_size)
+        end_list = child_list[(index + 1)...original_size]
+        child_list.delete_at(index)
+        start_list + middle_list + end_list
       end
 
       def replace(new_tree)
@@ -203,7 +287,7 @@ module Parser
         if name == param
           true
         elsif get_attribute(:production_type)
-          if param == get_attribute(:production_type)
+          if get_attribute(:production_type) == param
             true
           end
         else
@@ -338,8 +422,7 @@ module Parser
         self.open_state = false
       end
 
-      #The open state of the tree.
-      #@return [false, true]
+      #@return [Boolean] true if Tree is open
       def open?
         open_state
       end
@@ -372,27 +455,21 @@ module Parser
         " is not allowed on a closed tree."
       end
 
-      #@param name [Symbol] name of child node
-      def has_child?(name)
-        children.detect{|i| i.name == name} ? true : false
+      #@param tree_match [Symbol] case match of a child node
+      def has_child?(tree_match)
+        children.detect{|i| i === tree_match} ? true : false
       end
 
-      #@param names [Array<Symbol>] ordered list of the
-      #names of child nodes
+      #@param tree_matchers [Array<Symbol>] ordered list of case
+      # matchers for child nodes
       def has_children?(names)
-        names == children.map{|i| i.name}
+        children.zip(names).map{|i| i.first === i.last}.all?
       end
 
-      #Search tree for the presence of a name
-      #@param name [Symbol] name of child node
-      #@return [true, false] true if the name is present
-      def contains?(name)
-        root_match = self.name == name
-        if root_match || has_child?(name)
-          true
-        else
-          children.any?{|i| i.contains?(name)}
-        end
+      #@param (see #has_child?)
+      #@return [Boolean] true if a matching Tree is present
+      def contains?(tree_match)
+        !find{|i| i === tree_match}.nil?
       end
 
       #@param offset [Integer]
@@ -404,7 +481,7 @@ module Parser
 
       #Increment the tree levels of a given tree
       #@param offset [Integer]
-      def increment_levels(offset)
+      def increment_levels(offset=0)
         set_level(offset)
         unless leaf?
           children.each{|t| t.set_level}

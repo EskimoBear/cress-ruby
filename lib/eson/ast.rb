@@ -7,6 +7,7 @@ module AST
     reduce_array_set(tree)
     reduce_program_set(tree)
     reduce_string(tree)
+    make_operators_root(tree)
   end
 
   def remove_alternation_rules(tree)
@@ -54,5 +55,45 @@ module AST
   def reduce_string(tree)
     tree.delete_nodes(:string_delimiter)
     remove_nullable_child(tree, :string)
+  end
+
+  def make_operators_root(tree)
+    make_bind_trees(tree)
+    make_apply_trees(tree)
+    tree
+  end
+
+  def make_bind_trees(tree)
+    attributes = tree.select{|i| i === :attribute}
+    attribute_names = attributes.map{|a| a.children.first}
+    colons = attributes.map{|a| a.children[1]}
+    values = attributes.map{|a| a.children.last}
+    attributes.zip(attribute_names, colons, values).each do |t|
+      t_attribute = t.first
+      t_colon = t[2]
+      t_colon.name = :bind
+      t_colon.make_tree_node
+      t_colon.children.push(t[1]).push(t.last)
+      t_colon.children.each{|i| i.parent = t_colon}
+      t_attribute.children.delete_if{|i| !(i === t_colon.name)}
+      t_attribute.reduce_root
+    end
+  end
+
+  def make_apply_trees(tree)
+    calls = tree.select{|i| i === :call}
+    procs = calls.map{|a| a.children.first}
+    colons = calls.map{|a| a.children[1]}
+    args = calls.map{|a| a.children.last}
+    calls.zip(procs, colons, args).each do |t|
+      t_call = t.first
+      t_colon = t[2]
+      t_colon.name = :apply
+      t_colon.make_tree_node
+      t_colon.children.push(t[1]).push(t.last)
+      t_colon.children.each{|i| i.parent = t_colon}
+      t_call.children.delete_if{|i| !(i === t_colon.name)}
+      t_call.reduce_root
+    end
   end
 end

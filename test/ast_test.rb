@@ -65,4 +65,22 @@ describe AST do
     @ast.find{|i| i === :string}.children
       .map{|i| i.name}.wont_include :nullable
   end
+
+  it "created :bind trees" do
+    @ast.any?{|i| i === :bind}.must_equal true
+    @ast.select{|i| i === :bind}.all?{|i| i.internal?}
+      .must_equal true
+    @ast.select{|i| i === :bind}.all?{|i| i.degree == 2}
+      .must_equal true
+    @ast.none?{|i| i === :attribute}.must_equal true
+  end
+
+  it "created :apply trees" do
+    @ast.any?{|i| i === :apply}.must_equal true
+    @ast.select{|i| i === :apply}.all?{|i| i.internal?}
+      .must_equal true
+    @ast.select{|i| i === :apply}.all?{|i| i.degree == 2}
+      .must_equal true
+    @ast.none?{|i| i === :call}.must_equal true
+  end
 end

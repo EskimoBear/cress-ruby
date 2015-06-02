@@ -523,6 +523,12 @@ module Eson
         [])
     end
 
+    def ast_cfg
+      RuleSeq.new(format.copy_rules)
+        .make_nonterminal_rules([:bind, :apply])
+        .build_cfg("Ast_cfg", :program)
+    end
+
     def ast
       RuleSeq.assign_attribute_grammar(
         "AST",

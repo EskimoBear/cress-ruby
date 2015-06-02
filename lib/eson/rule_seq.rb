@@ -25,6 +25,11 @@ module Eson
         productions.map{|i| i.name}
       end
 
+      def ag_productions
+        self.values.select{|i| i.production_rule?}
+          .map{|i| i.name}
+      end
+
       def terminals
         self.values.select{|i| i.terminal?}.map{|i| i.name}
       end
@@ -158,6 +163,18 @@ module Eson
       if rule.option_rule? || rule.repetition_rule?
         rule.first_set.push :nullable
       end
+    end
+
+    #Creates production rules with the given names
+    #@param rule_names [Array<Symbol>] names of the rules
+    def make_nonterminal_rules(rule_names)
+      new_productions = rule_names.map do |i|
+        Rule.new(i,
+                 /undefined/,
+                 false,
+                 EBNF::ProductionRule.new)
+      end
+      self.concat new_productions
     end
 
     #Create a non-terminal production rule that is an alternation

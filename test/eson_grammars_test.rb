@@ -69,6 +69,16 @@ describe Eson::EsonGrammars do
         .must_equal true
     end
   end
+
+  describe "validate_astg" do
+    before do
+      @lang = subject.ast_cfg
+    end
+    it "should contain new rules" do
+      @lang.ag_productions.must_include :bind
+      @lang.ag_productions.must_include :apply
+    end
+  end
 end
 
 describe Eson::Rule do

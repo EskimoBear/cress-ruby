@@ -11,13 +11,14 @@ module Eson
     AlternationRule = Struct.new(:term_set)
     RepetitionRule = Struct.new(:term)
     OptionRule = Struct.new(:term)
+    ProductionRule = Struct.new(:name)
 
     def terminal?
       self.ebnf.nil?
     end
 
     def nonterminal?
-      !terminal?
+      !terminal? && !production_rule?
     end
 
     def nullable?
@@ -31,7 +32,7 @@ module Eson
     end
 
     def term_names
-      if self.terminal?
+      if self.terminal? || self.production_rule?
         nil
       elsif alternation_rule?
         self.ebnf.term_set.map{|i| i.rule_name}
@@ -77,8 +78,13 @@ module Eson
     def repetition_rule?
       self.ebnf.instance_of? RepetitionRule
     end
+
     def option_rule?
       self.ebnf.instance_of? OptionRule
+    end
+
+    def production_rule?
+      self.ebnf.instance_of? ProductionRule
     end
 
     def join_rule_names(terms, infix="")

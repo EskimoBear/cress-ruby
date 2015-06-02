@@ -254,10 +254,13 @@ module Parser
 
       #@param (see ParseTree#remove_root)
       def remove_root(tree_match)
-        if !parent.empty_tree? && !leaf?
+        if !parent.empty_tree? && internal?
           children.each{|cn| cn.parent = self.parent}
           root_index = parent.children.index{|cn| cn === tree_match}
-          parent.children.replace insert_child_at_index(root_index, parent.children, self.children)
+          parent.children.replace insert_child_at_index(
+                                    root_index,
+                                    parent.children,
+                                    self.children)
           parent.increment_levels
           parent
         end
@@ -437,6 +440,10 @@ module Parser
 
       def leaf?
         children.nil?
+      end
+
+      def internal?
+        !leaf?
       end
 
       def empty_tree?

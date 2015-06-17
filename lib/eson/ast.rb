@@ -55,12 +55,51 @@ module AST
   def reduce_string(tree)
     tree.delete_nodes(:string_delimiter)
     remove_nullable_child(tree, :string)
+    make_literal_strings(tree)
   end
 
   def make_operators_root(tree)
     make_bind_trees(tree)
     make_apply_trees(tree)
     tree
+  end
+
+  def make_literal_strings(tree)
+    strings = tree.select{|i| i === :string}
+    strings.each do |i|
+      make_empty_literal_string(i)
+      make_filled_literal_string(i)
+      make_interpolated_string(i)
+    end
+  end
+
+  def make_empty_literal_string(node)
+    if (node.degree == 1) && (node.children.first === :nullable)
+      nullable = node.children.first
+      nullable.replace get_rule(:literal_string).to_tree
+      nullable.store_attribute(:value, "")
+      node.reduce_root
+    end
+  end
+
+  def make_filled_literal_string(node)
+    if node.degree >= 1
+      if node.children.all?{|i| i === :word_form}
+        string = node.children.reduce("") do |acc, i|
+          acc.concat(i.get_attribute(:lexeme).to_s)
+        end
+        node.replace get_rule(:literal_string).to_tree
+        node.store_attribute(:value, string)
+      end
+    end
+  end
+
+  def make_interpolated_string(node)
+    if node.degree >= 1
+      if node.children.any?{|i| i === :variable_identifier}
+        node.replace get_rule(:interpolated_string).to_tree
+      end
+    end
   end
 
   def make_bind_trees(tree)
@@ -71,8 +110,7 @@ module AST
     attributes.zip(attribute_names, colons, values).each do |t|
       t_attribute = t.first
       t_colon = t[2]
-      t_colon.name = :bind
-      t_colon.make_tree_node
+      t_colon.replace get_rule(:bind).to_tree
       t_colon.children.push(t[1]).push(t.last)
       t_colon.children.each{|i| i.parent = t_colon}
       t_attribute.children.delete_if{|i| !(i === t_colon.name)}
@@ -88,8 +126,7 @@ module AST
     calls.zip(procs, colons, args).each do |t|
       t_call = t.first
       t_colon = t[2]
-      t_colon.name = :apply
-      t_colon.make_tree_node
+      t_colon.replace get_rule(:apply).to_tree
       t_colon.children.push(t[1]).push(t.last)
       t_colon.children.each{|i| i.parent = t_colon}
       t_call.children.delete_if{|i| !(i === t_colon.name)}

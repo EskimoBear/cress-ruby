@@ -59,11 +59,15 @@ describe AST do
   end
 
   it "reduced string node" do
-    string_children = @ast.find{|i| i === :string}.entries
-                      .map{|i| i.name}.uniq
-    string_children.wont_include :string_delimiter
-    @ast.find{|i| i === :string}.children
-      .map{|i| i.name}.wont_include :nullable
+    @ast.none?{|i| i === :string}.must_equal true
+  end
+
+  it "created :literal_string leaf" do
+    @ast.any?{|i| i === :literal_string}.must_equal true
+  end
+
+  it "created :interpolated_string tree" do
+    @ast.any?{|i| i === :interpolated_string}.must_equal true
   end
 
   it "created :bind trees" do

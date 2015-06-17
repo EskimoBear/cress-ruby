@@ -13,7 +13,8 @@ describe VariableStore do
       load_test_inputs('variable_sample'),
       subject)
     @tree = get_parse_tree(@ts, subject)
-    @tree_eval = get_semantic_eval(@tree, subject)
+    @ast = get_ast(@tree, subject)
+    @tree_eval = get_semantic_eval(@ast, subject)
     @store = @tree_eval[:env][:store]
   end
   

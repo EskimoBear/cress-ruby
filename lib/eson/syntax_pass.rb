@@ -11,8 +11,8 @@ module Eson::SyntaxPass
   #@param token_seq [TokenSeq]  
   #@return [AbstractSyntaxTree]
   def build_tree(token_seq, grammar)
-    ast = grammar.top_rule.parse(token_seq, grammar)[:tree]
-    grammar.eval_tree_attributes(ast)
+    parse_tree = grammar.top_rule.parse(token_seq, grammar)[:tree]
+    grammar.eval_tree_attributes(parse_tree)
   end
 
   def build_ast(tree, grammar)

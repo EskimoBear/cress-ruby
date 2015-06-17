@@ -515,25 +515,28 @@ module Eson
       end
     end
 
-    def var_store
-      RuleSeq.assign_attribute_grammar(
-        "VariableStore",
-        format,
-        [VariableStore],
-        [])
-    end
-
     def ast_cfg
       RuleSeq.new(format.copy_rules)
-        .make_nonterminal_rules([:bind, :apply])
+        .make_ag_production_rule(:bind)
+        .make_ag_production_rule(:apply)
+        .make_ag_terminal_rule(:literal_string, [:value])
+        .make_ag_production_rule(:interpolated_string)
         .build_cfg("Ast_cfg", :program)
     end
 
     def ast
       RuleSeq.assign_attribute_grammar(
         "AST",
-        format,
-        [AST],
+        ast_cfg,
+        [AST, Format],
+        [])
+    end
+
+    def var_store
+      RuleSeq.assign_attribute_grammar(
+        "VariableStore",
+        ast,
+        [VariableStore],
         [])
     end
 

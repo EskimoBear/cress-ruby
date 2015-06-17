@@ -7,7 +7,8 @@ module Parser
   class ParseTree
     CannotConvertTypeToTree = Class.new(StandardError)
     UnallowedMethodForClosedTree = Class.new(StandardError)
-    
+
+    include Enumerable
     extend Forwardable
 
     attr_reader :height
@@ -71,9 +72,99 @@ module Parser
       end
       self
     end
+
+    #Delete the matching node from the tree
+    #@param (see #remove_root)
+    def delete_node(tree_match)
+      descendants.find{|i| i === tree_match}
+        .delete_node(tree_match)
+      update_height
+      self
+    end
+
+    #return [Array<Tree>] all nodes excluding the root
+    def descendants
+      @root_tree.entries.drop(1)
+    end
+
+    #Delete the matching nodes from the tree
+    #@param (see #remove_root)
+    def delete_nodes(tree_match)
+      descendants.find_all{|i| i === tree_match}
+        .each{|i| i.delete_node(tree_match)}
+      update_height
+      self
+    end
+
+    #Replace a root node with it's children
+    #@param tree_match [Symbol, nil] case match for Tree
+    #@return [ParseTree, Tree] the modified root tree
+    def remove_root(tree_match=nil)
+      if tree_match.nil?
+        reduce_root
+      elsif @root_tree === tree_match
+        reduce_root_tree_var(tree_match)
+      else
+        tree = find{|i| i === tree_match}.remove_root(tree_match)
+        update_height
+        tree
+      end
+    end
+
+    #@param (see #remove_root)
+    def remove_roots(tree_match)
+      if @root_tree === tree_match
+        reduce_root_tree_var(tree_match)
+      end
+      self.select{|i| i === tree_match}
+        .each{|i| i.remove_root(tree_match)}
+      update_height
+      self
+    end
+
+    #If the root of tree_match has one child make it the new root
+    #of the ParseTree or Tree. When tree_match is nil
+    #the root of the ParseTree matches.
+    #@param (see #remove_root)
+    #@return (see #remove_root)
+    def reduce_root(tree_match=nil)
+      if tree_match.nil?
+        reduce_root_tree_var(@root_tree.name)
+      else
+        tree = find{|i| i === tree_match}.reduce_root
+        update_height
+        tree
+      end
+    end
+
+    #@param (see #remove_root)
+    def reduce_root_tree_var(tree_match)
+      if @root_tree === tree_match
+        if degree == 1
+          new_root = children.first
+          new_root.parent = Tree.new
+          @root_tree = new_root
+          @height = @height - 1
+          self
+        end
+      end
+    end
+
+    #@param (see #remove_root)
+    def reduce_roots(tree_match)
+      reduce_root_tree_var(tree_match)
+      post_order_entries = []
+      self.post_order_traversal{|i| post_order_entries.push i}
+      post_order_entries.select{|i| i === tree_match}
+        .each{|tm| tm.reduce_root}
+      update_height
+     self
+    end
     
-    def update_height(tree)
-      if tree.level > @height
+    def update_height(tree=nil)
+      if tree.nil?
+        @height = self.max_by{|t| t.level}.level
+      elsif tree.level > @height
         @height = tree.level
       end
     end
@@ -92,6 +183,7 @@ module Parser
         tree.get.increment_levels(active_node.level)
         possible_height = tree.height + active_node.level
         @height = @height < possible_height ? possible_height : @height
+        tree.get.parent = @active
         @active.children.push(tree.get)
         self
       end
@@ -125,19 +217,86 @@ module Parser
       self
     end
 
-    def_delegators :@root_tree, :degree, :closed?,
+    def_delegators :@root_tree, :each, :degree, :closed?,
                    :open?, :leaf?, :ensure_open, :has_child?,
                    :has_children?, :rule, :children, :level,
                    :empty_tree?, :contains?, :attribute_list,
                    :get_attribute, :store_attribute, :bottom_left_node,
                    :post_order_trace, :post_order_traversal,
-                   :attributes, :name
+                   :attributes, :name, :===
 
     #Struct class for a tree node
     Tree = Struct.new :name, :open_state, :attributes,
                       :children, :parent, :level do
 
+      include Enumerable
       include Eson::AttributeActions
+
+      #@param (see #remove_root)
+      def delete_node(tree_match)
+        if leaf?
+          leaf_index = parent.children
+                       .index{|cn| cn === tree_match}
+          parent.children.delete_at(leaf_index)
+        else
+          remove_root(tree_match)
+        end
+      end
+
+      def reduce_root
+        if degree == 1
+          new_root = children.first
+          new_root.parent = parent
+          new_root.increment_levels(0)
+          self.replace(new_root)
+        end
+      end
+
+      #@param (see ParseTree#remove_root)
+      def remove_root(tree_match)
+        if !parent.empty_tree? && internal?
+          children.each{|cn| cn.parent = self.parent}
+          root_index = parent.children.index{|cn| cn === tree_match}
+          parent.children.replace insert_child_at_index(
+                                    root_index,
+                                    parent.children,
+                                    self.children)
+          parent.increment_levels
+          parent
+        end
+      end
+
+      def insert_child_at_index(index, child_list, new_child_list)
+        original_size = child_list.length
+        child_list.concat new_child_list
+        start_list = child_list.take(index)
+        middle_list = child_list.drop(original_size)
+        end_list = child_list[(index + 1)...original_size]
+        child_list.delete_at(index)
+        start_list + middle_list + end_list
+      end
+
+      def replace(new_tree)
+        self.name = new_tree.name
+        self.open_state = new_tree.open_state
+        self.attributes = new_tree.attributes
+        self.parent = new_tree.parent
+        self.children = new_tree.children
+        self.level = new_tree.level
+        self
+      end
+
+      def ===(param)
+        if name == param
+          true
+        elsif get_attribute(:production_type)
+          if get_attribute(:production_type) == param
+            true
+          end
+        else
+          false
+        end
+      end
 
       def make_tree_node
         self.children = TreeSeq.new
@@ -165,6 +324,18 @@ module Parser
         post_order_traversal{|tree| acc.push tree.name}
       end
 
+      #pre-order traversal of the tree
+      #@yield [a] gives tree to the block
+      def each(&block)
+        if leaf?
+          yield self
+        else
+          yield self
+          children.each{|i| i.each(&block)}
+        end
+      end
+
+      #post-order traversal of the tree
       #@yield [a] gives tree to the block
       def post_order_traversal(&block)
         unless leaf?
@@ -254,8 +425,7 @@ module Parser
         self.open_state = false
       end
 
-      #The open state of the tree.
-      #@return [false, true]
+      #@return [Boolean] true if Tree is open
       def open?
         open_state
       end
@@ -270,6 +440,10 @@ module Parser
 
       def leaf?
         children.nil?
+      end
+
+      def internal?
+        !leaf?
       end
 
       def empty_tree?
@@ -288,27 +462,21 @@ module Parser
         " is not allowed on a closed tree."
       end
 
-      #@param name [Symbol] name of child node
-      def has_child?(name)
-        children.detect{|i| i.name == name} ? true : false
+      #@param tree_match [Symbol] case match of a child node
+      def has_child?(tree_match)
+        children.detect{|i| i === tree_match} ? true : false
       end
 
-      #@param names [Array<Symbol>] ordered list of the
-      #names of child nodes
+      #@param tree_matchers [Array<Symbol>] ordered list of case
+      # matchers for child nodes
       def has_children?(names)
-        names == children.map{|i| i.name}
+        children.zip(names).map{|i| i.first === i.last}.all?
       end
 
-      #Search tree for the presence of a name
-      #@param name [Symbol] name of child node
-      #@return [true, false] true if the name is present
-      def contains?(name)
-        root_match = self.name == name
-        if root_match || has_child?(name)
-          true
-        else
-          children.any?{|i| i.contains?(name)}
-        end
+      #@param (see #has_child?)
+      #@return [Boolean] true if a matching Tree is present
+      def contains?(tree_match)
+        !find{|i| i === tree_match}.nil?
       end
 
       #@param offset [Integer]
@@ -320,7 +488,7 @@ module Parser
 
       #Increment the tree levels of a given tree
       #@param offset [Integer]
-      def increment_levels(offset)
+      def increment_levels(offset=0)
         set_level(offset)
         unless leaf?
           children.each{|t| t.set_level}

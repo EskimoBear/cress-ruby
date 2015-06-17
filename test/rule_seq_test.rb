@@ -71,6 +71,27 @@ describe Eson::RuleSeq do
     end
   end
 
+  describe "attribute_grammar_rules" do
+    before do
+      @s_attrs = [:value, :line]
+      @i_attrs = [:closure]
+    end
+    it "#make_ag_production_rule" do
+      @rules = rule_seq.make_ag_production_rule(:ag_rule, @s_attrs, @i_attrs)
+      @new_rule = @rules.get_rule(:ag_rule)
+      @new_rule.must_be :ag_production?
+      @new_rule.s_attr.must_equal @s_attrs
+      @new_rule.i_attr.must_equal @i_attrs
+    end
+    it "#make_ag_terminal_rule" do
+      @rules = rule_seq.make_ag_terminal_rule(:ag_rule, @s_attrs)
+      @new_rule = @rules.get_rule(:ag_rule)
+      @new_rule.must_be :ag_terminal?
+      @new_rule.s_attr.must_equal @s_attrs
+      @new_rule.i_attr.must_be_empty
+    end
+  end
+
   describe "#make_terminal_rule" do
     it "has correct properties" do
       @rule = rule.new_terminal_rule(:rule, /k/)

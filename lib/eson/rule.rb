@@ -40,12 +40,15 @@ module Eson
       @follow_set = []
       @s_attr = []
       @i_attr = terminal? ? nil : []
-      @comp_rules = []
     end
 
     def to_tree
       if terminal?
         nil
+      elsif ag_terminal?
+        Parser::ParseTree::Tree.new(@name)
+          .make_leaf_node
+          .init_attributes(build_leaf_attributes)
       else
         Parser::ParseTree::Tree.new(@name)
           .make_tree_node
@@ -53,9 +56,29 @@ module Eson
       end
     end
 
+    def build_leaf_attributes
+      {:s_attr => build_attributes(@s_attr)
+                 .merge(production_type_attribute)}
+    end
+
     def build_tree_attributes
-      {:s_attr => build_attributes(@s_attr),
+      {:s_attr => build_attributes(@s_attr).merge(production_type_attribute),
        :i_attr => build_attributes(@i_attr)}
+    end
+
+    def production_type_attribute
+      type = if self.concatenation_rule?
+               :concatenation
+             elsif self.alternation_rule?
+               :alternation
+             elsif self.repetition_rule?
+               :repetition
+             elsif self.option_rule?
+               :option
+             elsif self.ag_production?
+               :ag_production
+             end
+      {:production_type => type}
     end
 
     def build_attributes(attrs)

@@ -1,5 +1,7 @@
 require_relative 'rule_seq.rb'
 require_relative 'typed_seq.rb'
+require_relative 'variable_store'
+require_relative 'ast'
 
 module Eson
   module EsonGrammars
@@ -229,8 +231,7 @@ module Eson
            :string_delimiter])
         .make_alternation_rule(
           :value,
-          [:variable_identifier,
-           :true,
+          [:true,
            :false,
            :null,
            :string,
@@ -512,6 +513,31 @@ module Eson
           end
         end
       end
+    end
+
+    def ast_cfg
+      RuleSeq.new(format.copy_rules)
+        .make_ag_production_rule(:bind)
+        .make_ag_production_rule(:apply)
+        .make_ag_terminal_rule(:literal_string, [:value])
+        .make_ag_production_rule(:interpolated_string)
+        .build_cfg("Ast_cfg", :program)
+    end
+
+    def ast
+      RuleSeq.assign_attribute_grammar(
+        "AST",
+        ast_cfg,
+        [AST, Format],
+        [])
+    end
+
+    def var_store
+      RuleSeq.assign_attribute_grammar(
+        "VariableStore",
+        ast,
+        [VariableStore],
+        [])
     end
 
     alias_method :tokenizer_lang, :format

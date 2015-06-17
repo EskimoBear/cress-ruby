@@ -25,6 +25,11 @@ module Eson
         productions.map{|i| i.name}
       end
 
+      def ag_productions
+        self.values.select{|i| i.ag_production?}
+          .map{|i| i.name}
+      end
+
       def terminals
         self.values.select{|i| i.terminal?}.map{|i| i.name}
       end
@@ -275,6 +280,28 @@ module Eson
     def missing_rule_error_message(rule_name)
       "The Eson::Rule.name ':#{rule_name}' is not present" \
       " in the sequence."
+    end
+
+    #Add an attribute grammar production rule to the RuleSeq
+    #@param name [Symbol] name of the attribute grammar production
+    #@param s_attrs [Array<Symbol>] array of s-attributes
+    #@param i_attrs [Array<Symbol>] array of i-attributes
+    #@return [self]
+    def make_ag_production_rule(name, s_attrs=[], i_attrs=[])
+      rule = Rule.new(name, nil, nil, EBNF::AG_ProductionRule[name])
+      rule.s_attr = s_attrs
+      rule.i_attr = i_attrs
+      self.push rule
+    end
+
+    #Add an attribute grammar terminal rule to the RuleSeq
+    #@param name [Symbol] name of the attribute grammar production
+    #@param s_attrs [Array<Symbol>] array of s-attributes
+    #@return [self]
+    def make_ag_terminal_rule(name, s_attrs=[])
+      rule = Rule.new(name, nil, nil, EBNF::AG_TerminalRule[name])
+      rule.s_attr = s_attrs
+      self.push rule
     end
 
     #Modifies a context free grammar with the properties of

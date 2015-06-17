@@ -36,4 +36,9 @@ module Eson
       raise SyntaxError, validate_json(eson_program, options)
     end
   end
+
+  def semantic_pass(tree, grammar)
+    store = grammar.build_store(tree)
+    {:env =>{:store => store}}
+  end
 end

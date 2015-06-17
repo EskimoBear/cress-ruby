@@ -11,13 +11,23 @@ module Eson
     AlternationRule = Struct.new(:term_set)
     RepetitionRule = Struct.new(:term)
     OptionRule = Struct.new(:term)
+    AG_TerminalRule = Struct.new(:name)
+    AG_ProductionRule = Struct.new(:name)
 
     def terminal?
       self.ebnf.nil?
     end
 
+    def ag_terminal?
+      self.ebnf.instance_of? AG_TerminalRule
+    end
+
+    def ag_production?
+      self.ebnf.instance_of? AG_ProductionRule
+    end
+
     def nonterminal?
-      !terminal?
+      !terminal? && !ag_production? && !ag_terminal?
     end
 
     def nullable?
@@ -30,8 +40,24 @@ module Eson
       end
     end
 
+    def alternation_rule?
+      self.ebnf.instance_of? AlternationRule
+    end
+
+    def concatenation_rule?
+      self.ebnf.instance_of? ConcatenationRule
+    end
+
+    def repetition_rule?
+      self.ebnf.instance_of? RepetitionRule
+    end
+
+    def option_rule?
+      self.ebnf.instance_of? OptionRule
+    end
+
     def term_names
-      if self.terminal?
+      if self.terminal? || self.ag_production? || self.ag_terminal?
         nil
       elsif alternation_rule?
         self.ebnf.term_set.map{|i| i.rule_name}
@@ -64,21 +90,6 @@ module Eson
       elsif option_rule?
         "[#{ebnf.term.rule_name}]"
       end
-    end
-
-    def alternation_rule?
-      self.ebnf.instance_of? AlternationRule
-    end
-
-    def concatenation_rule?
-      self.ebnf.instance_of? ConcatenationRule
-    end
-
-    def repetition_rule?
-      self.ebnf.instance_of? RepetitionRule
-    end
-    def option_rule?
-      self.ebnf.instance_of? OptionRule
     end
 
     def join_rule_names(terms, infix="")

@@ -69,6 +69,16 @@ describe Eson::EsonGrammars do
         .must_equal true
     end
   end
+
+  describe "validate_astg" do
+    before do
+      @lang = subject.ast_cfg
+    end
+    it "should contain new rules" do
+      @lang.ag_productions.must_include :bind
+      @lang.ag_productions.must_include :apply
+    end
+  end
 end
 
 describe Eson::Rule do
@@ -104,8 +114,7 @@ describe Eson::Rule do
     @lang.value.partial_status.must_equal false
     first_set = @lang.value.first_set
     first_set.must_be_instance_of Array
-    first_set.length.must_equal 8
-    first_set.must_include :variable_identifier
+    first_set.length.must_equal 7
     first_set.must_include :true
     first_set.must_include :false
     first_set.must_include :null
@@ -119,8 +128,7 @@ describe Eson::Rule do
       @lang.element_set.partial_status.must_equal false
       first_set = @lang.element_set.first_set
       first_set.must_be_instance_of Array
-      first_set.length.must_equal 9
-      first_set.must_include :variable_identifier
+      first_set.length.must_equal 8
       first_set.must_include :true
       first_set.must_include :false
       first_set.must_include :null

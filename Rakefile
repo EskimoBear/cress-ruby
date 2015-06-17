@@ -1,6 +1,8 @@
 task default: %w[test]
 
 task :test do
+  ruby  "-W0 test/ast_test.rb"
+  ruby  "-W0 test/variable_store_test.rb"
   ruby  "-W0 test/esonf_test.rb"
   ruby  "-W0 test/parse_tree_test.rb"
   ruby  "-W0 test/attr_grammar_test.rb"

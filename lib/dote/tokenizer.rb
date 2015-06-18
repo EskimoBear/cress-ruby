@@ -2,7 +2,7 @@ require 'oj'
 require 'pry'
 require_relative 'token_pass'
 
-module Eson::TokenPass
+module Dote::TokenPass
   
   module Tokenizer
 
@@ -12,13 +12,13 @@ module Eson::TokenPass
     JsonSymbol = Struct.new :lexeme, :name
     
     #Convert an eson program into a sequence of eson tokens
-    #@param eson_program [String] string provided to Eson#read
+    #@param eson_program [String] string provided to Dote#read
     #@return [TokenSeq] A token sequence
     #@raise [TokenizationIncomplete] token sequence does not contain
     #  all the characters in the program
     #@eskimobear.specification
-    # Eson token set, ET is a set of the eson terminals
-    # Eson token, et is a sequence of characters existing in ET
+    # Dote token set, ET is a set of the eson terminals
+    # Dote token, et is a sequence of characters existing in ET
     # label(et) maps the character sequence to the name of the matching
     #   eson terminal symbol
     # Input program, p, a valid JSON string 
@@ -116,7 +116,7 @@ module Eson::TokenPass
     def json_symbols_to_tokens(json_symbol_seq, char_seq, grammar)
       envs = grammar.env_init
       json_symbol_seq
-        .each_with_object(Eson::TokenPass::TokenSeq.new) do |symbol, seq|
+        .each_with_object(Dote::TokenPass::TokenSeq.new) do |symbol, seq|
         case symbol.name
         when :object_start
           update_json_and_char_seqs(

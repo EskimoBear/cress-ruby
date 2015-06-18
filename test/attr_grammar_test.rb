@@ -1,19 +1,19 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
-require_relative '../lib/eson/rule_seq.rb'
-require_relative '../lib/eson/eson_grammars.rb'
+require_relative '../lib/dote/rule_seq.rb'
+require_relative '../lib/dote/dote_grammars.rb'
 
-describe "Eson::RuleSeq" do
+describe "Dote::RuleSeq" do
   
-  subject {Eson::RuleSeq}
+  subject {Dote::RuleSeq}
 
   before do
     module Custom
       def custom_action
       end
     end
-    @cfg = Eson::EsonGrammars.e1
+    @cfg = Dote::DoteGrammars.e1
     @actions = [Custom]
     @attr_maps = [{
                     :attr => :value,

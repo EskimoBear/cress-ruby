@@ -1,8 +1,8 @@
-require_relative './eson_grammars.rb'
+require_relative './dote_grammars.rb'
 
-module Eson::SyntaxPass
+module Dote::SyntaxPass
 
-  extend Eson::EsonGrammars
+  extend Dote::DoteGrammars
   extend self
 
   ParseError = Class.new(StandardError)

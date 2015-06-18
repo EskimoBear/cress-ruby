@@ -1,9 +1,9 @@
 require_relative './rule'
 require_relative './typed_seq'
 
-module Eson
+module Dote
 
-  RuleSeq = TypedSeq.new_seq(Eson::Rule)
+  RuleSeq = TypedSeq.new_seq(Dote::Rule)
 
   class RuleSeq
 
@@ -39,7 +39,7 @@ module Eson
       end
 
       def copy_rules
-        Eson::RuleSeq.new self.values
+        Dote::RuleSeq.new self.values
       end
 
       def make_top_rule(rule_name)
@@ -59,13 +59,13 @@ module Eson
       private
 
       def rule_seq
-        Eson::RuleSeq.new self.values
+        Dote::RuleSeq.new self.values
       end
     end
 
     def self.new_item_error_message
       "One or more of the given array elements are not" \
-      " of the type Eson::Rule"
+      " of the type Dote::Rule"
     end
 
     def make_terminal_rule(new_rule_name, rxp)
@@ -154,7 +154,7 @@ module Eson
       end
     end
 
-    #@param rule [Eson::Rule]
+    #@param rule [Dote::Rule]
     #@return [nil]
     def prepare_first_set(rule)
       unless rule.partial_status
@@ -248,7 +248,7 @@ module Eson
 
     def missing_items_error_message(rule_names)
       names = rule_names.map{|i| ":".concat(i.to_s)}
-      "One or more of the following Eson::Rule.name's" \
+      "One or more of the following Dote::Rule.name's" \
       " are not present in the sequence: #{names.join(", ")}."
     end
 
@@ -278,7 +278,7 @@ module Eson
     end
 
     def missing_rule_error_message(rule_name)
-      "The Eson::Rule.name ':#{rule_name}' is not present" \
+      "The Dote::Rule.name ':#{rule_name}' is not present" \
       " in the sequence."
     end
 
@@ -380,7 +380,7 @@ module Eson
     #set of terminal names that can legally  appear at the start of
     #the sequences of symbols derivable from a rule. The first_set
     #of a terminal rule is the rule name.
-    #@param rule [Eson::Rule] Given rule
+    #@param rule [Dote::Rule] Given rule
     #@eskimobear.specification
     #
     #Prop : The first set of a concatenation is the first set of the
@@ -427,7 +427,7 @@ module Eson
 
     #Ensure a first_set is completed before returning it. Prevents
     #  complications due to ordering of Rules in the RuleSeq.
-    #@param rule [Eson::Rule] Given rule
+    #@param rule [Dote::Rule] Given rule
     #@return [Array<Symbol>] first set
     def get_first_set(rule)
       if rule.partial_status
@@ -439,7 +439,7 @@ module Eson
     #Compute the follow_set of nonterminal rules. The follow_set is
     #the set of terminals that can appear to the right of a nonterminal
     #in a sentence.
-    #@param rules [Eson::RuleSeq] list of possible rules
+    #@param rules [Dote::RuleSeq] list of possible rules
     #@param top_rule_name [Symbol] name of the top rule in the language
     #  from which @rules derives.
     def compute_follow_sets(rules, top_rule_name=nil)

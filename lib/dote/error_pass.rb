@@ -1,11 +1,11 @@
 require_relative './program_errors'
 
-module Eson
+module Dote
   module ErrorPass
 
     include ProgramErrors
 
-    LANG = Eson::EsonGrammars.tokenizer_lang
+    LANG = Dote::DoteGrammars.tokenizer_lang
     
     #@return [TokenSeq] self when Token is not found
     #@raise [UnknownSpecialForm] unknown_special_forms Token found

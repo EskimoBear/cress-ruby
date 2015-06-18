@@ -1,13 +1,12 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require_relative './test_helpers.rb'
-require_relative '../lib/eson.rb'
 
-describe Eson::SyntaxPass do
+describe Dote::SyntaxPass do
 
   include TestHelpers
 
-  subject {Eson::SyntaxPass}
+  subject {Dote::SyntaxPass}
 
   describe "valid_token_seq" do
     it "creates_tree" do

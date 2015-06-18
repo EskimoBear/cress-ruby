@@ -3,13 +3,13 @@ require_relative 'typed_seq.rb'
 require_relative 'variable_store'
 require_relative 'ast'
 
-module Eson
-  module EsonGrammars
+module Dote
+  module DoteGrammars
 
     extend self
 
-    RuleSeq =  Eson::RuleSeq
-    Rule = Eson::Rule
+    RuleSeq =  Dote::RuleSeq
+    Rule = Dote::Rule
 
     def proc_prefix_rxp
       /&/
@@ -425,9 +425,9 @@ module Eson
 
     def esonf
       RuleSeq.assign_attribute_grammar(
-        "EsonfGen",
+        "DotefGen",
         format,
-        [EsonF],
+        [DoteF],
         [{
            :attr => :line_feed,
            :type => :s_attr,
@@ -445,7 +445,7 @@ module Eson
          }])
     end
 
-    module EsonF
+    module DoteF
 
       def generate_source(tree, path)
         default_filename = "code.eson"

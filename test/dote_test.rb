@@ -1,9 +1,9 @@
 require 'minitest/autorun'
 require 'minitest/pride'
-require_relative '../lib/eson.rb'
+require_relative '../lib/dote.rb'
 require_relative './test_helpers.rb'
 
-describe Eson do
+describe Dote do
 
   include TestHelpers
   
@@ -16,20 +16,20 @@ describe Eson do
 
   describe "empty program" do
     it ".compile" do
-      Eson.compile(@empty_program).must_be_nil
+      Dote.compile(@empty_program).must_be_nil
     end
   end
 
   describe "invalid program" do
     it ".compile" do
-      proc {Eson.compile(@invalid_program)}.must_raise Eson::SyntaxError
+      proc {Dote.compile(@invalid_program)}.must_raise Dote::SyntaxError
     end
   end
 
   describe "program_with_unknown_special_forms" do
     it ".compile" do
-      proc {Eson.compile(@unknown_special_form_program)}
-        .must_raise Eson::TokenPass::TokenSeq::UnknownSpecialForm
+      proc {Dote.compile(@unknown_special_form_program)}
+        .must_raise Dote::TokenPass::TokenSeq::UnknownSpecialForm
     end
   end
 end

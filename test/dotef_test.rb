@@ -2,13 +2,12 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
 require_relative './test_helpers.rb'
-require_relative '../lib/eson.rb'
 
-describe "Eson::EsonGrammars::esonf" do
+describe "Dote::DoteGrammars::esonf" do
 
   include TestHelpers
   
-  subject {Eson::EsonGrammars.esonf}
+  subject {Dote::DoteGrammars.esonf}
 
   before do
     @program = get_tokenizer_sample_program

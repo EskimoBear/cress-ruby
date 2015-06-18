@@ -3,7 +3,7 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
 require_relative './test_helpers'
-require_relative '../lib/eson/rule.rb'
+require_relative '../lib/dote/rule.rb'
 
 describe Parser::ParseTree do
 

@@ -15,7 +15,7 @@ module Parser
 
     #Initialize tree with obj as root node. An empty
     #tree is created if no parameter is given.
-    #@param obj [Eson::Rule] Rule
+    #@param obj [Dote::Rule] Rule
     def initialize(obj=nil)
       init_empty
       set_root(obj)
@@ -230,7 +230,7 @@ module Parser
                       :children, :parent, :level do
 
       include Enumerable
-      include Eson::AttributeActions
+      include Dote::AttributeActions
 
       #@param (see #remove_root)
       def delete_node(tree_match)
@@ -494,7 +494,7 @@ module Parser
           children.each{|t| t.set_level}
         end
       end
-      Eson::AttributeActions.validate self
+      Dote::AttributeActions.validate self
     end
 
     TreeSeq = TypedSeq.new_seq(Tree)

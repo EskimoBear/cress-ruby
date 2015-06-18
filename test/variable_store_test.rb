@@ -1,12 +1,12 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require_relative './test_helpers'
-require_relative '../lib/eson/eson_grammars'
+require_relative '../lib/dote/dote_grammars'
 
 describe VariableStore do
 
   include TestHelpers
-  subject {Eson::EsonGrammars.var_store}
+  subject {Dote::DoteGrammars.var_store}
 
   before do
     @ts = get_token_sequence(

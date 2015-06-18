@@ -2,9 +2,9 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
 require_relative './test_helpers.rb'
-require_relative '../lib/eson/tokenizer.rb'
+require_relative '../lib/dote/tokenizer.rb'
 
-describe Eson::TokenPass::Tokenizer do
+describe Dote::TokenPass::Tokenizer do
 
   include TestHelpers
 
@@ -12,7 +12,7 @@ describe Eson::TokenPass::Tokenizer do
     @token_sequence = get_token_sequence
   end
   it "is a TokenSeq" do
-    @token_sequence.must_be_instance_of Eson::TokenPass::TokenSeq
+    @token_sequence.must_be_instance_of Dote::TokenPass::TokenSeq
   end
   it "eval :line_no" do
     @token_sequence.last.get_attribute(:line_no).must_equal 17

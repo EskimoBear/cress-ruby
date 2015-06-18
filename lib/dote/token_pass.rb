@@ -1,20 +1,20 @@
-require_relative 'eson_grammars'
+require_relative 'dote_grammars'
 require_relative 'tokenizer'
 require_relative 'error_pass'
 require_relative 'typed_seq'
 
-module Eson::TokenPass
+module Dote::TokenPass
 
   extend Tokenizer
 
-  Token = Eson::LexemeCapture::Token
+  Token = Dote::LexemeCapture::Token
   TokenSeq = TypedSeq.new_seq(Token)
   
-  LANG = Eson::EsonGrammars.format
+  LANG = Dote::DoteGrammars.format
 
   class TokenSeq
 
-    include Eson::ErrorPass
+    include Dote::ErrorPass
 
     def get_program_snippet(line_no)
       TokenSeq.new(self.select{|i| i.get_attribute(:line_no) == line_no})
@@ -69,7 +69,7 @@ module Eson::TokenPass
     #Given an alternation rule add rule.name to each referenced
     #  token's alternation_names array.
     #
-    #@param rule [Eson::RuleSeq::Rule] alternation rule
+    #@param rule [Dote::RuleSeq::Rule] alternation rule
     def assign_alternation_names(rule)
       token_names = rule.term_names
       self.map! do |old_token|
@@ -91,7 +91,7 @@ module Eson::TokenPass
     #Replace tokens of :choice names with token of rule name and
     #  equivalent lexeme. Reduce all repetitions to a single token. 
     #  
-    #@param rule [Eson::RuleSeq::Rule] An alternation rule 
+    #@param rule [Dote::RuleSeq::Rule] An alternation rule 
     #@eskimobear.specification
     # Original token sequence, T
     # Output token sequence, O
@@ -119,7 +119,7 @@ module Eson::TokenPass
     def tokenize_alternation_rule_recur(
           rule,
           input_sequence,
-          output_sequence = Eson::TokenPass::TokenSeq.new)
+          output_sequence = Dote::TokenPass::TokenSeq.new)
 
       new_token_name = rule.name
       token_names = rule.term_names
@@ -192,7 +192,7 @@ module Eson::TokenPass
     #Replace inner token sequence of concatenation names with token of rule
     #  name and equivalent lexeme.
     #
-    #@param rule [Eson::RuleSeq::Rule] A concatenation rule
+    #@param rule [Dote::RuleSeq::Rule] A concatenation rule
     #@eskimobear.specification
     # Original token sequence, T
     # Output token sequence, O
@@ -213,7 +213,7 @@ module Eson::TokenPass
     end
 
     def tokenize_concatenation_rule_recur(rule, input_sequence,
-                                          output_sequence =  Eson::TokenPass::TokenSeq.new)
+                                          output_sequence =  Dote::TokenPass::TokenSeq.new)
       token_names = rule.term_names
       match_seq_size = token_names.length
       new_token_name = rule.name
@@ -234,10 +234,10 @@ module Eson::TokenPass
     end
 
     def reduce_tokens(new_name, *tokens)
-      line_no = Eson::TokenPass::TokenSeq
+      line_no = Dote::TokenPass::TokenSeq
                 .new(tokens)
                 .get_next_line_no
-      indent = Eson::TokenPass::TokenSeq
+      indent = Dote::TokenPass::TokenSeq
                .new(tokens)
                .get_next_indent
       combined_lexeme = tokens.each_with_object("") do |i, string|
@@ -291,7 +291,7 @@ module Eson::TokenPass
     #@see take_with_seq_recur
     #@param token_names [Array<Symbols>] sequence of token names to match
     #@yield [t] matching token sequence
-    #@return [Eson::TokenPass::TokenSeq, nil] matching token sequence
+    #@return [Dote::TokenPass::TokenSeq, nil] matching token sequence
     #or nil
     def take_with_seq(*token_names)
       if block_given?
@@ -304,11 +304,11 @@ module Eson::TokenPass
     #Scans a input_sequence recursively for a token sequence that
     #begins at head and ends with the token names pat_seq.
     #@param pat_seq [Array<Symbols>] sequence of token names to match
-    #@param input_sequence [Eson::TokenPass::TokenSeq] token sequence to
+    #@param input_sequence [Dote::TokenPass::TokenSeq] token sequence to
     #analyze
-    #@param output_sequence [Eson::TokenPass::TokenSeq] scanned token
+    #@param output_sequence [Dote::TokenPass::TokenSeq] scanned token
     #sequence
-    #@return [Eson::TokenPass::TokenSeq, nil] matching token sequence
+    #@return [Dote::TokenPass::TokenSeq, nil] matching token sequence
     #or nil
     #@eskimobear.specification
     # T, input token sequence
@@ -336,7 +336,7 @@ module Eson::TokenPass
     #        S' = S + T
     #        P = T'
     def take_with_seq_recur(pat_seq, input_sequence,
-                            output_sequence = Eson::TokenPass::TokenSeq.new)
+                            output_sequence = Dote::TokenPass::TokenSeq.new)
       pat_start = pat_seq.first
       if input_sequence.include_token?(pat_start)
         scanned, unscanned = input_sequence.split_before_token(pat_start)

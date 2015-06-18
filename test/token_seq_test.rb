@@ -1,18 +1,18 @@
 require 'minitest/autorun'
 require 'minitest/pride'
-require_relative '../lib/eson/token_pass.rb'
+require_relative '../lib/dote/token_pass.rb'
 require_relative './test_helpers.rb'
 
 class TestTokenSeq < MiniTest::Test
 
   def setup
-    @token_seq = Eson::TokenPass::TokenSeq.new(5) {Eson::LexemeCapture::Token.new}
+    @token_seq = Dote::TokenPass::TokenSeq.new(5) {Dote::LexemeCapture::Token.new}
   end
 
   def test_take_with_seq_should_succeed
     @token_seq[3].name = "target_1"
     @token_seq.last.name = "target_2"
-    @token_seq.push(Eson::LexemeCapture::Token["lexeme", "name"])
+    @token_seq.push(Dote::LexemeCapture::Token["lexeme", "name"])
     expected_seq =  @token_seq.take(@token_seq.length - 1)
     assert_equal expected_seq, @token_seq.take_with_seq("target_1", "target_2")
   end
@@ -25,7 +25,7 @@ class TestTokenSeq < MiniTest::Test
     @token_seq[1].name = "target_2"
     @token_seq[3].name = "target_1"
     @token_seq.last.name = "target_2"
-    @token_seq.push(Eson::LexemeCapture::Token["lexeme", "target_2"])
+    @token_seq.push(Dote::LexemeCapture::Token["lexeme", "target_2"])
     assert @token_seq.seq_match?("target_1", "target_2")
   end
 
@@ -37,12 +37,12 @@ class TestTokenSeq < MiniTest::Test
  
 end
 
-describe Eson::TokenPass::TokenSeq do
+describe Dote::TokenPass::TokenSeq do
   before do
-    @lang = Eson::EsonGrammars.format
+    @lang = Dote::DoteGrammars.format
     @alternation_rule = @lang.sub_string
     @concatenation_rule = @lang.variable_identifier
-    @token_seq = Eson::TokenPass::TokenSeq.new(4) {Eson::LexemeCapture::Token.new}
+    @token_seq = Dote::TokenPass::TokenSeq.new(4) {Dote::LexemeCapture::Token.new}
   end
   
   describe "#tokenize_rule" do
@@ -56,7 +56,7 @@ describe Eson::TokenPass::TokenSeq do
       @token_seq[3].name = :word
       @token_seq[3].lexeme = :word_2
       @token_seq.all?{|i| i.name == @concatenation_rule.name}
-      @token_seq.must_be_instance_of Eson::TokenPass::TokenSeq
+      @token_seq.must_be_instance_of Dote::TokenPass::TokenSeq
     end
   end
 end

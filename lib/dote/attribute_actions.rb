@@ -1,6 +1,6 @@
 require_relative './respondent'
 
-module Eson
+module Dote
   module AttributeActions
 
     extend Respondent

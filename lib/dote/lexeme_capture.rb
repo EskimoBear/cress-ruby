@@ -2,10 +2,10 @@ require_relative './respondent'
 require_relative './attribute_actions'
 require_relative './parser.rb'
 
-module Eson
+module Dote
 
   #Operations and data structures for the lexeme field
-  #  of Eson::RuleSeq::Rule. Token has a
+  #  of Dote::RuleSeq::Rule. Token has a
   #  regexp that matches a fixed lexeme or a set of strings.
   module LexemeCapture
 

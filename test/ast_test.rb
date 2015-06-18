@@ -1,11 +1,11 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require_relative './test_helpers'
-require_relative '../lib/eson/eson_grammars.rb'
+require_relative '../lib/dote/dote_grammars.rb'
 
 describe AST do
 
-  subject {Eson::EsonGrammars.ast}
+  subject {Dote::DoteGrammars.ast}
 
   include TestHelpers
 

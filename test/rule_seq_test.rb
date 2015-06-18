@@ -1,12 +1,12 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
-require_relative '../lib/eson/rule_seq'
+require_relative '../lib/dote/rule_seq'
 
-describe Eson::RuleSeq do
+describe Dote::RuleSeq do
 
-  subject {Eson::RuleSeq}
-  let(:rule) {Eson::Rule}
+  subject {Dote::RuleSeq}
+  let(:rule) {Dote::Rule}
   let(:rule_seq) {subject.new([rule.new(:rule_1, /RU/),
                                rule.new(:rule_2, /LE/)])}
   
@@ -36,7 +36,7 @@ describe Eson::RuleSeq do
     end
     it "is partial rule" do
       @rules.make_concatenation_rule(:rule_4, [:rule_2, :undefined])
-      proc {@rules.convert_to_terminal(:rule_4)}.must_raise Eson::RuleSeq::CannotMakeTerminal
+      proc {@rules.convert_to_terminal(:rule_4)}.must_raise Dote::RuleSeq::CannotMakeTerminal
     end
   end
 
@@ -44,7 +44,7 @@ describe Eson::RuleSeq do
     it "succeeds" do
       rules = rule_seq.remove_rules([:rule_1])
       rules.must_be_instance_of subject
-      proc {rules.get_rule(:rule_1)}.must_raise Eson::RuleSeq::MissingRule
+      proc {rules.get_rule(:rule_1)}.must_raise Dote::RuleSeq::MissingRule
       rules.length.must_equal 1
     end
     it "fails" do
@@ -108,7 +108,7 @@ describe Eson::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
-      @new_rule.ebnf.must_be_instance_of Eson::EBNF::AlternationRule
+      @new_rule.ebnf.must_be_instance_of Dote::EBNF::AlternationRule
       @new_rule.nullable?.must_equal false
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :rule_2
@@ -146,7 +146,7 @@ describe Eson::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
-      @new_rule.ebnf.must_be_instance_of Eson::EBNF::ConcatenationRule
+      @new_rule.ebnf.must_be_instance_of Dote::EBNF::ConcatenationRule
       @new_rule.nullable?.must_equal false
       @new_rule.first_set.must_include :rule_1
       @new_rule.partial_status.must_equal false
@@ -234,7 +234,7 @@ describe Eson::RuleSeq do
       @rules = rule_seq.make_repetition_rule(:new_rule, :rule_1)
       @new_rule = @rules.get_rule(:new_rule)     
       @rules.must_be_instance_of subject
-      @new_rule.ebnf.must_be_instance_of Eson::EBNF::RepetitionRule
+      @new_rule.ebnf.must_be_instance_of Dote::EBNF::RepetitionRule
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
       @new_rule.nullable?.must_equal true
@@ -265,7 +265,7 @@ describe Eson::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
-      @new_rule.ebnf.must_be_instance_of Eson::EBNF::OptionRule
+      @new_rule.ebnf.must_be_instance_of Dote::EBNF::OptionRule
       @new_rule.nullable?.must_equal true
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :nullable

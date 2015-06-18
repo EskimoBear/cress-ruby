@@ -13,7 +13,7 @@ module Parser
   uses :name, :term_names, :terminal?, :follow_set
   
   #Return a legal instance of a rule
-  #@param tokens [Eson::TokenPass::TokenSeq] a token sequence
+  #@param tokens [Dote::TokenPass::TokenSeq] a token sequence
   #@param grammar [Struct] context free grammar or attribute grammar
   #@return [Hash<Symbol, TokenSeq>] returns matching sub-sequence in
   #                                 tokens as :parsed_seq, as a tree
@@ -60,9 +60,9 @@ module Parser
 
   def build_parse_result(parsed_seq, rest, tree)
     if parsed_seq.instance_of? Array
-      parsed_seq = Eson::TokenPass::TokenSeq.new(parsed_seq)
+      parsed_seq = Dote::TokenPass::TokenSeq.new(parsed_seq)
     elsif rest.instance_of? Array
-      rest = Eson::TokenPass::TokenSeq.new(rest)
+      rest = Dote::TokenPass::TokenSeq.new(rest)
     end
     result = {:parsed_seq => parsed_seq, :rest => rest, :tree => tree}
   end
@@ -109,8 +109,8 @@ module Parser
           first_set_error_message(lookahead, tokens)
   end
 
-  #@param token [Eson::LexemeCapture::Token] token
-  #@param grammar [Eson::RuleSeq] list of possible rules
+  #@param token [Dote::LexemeCapture::Token] token
+  #@param grammar [Dote::RuleSeq] list of possible rules
   #@return [Terminal, NonTerminal] term that has a first_set
   #  which includes the given token.
   #@raise [FirstSetNotDisjoint] if more than one term matches

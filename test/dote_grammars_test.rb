@@ -1,11 +1,11 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
-require_relative '../lib/eson/eson_grammars.rb'
+require_relative '../lib/dote/dote_grammars.rb'
 
-describe Eson::EsonGrammars do
+describe Dote::DoteGrammars do
   
-  subject {Eson::EsonGrammars}
+  subject {Dote::DoteGrammars}
 
   describe "validate_keys" do
     before do
@@ -81,9 +81,9 @@ describe Eson::EsonGrammars do
   end
 end
 
-describe Eson::Rule do
+describe Dote::Rule do
   before do
-    @lang = Eson::EsonGrammars.format
+    @lang = Dote::DoteGrammars.format
   end
   describe "#to_s" do
     it "is a terminal rule" do

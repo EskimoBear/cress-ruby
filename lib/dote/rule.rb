@@ -2,7 +2,7 @@ require_relative './lexeme_capture.rb'
 require_relative './ebnf.rb'
 require_relative './parser'
 
-module Eson
+module Dote
 
   #EBNF production rule representation for terminals and non-terminals
   class Rule
@@ -28,7 +28,7 @@ module Eson
     #  rule.
     #  If a rule has a partial_status then it's full first_set is only
     #  computed when a formal language is derived from said rule.
-    #@param ebnf [Eson::EBNF] ebnf definition of the rule, each defintion
+    #@param ebnf [Dote::EBNF] ebnf definition of the rule, each defintion
     #  contains only one control, thus a rule can be one of the four control
     #  types:- concatenation, alternation, repetition and option.
     def initialize(name, start_rxp=nil, partial_status=nil, ebnf=nil)
@@ -90,9 +90,9 @@ module Eson
     end
 
     #Compute the start rxp of nonterminal rules
-    #@param rules [Eson::RuleSeq] the other rules making
+    #@param rules [Dote::RuleSeq] the other rules making
     #  up the grammar
-    #@return [Eson::RuleSeq::Rule] the mutated Rule
+    #@return [Dote::RuleSeq::Rule] the mutated Rule
     def compute_start_rxp(rules)
       @start_rxp = if alternation_rule?
                      make_alternation_rxp(rules, term_names)

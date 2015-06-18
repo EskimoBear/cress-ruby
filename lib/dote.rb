@@ -1,16 +1,16 @@
 require 'vert'
-require_relative 'eson/token_pass'
-require_relative 'eson/syntax_pass'
-require_relative 'eson/code_gen'
+require_relative 'dote/token_pass'
+require_relative 'dote/syntax_pass'
+require_relative 'dote/code_gen'
 
-module Eson
+module Dote
 
   include Vert
   extend self
 
   SyntaxError = Class.new(StandardError)
 
-  LANG = Eson::EsonGrammars.format
+  LANG = Dote::DoteGrammars.format
   EMPTY_PROGRAM = "empty_program"
   MALFORMED_PROGRAM = "Program is malformed"
   MALFORMED_PROGRAM_RGX = /Program is malformed/

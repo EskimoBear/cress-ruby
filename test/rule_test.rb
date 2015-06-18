@@ -1,16 +1,16 @@
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
-require_relative '../lib/eson/rule.rb'
-require_relative '../lib/eson/token_pass'
+require_relative '../lib/dote/rule.rb'
+require_relative '../lib/dote/token_pass'
 
-describe Eson::Rule do
+describe Dote::Rule do
 
-  subject {Eson::Rule}
+  subject {Dote::Rule}
   let(:ast) {Parser::ParseTree}
-  let(:token) {Eson::LexemeCapture::Token}
-  let(:token_seq) {Eson::TokenPass::TokenSeq}
-  let(:rule_seq) {Eson::RuleSeq.new([subject.new(:rule_1, /RU/),
+  let(:token) {Dote::LexemeCapture::Token}
+  let(:token_seq) {Dote::TokenPass::TokenSeq}
+  let(:rule_seq) {Dote::RuleSeq.new([subject.new(:rule_1, /RU/),
                                                subject.new(:rule_2, /LE/),
                                                subject.new(:rule_3, /RL/)])}
 
@@ -86,7 +86,7 @@ describe Eson::Rule do
       end
       it "with invalid token" do
         proc {@rule.parse(@invalid_token_seq, rule_seq)}
-          .must_raise Eson::Rule::InvalidSequenceParsed
+          .must_raise Dote::Rule::InvalidSequenceParsed
       end
     end
     describe "alternation_rule" do
@@ -141,7 +141,7 @@ describe Eson::Rule do
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Rule::InvalidSequenceParsed
+            .must_raise Dote::Rule::InvalidSequenceParsed
         end
       end
       describe "with_nonterminals" do
@@ -277,11 +277,11 @@ describe Eson::Rule do
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Rule::InvalidSequenceParsed
+            .must_raise Dote::Rule::InvalidSequenceParsed
         end
         it "exhausted tokens while parsing" do
           proc {@rule.parse(@incomplete_token_seq, @rules)}
-            .must_raise Eson::Rule::InvalidSequenceParsed
+            .must_raise Dote::Rule::InvalidSequenceParsed
         end
       end
       describe "with_nonterminals" do
@@ -355,7 +355,7 @@ describe Eson::Rule do
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Rule::InvalidSequenceParsed
+            .must_raise Dote::Rule::InvalidSequenceParsed
         end
       end
     end
@@ -420,7 +420,7 @@ describe Eson::Rule do
         end
         it "with_invalid_terminal" do
           proc{@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Rule::InvalidSequenceParsed
+            .must_raise Dote::Rule::InvalidSequenceParsed
         end
       end
       describe "with_nonterminals" do
@@ -555,7 +555,7 @@ describe Eson::Rule do
         end
         it "with_invalid_tokens" do
           proc{@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Rule::InvalidSequenceParsed
+            .must_raise Dote::Rule::InvalidSequenceParsed
         end
       end
     end
@@ -696,7 +696,7 @@ describe Eson::Rule do
         end
         it "with invalid tokens" do
           proc {@rule.parse(@invalid_token_seq, @rules)}
-            .must_raise Eson::Rule::InvalidSequenceParsed
+            .must_raise Dote::Rule::InvalidSequenceParsed
         end
       end
     end

@@ -1,12 +1,12 @@
 require 'pp'
-require_relative '../lib/eson'
+require_relative '../lib/dote'
 
 module TestHelpers
 
   extend self
 
   def get_sample_rules
-    Eson::RuleSeq.new
+    Dote::RuleSeq.new
       .make_terminal_rule(:terminal, /rule/)
       .make_alternation_rule(:nonterminal, [:terminal])
   end
@@ -39,16 +39,16 @@ module TestHelpers
     "{\"invalid\": (}"
   end
 
-  def get_tokens(grammar=Eson::EsonGrammars.tokenizer_lang)
-    Eson::TokenPass.tokenize_program(
+  def get_tokens(grammar=Dote::DoteGrammars.tokenizer_lang)
+    Dote::TokenPass.tokenize_program(
       get_tokenizer_sample_program,
       grammar)
       .verify_special_forms
   end
 
   def get_token_sequence(program=get_tokenizer_sample_program,
-                         grammar=Eson::EsonGrammars.tokenizer_lang)
-    Eson::TokenPass
+                         grammar=Dote::DoteGrammars.tokenizer_lang)
+    Dote::TokenPass
       .tokenize_program(
         program,
         grammar)
@@ -56,24 +56,24 @@ module TestHelpers
   end
 
   def get_parse_tree(token_sequence=get_token_sequence,
-              grammar=Eson::EsonGrammars.tokenizer_lang)
-    Eson::SyntaxPass.build_tree(token_sequence, grammar)
+              grammar=Dote::DoteGrammars.tokenizer_lang)
+    Dote::SyntaxPass.build_tree(token_sequence, grammar)
   end
 
   def get_ast(tree=get_parse_tree,
-              grammar=Eson::EsonGrammars.tokenizer_lang)
-    Eson::SyntaxPass.build_ast(tree, grammar)
+              grammar=Dote::DoteGrammars.tokenizer_lang)
+    Dote::SyntaxPass.build_ast(tree, grammar)
   end
 
   def get_semantic_eval(tree=get_parse_tree,
-                        grammar=Eson::EsonGrammars.tokenizer_lang)
-    Eson.semantic_pass(tree, grammar)
+                        grammar=Dote::DoteGrammars.tokenizer_lang)
+    Dote.semantic_pass(tree, grammar)
   end
 
   def get_code(tree=get_parse_tree,
-               grammar=Eson::EsonGrammars.tokenizer_lang,
+               grammar=Dote::DoteGrammars.tokenizer_lang,
                path=get_code_gen_dir)
-    Eson::CodeGen.make_file(tree, grammar, path)
+    Dote::CodeGen.make_file(tree, grammar, path)
   end
 
   def get_code_gen_dir
@@ -88,7 +88,7 @@ module TestHelpers
   private
 
   def load_test_inputs(name)
-    file = File.join('../../test/eson_inputs', "#{name}.eson")
+    file = File.join('../../test/dote_inputs', "#{name}.dt")
     File.open(File.expand_path(file, __FILE__)).read 
   end
 end

@@ -1,7 +1,7 @@
-module Eson
+module Dote
 
   #Operations and data structures for the ebnf field
-  #  of the Eson::RuleSeq::Rule
+  #  of the Dote::RuleSeq::Rule
   module EBNF
 
     Terminal = Struct.new(:rule_name)

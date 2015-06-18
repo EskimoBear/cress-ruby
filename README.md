@@ -1,40 +1,40 @@
-eson-ruby
+Dote-ruby
 =======
 
-[eson](https://github.com/EskimoBear/eson) compiler implemented in Ruby.
+[Dote](https://github.com/EskimoBear/dote-spec) compiler implemented in Ruby.
 
 ##Compiling 
-To compile an eson file call the `compile` method with the file path of the eson program.
+To compile a Dote program call the `compile` method with its file path.
 
 ```ruby
-Eson.compile('program.eson')
+Dote.compile('program.dt')
 ```
 
 A `compile` will evaluate all singles and calls in the eson file and output a `.json` file in the same directory. 
 
 ##Code generation
-Eson will generate JSON documents by default but the compiler can also generate Ruby source code. The Ruby code generator can be invoked by passing `:ruby` as the second argument.
+Dote will generate JSON documents by default but the compiler can also generate Ruby source code. The Ruby code generator can be invoked by passing `:ruby` as the second argument.
 
 ```ruby
-Eson.compile('program.eson', :ruby)
+Dote.compile('program.dt', :ruby)
 ```
 
 ##Command-line usage
-eson can also be used from the command-line.
+Dote can also be used from the command-line.
 
 ```shell
-# Calls compile with the JSON code generator
-eson program.eson
+#Calls compile with the JSON code generator
+Dote program.dt
 
 #Calls compile with the Ruby code generator
-eson --ruby program.eson
+Dote --ruby program.dt
 ```
 
 ##Extending the compiler
-Eson compiler supports extensibilty by allowing users to define additional special forms to sit alongside those built-in to eson. This allows a user to create declarative DSLs that use eson syntax. To create a DSL atop eson a user defines a domain specific set of special forms and their respective handlers.
+Dote compiler supports extensibilty by allowing users to define additional special forms to sit alongside those built-in to Dote. This allows a user to create declarative DSLs that use Dote syntax. To create a DSL atop Dote a user defines a domain specific set of special forms and their respective handlers.
 
 ```ruby
-golf-compiler = Eson.extend(GolfDsl, "golf")
+golf-compiler = Dote.extend(GolfDsl, "golf")
 ```
 
-In the snippet above the `extend` method returns a compiler for a new eson based DSL called `golf`. `golf-compiler` has all the abilities of the original eson compiler as well as the ability to parse the special forms defined in the GolfDsl module.
+In the snippet above the `extend` method returns a compiler for a new Dote based DSL called `golf`. `golf-compiler` has all the abilities of the original Dote compiler as well as the ability to parse the special forms defined in the GolfDsl module.

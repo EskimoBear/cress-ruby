@@ -9,4 +9,7 @@ describe "cli" do
   it "prints default usage text" do
     `#{@path}`.must_equal CLI_USAGE
   end
+  it "prints version" do
+    `#{@path} --version`.must_match /dote 0.1.0/
+  end
 end

@@ -54,10 +54,11 @@ describe "Dote::DoteGrammars::esonf" do
 
   describe "validate_generated_code" do
     before do
-      @code_path = File.join(get_code_gen_dir, "code.eson")
+      @file_name = "code.dt"
+      @code_path = File.join(get_code_gen_dir, @file_name)
     end
     it "outputs a file" do
-      @code = get_code(@tree, subject)
+      @code = get_code(@tree, subject, get_code_gen_dir, @file_name)
       FileTest.exist?(@code_path).must_equal true
     end
     after do

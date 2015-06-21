@@ -3,8 +3,8 @@ module Dote
 
     extend self
     
-    def make_file(tree, grammar, path)
-      grammar.generate_source(tree, path)
+    def make_file(tree, grammar, path, file_name)
+      grammar.generate_source(tree, path, file_name)
     end
   end
 end

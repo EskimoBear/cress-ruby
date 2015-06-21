@@ -4,6 +4,9 @@ GEM
     avro (1.7.7)
       multi_json
     coderay (1.1.0)
+    commander (4.3.4)
+      highline (~> 1.7.2)
+    highline (1.7.2)
     method_source (0.8.2)
     minitest (5.5.0)
     multi_json (1.10.1)
@@ -22,6 +25,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  commander
   minitest
   oj
   pry

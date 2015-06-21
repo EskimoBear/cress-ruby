@@ -72,8 +72,9 @@ module TestHelpers
 
   def get_code(tree=get_parse_tree,
                grammar=Dote::DoteGrammars.tokenizer_lang,
-               path=get_code_gen_dir)
-    Dote::CodeGen.make_file(tree, grammar, path)
+               path=get_code_gen_dir,
+               file_name="code.dt")
+    Dote::CodeGen.make_file(tree, grammar, path, file_name)
   end
 
   def get_code_gen_dir
@@ -87,8 +88,12 @@ module TestHelpers
   
   private
 
-  def load_test_inputs(name)
+  def get_test_input_path(name)
     file = File.join('../../test/dote_inputs', "#{name}.dt")
-    File.open(File.expand_path(file, __FILE__)).read 
+    File.expand_path(file, __FILE__)
+  end
+
+  def load_test_inputs(name)
+    File.open(get_test_input_path(name)).read
   end
 end

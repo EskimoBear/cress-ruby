@@ -447,9 +447,8 @@ module Dote
 
     module DoteF
 
-      def generate_source(tree, path)
-        default_filename = "code.eson"
-        File.open(File.join(path, default_filename), "w") do |f|
+      def generate_source(tree, path, file_name="code.dt")
+        File.open(File.join(path, file_name), "w") do |f|
           f.write tree.get_attribute(:to_s)
         end
       end

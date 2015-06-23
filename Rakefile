@@ -13,4 +13,5 @@ task :test do
   ruby  "-W0 test/rule_test.rb"
   ruby  "-W0 test/token_seq_test.rb"
   ruby  "-W0 test/syntax_pass_test.rb"
+  ruby  "-W0 test/cli_test.rb"
 end

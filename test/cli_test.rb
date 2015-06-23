@@ -2,13 +2,13 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'fileutils'
 require_relative './test_helpers'
-require_relative '../bin/cli.rb'
+require_relative '../bin/dote.rb'
 
 describe "cli" do
   include TestHelpers
 
   before do
-    @path = File.expand_path('../../bin/cli.rb', __FILE__)
+    @path = File.expand_path('../../bin/dote.rb', __FILE__)
   end
   it "prints default usage text" do
     `#{@path}`.must_equal CLI_USAGE

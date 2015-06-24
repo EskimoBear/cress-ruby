@@ -37,16 +37,24 @@ command 'fmt' do |c|
     end
     files = parse_file_paths(args)
     if files[:input_file]
-      if files[:output_file].nil?
-        program = File.open(files[:input_file]).read
-        grammar = Dote::DoteGrammars.esonf
+      program = File.open(files[:input_file]).read
+      grammar = Dote::DoteGrammars.esonf
         token_sequence = Dote::TokenPass.tokenize_program(program, grammar)
                          .verify_special_forms
         tree = Dote::SyntaxPass.build_tree(token_sequence, grammar)
+      if files[:output_file].nil?
         Dote::CodeGen.make_file(tree,
                                 grammar,
                                 File.dirname(files[:input_file]),
                                 File.basename(files[:input_file]))
+      else
+        if File.extname(files[:output_file]).empty?
+          files[:output_file] = files[:output_file].dup.concat(".dt")
+        end
+        Dote::CodeGen.make_file(tree,
+                                grammar,
+                                File.dirname(files[:output_file]),
+                                File.basename(files[:output_file]))
       end
     end
   end

@@ -2,16 +2,16 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'fileutils'
 require_relative './test_helpers'
-require_relative '../bin/dote.rb'
+require_relative '../lib/cli/messages.rb'
 
 describe "cli" do
   include TestHelpers
 
   before do
-    @path = File.expand_path('../../bin/dote.rb', __FILE__)
+    @path = File.expand_path('../../bin/dote', __FILE__)
   end
   it "prints default usage text" do
-    `#{@path}`.must_equal CLI_USAGE
+    `#{@path}`.must_equal CLI::Messages::USAGE
   end
   it "prints version" do
     `#{@path} --version`.must_match /dote 0.1.0/

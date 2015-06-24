@@ -8,8 +8,9 @@ Gem::Specification.new do |s|
   s.email        = 'andrebcdickson@gmail.com'
   s.license      = 'GPLv3'
   s.files        =  Dir['dote.gemspec', 'lib/dote.rb',
-                        'lib/dote/*', 'lib/bin/dote.rb']
-  s.executables  = ['dote.rb']
+                        'lib/dote/*', 'lib/bin/*',
+                        'lib/cli/messages.rb']
+  s.executables  = ['dote']
   s.add_runtime_dependency 'oj', '~> 2.10'
   s.add_runtime_dependency 'vert', '~> 0'
   s.add_runtime_dependency 'commander', '~> 4.3'

@@ -3,12 +3,10 @@
 require 'rubygems'
 require 'commander/import'
 require_relative '../lib/dote.rb'
+require_relative '../lib/cli/messages.rb'
 
-CLI_USAGE = "Usage: dote --COMMAND [ARGS]\n"\
-            "Hint: pass a file to compile\n"
-GEMSPEC_PATH = File.expand_path('../../dote.gemspec', __FILE__)
-
-gemspec = Gem::Specification::load(GEMSPEC_PATH)
+gemspec_path = File.expand_path('../../dote.gemspec', __FILE__)
+gemspec = Gem::Specification::load(gemspec_path)
 
 program :name, gemspec.name.to_s
 program :version, gemspec.version.to_s
@@ -19,7 +17,7 @@ default_command :usage
 
 command :usage do |c|
   c.action do
-    say CLI_USAGE
+    say CLI::Messages::USAGE
   end
 end
 

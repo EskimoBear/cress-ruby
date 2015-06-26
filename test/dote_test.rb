@@ -10,7 +10,7 @@ describe Dote do
   before do
     @empty_program = get_empty_program
     @unknown_special_form_program = get_unknown_special_form_program
-    @invalid_program = get_invalid_program
+    @malformed_program = get_malformed_program
     @valid_program = get_tokenizer_sample_program
   end
 
@@ -20,9 +20,9 @@ describe Dote do
     end
   end
 
-  describe "invalid program" do
+  describe "malformed program" do
     it ".compile" do
-      proc {Dote.compile(@invalid_program)}.must_raise Dote::SyntaxError
+      proc {Dote.compile(@malformed_program)}.must_raise Dote::SyntaxError
     end
   end
 

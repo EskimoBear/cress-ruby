@@ -13,7 +13,6 @@ module Dote
   LANG = Dote::DoteGrammars.format
   EMPTY_PROGRAM = "empty_program"
   MALFORMED_PROGRAM = "Program is malformed"
-  MALFORMED_PROGRAM_RGX = /Program is malformed/
 
   def compile(eson_program, grammar=LANG)
     if validate_json?(eson_program)
@@ -32,7 +31,7 @@ module Dote
     case validate_json(eson_program, options)
     when EMPTY_PROGRAM
       return nil
-    when MALFORMED_PROGRAM_RGX
+    when Regexp.new(MALFORMED_PROGRAM)
       raise SyntaxError, validate_json(eson_program, options)
     end
   end

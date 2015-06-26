@@ -35,8 +35,8 @@ module TestHelpers
     "{}"
   end
 
-  def get_invalid_program
-    "{\"invalid\": (}"
+  def get_malformed_program
+    "{\"malformed\": (}"
   end
 
   def get_tokens(grammar=Dote::DoteGrammars.tokenizer_lang)

@@ -347,7 +347,7 @@ module Dote
     def build_cfg(grammar_name, top_rule_name=nil)
       rules = self.clone
       include_nullable_rule(rules)
-      grammar_struct = Struct.new grammar_name, *rules.names do
+      grammar_struct = Struct.new *rules.names do
         include CFGOperations
       end
       complete_partial_first_sets(rules)

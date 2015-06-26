@@ -24,9 +24,6 @@ describe Dote::DoteGrammars do
     before do
       @lang = subject.e1
     end
-    it "should be E1" do
-      @lang.must_be_kind_of Struct::E1
-    end
     it "should contain new rules" do
       @lang.terminals.must_include :word_form
       @lang.terminals.must_include :variable_identifier

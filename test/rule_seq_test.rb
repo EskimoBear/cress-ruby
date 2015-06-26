@@ -57,9 +57,6 @@ describe Dote::RuleSeq do
       @rules = rule_seq.
                make_concatenation_rule(:rule_3, [:rule_1, :rule_2])
     end
-    it "has correct properties" do
-      @rules.build_cfg("LANG").must_be_instance_of Struct::LANG
-    end
     it "has no partial first sets" do
       @rules.build_cfg("LANG").rule_3.partial_status.must_equal false
     end

@@ -1,5 +1,5 @@
 require_relative './rule'
-require_relative './typed_seq'
+require_relative '../../utils/typed_seq'
 
 module Dote
 

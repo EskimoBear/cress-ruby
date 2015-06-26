@@ -1,4 +1,4 @@
-require_relative './respondent'
+require_relative '../../utils/respondent'
 require_relative './parse_tree'
 require_relative './program_errors'
 

@@ -1,5 +1,5 @@
 require 'forwardable'
-require_relative './typed_seq'
+require_relative '../../utils/typed_seq'
 require_relative './attribute_actions'
 
 module Parser

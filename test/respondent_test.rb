@@ -1,6 +1,6 @@
 require 'minitest/autorun'
 require 'minitest/pride'
-require_relative '../lib/eson/respondent'
+require_relative '../utils/respondent'
 
 describe Respondent do
 

@@ -1,7 +1,7 @@
 require_relative 'dote_grammars'
 require_relative 'tokenizer'
 require_relative 'error_pass'
-require_relative 'typed_seq'
+require_relative '../../utils/typed_seq'
 
 module Dote::TokenPass
 

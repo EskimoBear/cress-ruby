@@ -15,3 +15,8 @@ task :test do
   ruby "test/syntax_pass_test.rb"
   ruby "test/cli_test.rb"
 end
+
+task :test_utils do
+  ruby "test/respondent_test.rb"
+  ruby "test/typed_seq_test.rb"
+end

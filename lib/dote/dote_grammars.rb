@@ -1,5 +1,4 @@
 require_relative 'rule_seq.rb'
-require_relative 'typed_seq.rb'
 require_relative 'variable_store'
 require_relative 'ast'
 

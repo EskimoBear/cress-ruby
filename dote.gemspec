@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'oj', '~> 2.10'
   s.add_runtime_dependency 'vert', '~> 0'
   s.add_runtime_dependency 'commander', '~> 4.3'
-  s.add_development_dependency 'minitest', '~> 0'
+  s.add_development_dependency 'minitest'
   s.add_development_dependency 'pry', '~> 0'
   s.add_development_dependency 'rake', '~> 0'
 end

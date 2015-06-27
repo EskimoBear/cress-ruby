@@ -10,7 +10,7 @@ module Dote
 
   SyntaxError = Class.new(StandardError)
 
-  LANG = Dote::DoteGrammars.format
+  LANG = Dote::DoteGrammars.compile_grammar
   EMPTY_PROGRAM = "empty_program"
   MALFORMED_PROGRAM = "Program is malformed"
 

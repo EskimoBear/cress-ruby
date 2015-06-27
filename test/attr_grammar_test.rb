@@ -13,7 +13,7 @@ describe "Dote::RuleSeq" do
       def custom_action
       end
     end
-    @cfg = Dote::DoteGrammars.e1
+    @cfg = Dote::DoteGrammars.tokenizer_cfg
     @actions = [Custom]
     @attr_maps = [{
                     :attr => :value,

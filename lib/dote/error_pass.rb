@@ -5,7 +5,7 @@ module Dote
 
     include ProgramErrors
 
-    LANG = Dote::DoteGrammars.tokenizer_lang
+    LANG = Dote::DoteGrammars.compile_grammar
     
     #@return [TokenSeq] self when Token is not found
     #@raise [UnknownSpecialForm] unknown_special_forms Token found

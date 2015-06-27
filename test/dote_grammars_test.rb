@@ -9,7 +9,7 @@ describe Dote::DoteGrammars do
 
   describe "validate_keys" do
     before do
-      @lang = subject.keys
+      @lang = subject.keys_cfg
     end
     it "should contain built rules" do
       @lang.nonterminals.must_include :proc_identifier
@@ -20,9 +20,9 @@ describe Dote::DoteGrammars do
     end
   end
   
-  describe "validate_e1" do
+  describe "validate_tokenizer_cfg" do
     before do
-      @lang = subject.e1
+      @lang = subject.tokenizer_cfg
     end
     it "should contain new rules" do
       @lang.terminals.must_include :word_form
@@ -48,7 +48,7 @@ describe Dote::DoteGrammars do
 
   describe "validate_format" do
     before do
-      @lang = subject.format
+      @lang = subject.display_fmt
     end
     it "rules have s_attr line_no" do
       @lang.values.all?{|i| i.s_attr.include? :line_no}
@@ -80,7 +80,7 @@ end
 
 describe Dote::Rule do
   before do
-    @lang = Dote::DoteGrammars.format
+    @lang = Dote::DoteGrammars.display_fmt
   end
   describe "#to_s" do
     it "is a terminal rule" do

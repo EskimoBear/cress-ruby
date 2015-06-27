@@ -3,6 +3,7 @@ require_relative '../lib/dote'
 
 module TestHelpers
 
+  DEFAULT_GRAMMAR = Dote::DoteGrammars.compile_grammar
   extend self
 
   def get_sample_rules
@@ -39,7 +40,7 @@ module TestHelpers
     "{\"malformed\": (}"
   end
 
-  def get_tokens(grammar=Dote::DoteGrammars.tokenizer_lang)
+  def get_tokens(grammar=DEFAULT_GRAMMAR)
     Dote::TokenPass.tokenize_program(
       get_tokenizer_sample_program,
       grammar)
@@ -47,7 +48,7 @@ module TestHelpers
   end
 
   def get_token_sequence(program=get_tokenizer_sample_program,
-                         grammar=Dote::DoteGrammars.tokenizer_lang)
+                         grammar=DEFAULT_GRAMMAR)
     Dote::TokenPass
       .tokenize_program(
         program,
@@ -56,22 +57,22 @@ module TestHelpers
   end
 
   def get_parse_tree(token_sequence=get_token_sequence,
-              grammar=Dote::DoteGrammars.tokenizer_lang)
+              grammar=DEFAULT_GRAMMAR)
     Dote::SyntaxPass.build_tree(token_sequence, grammar)
   end
 
   def get_ast(tree=get_parse_tree,
-              grammar=Dote::DoteGrammars.tokenizer_lang)
+              grammar=DEFAULT_GRAMMAR)
     Dote::SyntaxPass.build_ast(tree, grammar)
   end
 
   def get_semantic_eval(tree=get_parse_tree,
-                        grammar=Dote::DoteGrammars.tokenizer_lang)
+                        grammar=DEFAULT_GRAMMAR)
     Dote.semantic_pass(tree, grammar)
   end
 
   def get_code(tree=get_parse_tree,
-               grammar=Dote::DoteGrammars.tokenizer_lang,
+               grammar=DEFAULT_GRAMMAR,
                path=get_code_gen_dir,
                file_name="code.dt")
     Dote::CodeGen.make_file(tree, grammar, path, file_name)

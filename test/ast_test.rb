@@ -3,7 +3,7 @@ require 'minitest/pride'
 require_relative './test_helpers'
 require_relative '../lib/dote/dote_grammars.rb'
 
-describe AST do
+describe Dote::DoteGrammars::AST do
 
   subject {Dote::DoteGrammars.ast}
 

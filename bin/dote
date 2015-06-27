@@ -36,7 +36,7 @@ command 'fmt' do |c|
     files = parse_file_paths(args)
     if files[:input_file]
       program = File.open(files[:input_file]).read
-      grammar = Dote::DoteGrammars.esonf
+      grammar = Dote::DoteGrammars.dote_fmt
         token_sequence = Dote::TokenPass.tokenize_program(program, grammar)
                          .verify_special_forms
         tree = Dote::SyntaxPass.build_tree(token_sequence, grammar)

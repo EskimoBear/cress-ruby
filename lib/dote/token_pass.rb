@@ -10,7 +10,7 @@ module Dote::TokenPass
   Token = Dote::LexemeCapture::Token
   TokenSeq = TypedSeq.new_seq(Token)
   
-  LANG = Dote::DoteGrammars.format
+  LANG = Dote::DoteGrammars.compile_grammar
 
   class TokenSeq
 

@@ -3,7 +3,7 @@ require 'minitest/pride'
 require_relative './test_helpers'
 require_relative '../lib/dote/dote_grammars'
 
-describe VariableStore do
+describe Dote::DoteGrammars::VariableStore do
 
   include TestHelpers
   subject {Dote::DoteGrammars.var_store}

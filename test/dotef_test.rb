@@ -3,11 +3,11 @@ require 'minitest/pride'
 require 'pp'
 require_relative './test_helpers.rb'
 
-describe "Dote::DoteGrammars::esonf" do
+describe "Dote::DoteGrammars::dote_fmt" do
 
   include TestHelpers
   
-  subject {Dote::DoteGrammars.esonf}
+  subject {Dote::DoteGrammars.dote_fmt}
 
   before do
     @program = get_tokenizer_sample_program
@@ -15,7 +15,7 @@ describe "Dote::DoteGrammars::esonf" do
     @tree = get_parse_tree(@ts, subject)
   end
 
-  describe "validate_esonf" do
+  describe "validate_dote_fmt" do
     it "rules have s_attr line_feed" do
       subject.values.all?{|i| i.s_attr.include? :line_feed}
         .must_equal true

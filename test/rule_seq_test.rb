@@ -58,13 +58,14 @@ describe Dote::RuleSeq do
                make_concatenation_rule(:rule_3, [:rule_1, :rule_2])
     end
     it "has no partial first sets" do
-      @rules.build_cfg("LANG").rule_3.partial_status.must_equal false
+      @rules.build_cfg.get_rule(:rule_3)
+        .partial_status.must_equal false
     end
   end
 
   describe "to_s" do
     it "success" do
-      rule_seq.build_cfg("LANG").to_s.must_match /has the following/
+      rule_seq.build_cfg.to_s.must_match /has the following/
     end
   end
 
@@ -173,14 +174,14 @@ describe Dote::RuleSeq do
         @rule = @rules.get_rule(:rule)
       end
       it "has correct first set" do
-        lang = @rules.build_cfg("LANG")
-        rule = lang.rule
+        lang = @rules.build_cfg
+        rule = lang.get_rule :rule
         rule.first_set.must_include :rule_1
         rule.first_set.must_include :rule_2
       end
       it "no duplicates in first set" do
-        lang = @rules.build_cfg("LANG")
-        lang.rule.first_set.uniq!.must_be_nil
+        lang = @rules.build_cfg
+        lang.get_rule(:rule).first_set.uniq!.must_be_nil
       end
     end
     describe "with only nullable terms" do
@@ -194,8 +195,8 @@ describe Dote::RuleSeq do
         @rule.nullable?.must_equal true
       end
       it "has correct first set" do
-        lang = @rules.build_cfg("LANG")
-        rule = lang.rule
+        lang = @rules.build_cfg
+        rule = lang.get_rule :rule
         rule.first_set.must_include :rule_1
         rule.first_set.must_include :rule_2
         rule.first_set.must_include :nullable
@@ -205,21 +206,21 @@ describe Dote::RuleSeq do
       before do
         @rules = rule_seq.make_option_rule(:o_rule_1, :rule_1)
                  .make_concatenation_rule(:rule, [:rule_2, :o_rule_1])
-        @lang = @rules.build_cfg("LANG", :rule)
+        @lang = @rules.build_cfg(:rule)
       end
       it ":top_rule correct" do
         @lang.top_rule.follow_set.must_include :eof
         @lang.top_rule.follow_set.length.must_equal 1
       end
       it ":o_rule_1 correct" do
-        @lang.o_rule_1.follow_set.must_include :eof
+        @lang.get_rule(:o_rule_1).follow_set.must_include :eof
       end
       it ":rule_1 correct" do
-        @lang.rule_1.follow_set.must_include :eof
+        @lang.get_rule(:rule_1).follow_set.must_include :eof
       end
       it ":rule_2 correct" do
-        @lang.rule_2.follow_set.must_include :rule_1
-        @lang.rule_2.follow_set.wont_include :nullable
+        @lang.get_rule(:rule_2).follow_set.must_include :rule_1
+        @lang.get_rule(:rule_2).follow_set.wont_include :nullable
       end
     end
     describe "with illegal left recursion" do

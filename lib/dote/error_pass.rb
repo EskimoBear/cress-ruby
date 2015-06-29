@@ -11,7 +11,7 @@ module Dote
     #@raise [UnknownSpecialForm] unknown_special_forms Token found
     def verify_special_forms
       error_token = self.find do |i|
-        i.name == LANG.unreserved_procedure_identifier.name
+        i.name == LANG.get_rule(:unreserved_procedure_identifier).name
       end
       unless error_token.nil?
         raise UnknownSpecialForm,

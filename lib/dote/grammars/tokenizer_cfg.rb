@@ -38,7 +38,7 @@ module Dote::DoteGrammars
         :proc_identifier,
         [:unreserved_procedure_identifier,
          :special_form_identifier])
-      .build_cfg("R0")
+      .build_cfg
   end
 
   def make_reserved_keys_rules(keywords)
@@ -269,6 +269,6 @@ module Dote::DoteGrammars
       .make_concatenation_rule(
         :program,
         [:program_start, :declaration_set, :program_end])
-      .build_cfg("E1", :program)
+      .build_cfg(:program)
   end
 end

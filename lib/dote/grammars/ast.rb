@@ -6,12 +6,11 @@ module Dote::DoteGrammars
       .make_ag_production_rule(:apply)
       .make_ag_terminal_rule(:literal_string, [:value])
       .make_ag_production_rule(:interpolated_string)
-      .build_cfg("Ast_cfg", :program)
+      .build_cfg(:program)
   end
 
   def ast
     RuleSeq.assign_attribute_grammar(
-      "AST",
       ast_cfg,
       [AST, DisplayFormat],
       [])

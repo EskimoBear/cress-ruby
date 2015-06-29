@@ -2,7 +2,6 @@ module Dote::DoteGrammars
 
   def var_store
     RuleSeq.assign_attribute_grammar(
-      "VariableStore",
       ast,
       [VariableStore],
       [])

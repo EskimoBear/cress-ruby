@@ -363,8 +363,8 @@ describe Dote::Rule do
       before do
         @rules = rule_seq
                  .make_repetition_rule(:terminal_rule, :rule_1)
-        @lang = @rules.build_cfg("LANG")
-        @rule = @lang.terminal_rule
+        @lang = @rules.build_cfg
+        @rule = @lang.get_rule(:terminal_rule)
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_1)]
         @valid_token_seq = token_seq.new(@sequence)
         @follow_sequence = [token.new(:lexeme, :rule_3), token.new(:lexeme, :rule_1)]
@@ -429,8 +429,8 @@ describe Dote::Rule do
                    .make_concatenation_rule(:c_rule, [:rule_1, :rule_2])
                    .make_repetition_rule(:nonterminal_rule, :c_rule)
                    .make_concatenation_rule(:top, [:nonterminal_rule, :rule_3])
-          @lang = @rules.build_cfg("LANG", :top)
-          @rule = @lang.nonterminal_rule
+          @lang = @rules.build_cfg(:top)
+          @rule = @lang.get_rule(:nonterminal_rule)
           @sequence  = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
           @valid_once_seq = token_seq.new(@sequence).concat(@invalid_sequence)
           @valid_many_seq = token_seq.new(@sequence)
@@ -564,8 +564,8 @@ describe Dote::Rule do
         @rules = rule_seq
                  .make_option_rule(:terminal_rule, :rule_1)
                  .make_terminal_rule(:nullable, /""/)
-        @lang = @rules.build_cfg("LANG")
-        @rule = @lang.terminal_rule
+        @lang = @rules.build_cfg
+        @rule = @lang.get_rule(:terminal_rule)
         @sequence = [token.new(:lexeme, :rule_1), token.new(:lexeme, :rule_2)]
         @valid_token_seq = token_seq.new(@sequence)
         @nulled_sequence = [token.new(:lexeme, :rule_3), token.new(:lexeme, :rule_1)]
@@ -610,8 +610,8 @@ describe Dote::Rule do
                    .make_concatenation_rule(:top,
                                             [:nonterminal_rule,
                                              :rule_3])
-          @lang = @rules.build_cfg("LANG", :top)
-          @rule = @lang.nonterminal_rule
+          @lang = @rules.build_cfg(:top)
+          @rule = @lang.get_rule(:nonterminal_rule)
         end
         describe "with_valid_tokens" do
           before do

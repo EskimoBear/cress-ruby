@@ -2,7 +2,6 @@ module Dote::DoteGrammars
 
   def dote_fmt
     RuleSeq.assign_attribute_grammar(
-      "DotefGen",
       display_fmt,
       [DoteFormat],
       [{
@@ -31,7 +30,6 @@ module Dote::DoteGrammars
     end
 
     def eval_tree_attributes(tree)
-      super
       build_tree_to_s(tree)
       tree
     end

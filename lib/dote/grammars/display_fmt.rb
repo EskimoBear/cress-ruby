@@ -4,7 +4,6 @@ module Dote::DoteGrammars
   #for display on stdout
   def display_fmt
     RuleSeq.assign_attribute_grammar(
-      "Display_Fmt",
       tokenizer_cfg,
       [DisplayFormat],
       [{

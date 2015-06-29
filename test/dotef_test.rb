@@ -17,15 +17,15 @@ describe "Dote::DoteGrammars::dote_fmt" do
 
   describe "validate_dote_fmt" do
     it "rules have s_attr line_feed" do
-      subject.values.all?{|i| i.s_attr.include? :line_feed}
+      subject.all?{|i| i.s_attr.include? :line_feed}
         .must_equal true
     end
     it "rules have :line_start" do
-      subject.values.all?{|i| i.s_attr.include? :line_start}
+      subject.all?{|i| i.s_attr.include? :line_start}
         .must_equal true
     end
     it "rules have s_attr to_s" do
-      subject.values.all?{|i| i.s_attr.include? :to_s}
+      subject.all?{|i| i.s_attr.include? :to_s}
         .must_equal true
     end
   end

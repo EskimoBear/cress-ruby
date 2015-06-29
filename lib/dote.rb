@@ -14,10 +14,10 @@ module Dote
   EMPTY_PROGRAM = "empty_program"
   MALFORMED_PROGRAM = "Program is malformed"
 
-  #@param program [String] string representation of the program
-  #@param grammar [Struct] grammar to process program
-  #@return [nil, Parser::ParseTree] parse tree for the program
-  #@raise SyntaxError, when program is malformed JSON
+  # @param program [String] string representation of the program
+  # @param grammar [Struct] grammar to process program
+  # @return [nil, Parser::ParseTree] parse tree for the program
+  # @raise SyntaxError, when program is malformed JSON
   def compile(program, grammar=LANG)
     if validate_json?(program)
       token_sequence = TokenPass.tokenize_program(program, grammar)

@@ -11,7 +11,7 @@ module Parser
   FirstSetNotDisjoint = Class.new(StandardError)
 
   uses :name, :term_names, :terminal?, :follow_set
-  
+
   #Return a legal instance of a rule
   #@param tokens [Dote::TokenPass::TokenSeq] a token sequence
   #@param grammar [Struct] context free grammar or attribute grammar
@@ -54,8 +54,19 @@ module Parser
       build_parse_result([lookahead], tokens.drop(1), tree)
     else
       raise InvalidSequenceParsed,
-            parse_terminal_error_message(self.name, lookahead, tokens)
+            parse_terminal_error_message(self.name,
+                                         lookahead,
+                                         tokens)
     end
+  end
+
+  def parse_terminal_error_message(expected_token_name,
+                                   actual_token,
+                                   token_seq)
+    "Error while parsing :#{@name}." \
+    " Expected a symbol of type :#{expected_token_name} but got a" \
+    " :#{actual_token.name} instead."
+      .concat(print_error_line(actual_token, token_seq))
   end
 
   def build_parse_result(parsed_seq, rest, tree)
@@ -135,6 +146,13 @@ module Parser
     end
   end
 
+  def first_set_error_message(token, token_seq)
+    "Error while parsing :#{@name}." \
+    " None of the first_sets of :#{@name} contain" \
+    " the term :#{token.name}."
+      .concat(print_error_line(token, token_seq))
+  end
+
   #Return a legal instance of a concatenation rule
   #@param (see #parse)
   #@return (see #parse)
@@ -181,6 +199,15 @@ module Parser
       acc[:parsed_seq].concat(parse_result[:parsed_seq])
       acc[:rest] = parse_result[:rest]
     end
+  end
+
+  def exhausted_tokens_error_message(expected_token_name,
+                                     token_seq)
+    "The program is incomplete." \
+    " Expected a symbol of type :#{expected_token_name}" \
+    " while parsing :#{@name} but there are no more tokens" \
+    " to parse."
+      .concat(print_error_line(token_seq.last, token_seq))
   end
 
   #Return a legal instance of an option rule

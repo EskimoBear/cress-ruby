@@ -1,7 +1,7 @@
 module Dote::DoteGrammars
 
-  #@return [Struct] attribute grammar that formats Dote programs
-  #for display on stdout
+  # @return [Struct] attribute grammar that formats Dote programs
+  # for display on stdout
   def display_fmt
     RuleSeq.assign_attribute_grammar(
       tokenizer_cfg,
@@ -85,57 +85,6 @@ module Dote::DoteGrammars
           token.store_attribute(:line_start, true)
         end
       end
-    end
-
-    def get_program_snippet(line_no, token_seq)
-      display_program(
-        TokenSeq.new(
-        token_seq.select{|i| i.get_attribute(:line_no) == line_no}))
-    end
-
-    def display_program(token_seq)
-      if token_seq.none?{|i| i.get_attribute(:line_no).nil?}
-        program_lines =
-          token_seq.slice_when do |t0, t1|
-          t0.get_attribute(:line_no) != t1.get_attribute(:line_no)
-        end
-          .map do |ts|
-          [ ts.first.get_attribute(:line_no),
-            ts.first.get_attribute(:indent),
-            ts.each_with_object("") do |j, acc|
-              acc.concat(j.lexeme.to_s)
-              unit = j.get_attribute(:spaces_after)
-              space = unit.nil? ? "" : get_spaces(unit)
-              acc.concat(space)
-            end
-          ]
-        end
-        max_line = program_lines.length
-        program_lines.map do |i|
-          "#{get_line(i[0], max_line)}#{get_indentation(i[1])}#{i[2]}\n"
-        end
-          .reduce(:concat)
-          .prepend("\n")
-      end
-    end
-
-    def get_line(line_no, max_line_no)
-      padding = max_line_no.to_s.size - line_no.to_s.size
-      "#{get_spaces(padding)}#{line_no}:"
-    end
-
-    def get_spaces(units)
-      repeat_string(units, " ")
-    end
-
-    def get_indentation(units)
-      repeat_string(units, "  ")
-    end
-
-    def repeat_string(reps, string)
-      acc = String.new
-      reps.times{acc.concat(string)}
-      acc
     end
   end
 end

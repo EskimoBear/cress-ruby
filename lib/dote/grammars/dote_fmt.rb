@@ -61,14 +61,14 @@ module Dote::DoteGrammars
       spaces_after = token.get_attribute(:spaces_after)
       line_feed = token.get_attribute(:line_feed)
       line_start = token.get_attribute(:line_start)
-      string = "#{get_indentation(indent, line_start)}" \
+      string = "#{indentation(indent, line_start)}" \
                "#{lexeme}" \
                "#{spaces_after.nil? ? "" : " "}" \
                "#{line_feed.eql?(true) ? "\n" : ""}"
       token.store_attribute(:to_s, string)
     end
 
-    def get_indentation(indent, line_start)
+    def indentation(indent, line_start)
       if line_start
         acc = String.new
         indent.times{acc.concat("  ")}

@@ -1,45 +1,73 @@
 module ProgramErrors
 
+  # Program could not be parsed
   InvalidSequenceParsed = Class.new(StandardError)
+
+  # A special_form unknown to compiler called in program
   UnknownSpecialForm = Class.new(StandardError)
 
-  def exhausted_tokens_error_message(expected_token_name,
-                                     token_seq)
-    "The program is incomplete." \
-    " Expected a symbol of type :#{expected_token_name}" \
-    " while parsing :#{@name} but there are no more tokens" \
-    " to parse."
-      .concat(print_error_line(token_seq.last, token_seq))
-  end
-
+  # Print errors only when required attributes are present in the tokens.
+  # These attributes are made available by the attribute grammar
+  # {Dote::DoteGrammars.display_fmt}
+  # @param invalid_token [Token] the error token
+  # @param token_seq [TokenSeq] the tokens in the program
+  # @return [String] formatted output of program line contained in token_seq
   def print_error_line(invalid_token, token_seq)
     if invalid_token.valid_attribute?(:line_no) &&
        invalid_token.valid_attribute?(:indent)
       line_no = invalid_token.get_attribute(:line_no)
-      token_seq.get_program_snippet(line_no)
+      get_program_snippet(line_no, token_seq)
     else
       String.new
     end
   end
 
-  def parse_terminal_error_message(expected_token_name,
-                                   actual_token,
-                                   token_seq)
-    "Error while parsing :#{@name}." \
-    " Expected a symbol of type :#{expected_token_name} but got a" \
-    " :#{actual_token.name} instead."
-      .concat(print_error_line(actual_token, token_seq))
+  def get_program_snippet(line_no, token_seq)
+    display_program(token_seq.select{|i| i.get_attribute(:line_no) == line_no})
   end
 
-  def first_set_error_message(token, token_seq)
-    "Error while parsing :#{@name}." \
-    " None of the first_sets of :#{@name} contain" \
-    " the term :#{token.name}."
-      .concat(print_error_line(token, token_seq))
+  def display_program(token_seq)
+    if token_seq.none?{|i| i.get_attribute(:line_no).nil?}
+      program_lines =
+        token_seq.slice_when do |t0, t1|
+        t0.get_attribute(:line_no) != t1.get_attribute(:line_no)
+      end
+        .map do |ts|
+        [ ts.first.get_attribute(:line_no),
+          ts.first.get_attribute(:indent),
+          ts.each_with_object("") do |j, acc|
+            acc.concat(j.lexeme.to_s)
+            unit = j.get_attribute(:spaces_after)
+            space = unit.nil? ? "" : get_spaces(unit)
+            acc.concat(space)
+          end
+        ]
+      end
+      max_line = program_lines.length
+      program_lines.map do |i|
+        "#{get_line(i[0], max_line)}#{get_indentation(i[1])}#{i[2]}\n"
+      end
+        .reduce(:concat)
+        .prepend("\n")
+    end
   end
 
-  def unknown_special_form_error_message(token, token_seq)
-    "'#{token.lexeme}' is not a known special_form." \
-      .concat(print_error_line(token, token_seq))
+  def get_line(line_no, max_line_no)
+    padding = max_line_no.to_s.size - line_no.to_s.size
+    "#{get_spaces(padding)}#{line_no}:"
+  end
+
+  def get_spaces(units)
+    repeat_string(units, " ")
+  end
+
+  def get_indentation(units)
+    repeat_string(units, "  ")
+  end
+
+  def repeat_string(reps, string)
+    acc = String.new
+    reps.times{acc.concat(string)}
+    acc
   end
 end

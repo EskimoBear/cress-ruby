@@ -12,7 +12,6 @@ task :test do
   ruby "test/rule_seq_test.rb"
   ruby "test/rule_test.rb"
   ruby "test/token_seq_test.rb"
-  ruby "test/syntax_pass_test.rb"
   ruby "test/cli_test.rb"
 end
 

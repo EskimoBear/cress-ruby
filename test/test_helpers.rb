@@ -19,7 +19,7 @@ module TestHelpers
   def get_sample_production
     get_sample_rules.get_rule(:nonterminal)
   end
-  
+
   def get_valid_eson
     load_test_inputs('valid')
   end
@@ -58,12 +58,12 @@ module TestHelpers
 
   def get_parse_tree(token_sequence=get_token_sequence,
               grammar=DEFAULT_GRAMMAR)
-    Dote::SyntaxPass.build_tree(token_sequence, grammar)
+    Dote.build_tree(token_sequence, grammar)
   end
 
   def get_ast(tree=get_parse_tree,
               grammar=DEFAULT_GRAMMAR)
-    Dote::SyntaxPass.build_ast(tree, grammar)
+    Dote.build_ast(tree, grammar)
   end
 
   def get_semantic_eval(tree=get_parse_tree,
@@ -86,7 +86,7 @@ module TestHelpers
     end
     path
   end
-  
+
   private
 
   def get_test_input_path(name)

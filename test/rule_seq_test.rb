@@ -9,7 +9,7 @@ describe Dote::RuleSeq do
   let(:rule) {Dote::Rule}
   let(:rule_seq) {subject.new([rule.new(:rule_1, /RU/),
                                rule.new(:rule_2, /LE/)])}
-  
+
   describe ".new" do
     it "item is a Rule" do
       proc {subject.new([rule.new(nil, nil)])}.must_be_silent
@@ -56,10 +56,13 @@ describe Dote::RuleSeq do
     before do
       @rules = rule_seq.
                make_concatenation_rule(:rule_3, [:rule_1, :rule_2])
+      @cfg = @rules.build_cfg
     end
     it "has no partial first sets" do
-      @rules.build_cfg.get_rule(:rule_3)
-        .partial_status.must_equal false
+      @cfg.get_rule(:rule_3).partial_status.must_equal false
+    end
+    it "is a RuleSeq" do
+      @cfg.must_be_instance_of subject
     end
   end
 
@@ -98,7 +101,7 @@ describe Dote::RuleSeq do
       @rule.ebnf.must_be_nil true
     end
   end
-  
+
   describe "#make_alternation_rule" do
     it "has correct properties" do
       @rules = rule_seq.make_alternation_rule(:new_rule, [:rule_1, :rule_2])
@@ -230,7 +233,7 @@ describe Dote::RuleSeq do
   describe "#make_repetition_rule" do
     it "has correct properties" do
       @rules = rule_seq.make_repetition_rule(:new_rule, :rule_1)
-      @new_rule = @rules.get_rule(:new_rule)     
+      @new_rule = @rules.get_rule(:new_rule)
       @rules.must_be_instance_of subject
       @new_rule.ebnf.must_be_instance_of Dote::EBNF::RepetitionRule
       @new_rule.must_be_instance_of rule

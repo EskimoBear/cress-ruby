@@ -3,7 +3,7 @@ require 'pry'
 require_relative 'token_pass'
 
 module Dote::TokenPass
-  
+
   module Tokenizer
 
     InvalidLexeme = Class.new(StandardError)
@@ -14,25 +14,25 @@ module Dote::TokenPass
     # @!attribute name
     #   @return [Symbol] name of the JSON symbol
     JsonSymbol = Struct.new :lexeme, :name
-    
-    #Convert an eson program into a sequence of eson tokens
-    #@param eson_program [String] string provided to Dote#read
-    #@return [TokenSeq] A token sequence
-    #@raise [TokenizationIncomplete] token sequence does not contain
-    #  all the characters in the program
-    #@eskimobear.specification
-    # Dote token set, ET is a set of the eson terminals
-    # Dote token, et is a sequence of characters existing in ET
-    # label(et) maps the character sequence to the name of the matching
-    #   eson terminal symbol
-    # Input program, p, a valid JSON string 
-    # Input sequence, P, a sequence of characters in p
-    # Token sequence, T
+
+    # Convert an eson program into a sequence of eson tokens
+    # @param eson_program [String] string provided to Dote#read
+    # @return [TokenSeq] A token sequence
+    # @raise [TokenizationIncomplete] token sequence does not contain
+    #   all the characters in the program
+    # @eskimobear.specification
+    #  Dote token set, ET is a set of the eson terminals
+    #  Dote token, et is a sequence of characters existing in ET
+    #  label(et) maps the character sequence to the name of the matching
+    #    eson terminal symbol
+    #  Input program, p, a valid JSON string
+    #  Input sequence, P, a sequence of characters in p
+    #  Token sequence, T
     #
-    # Init : length(P) > 0
-    #        length(T) = 0
-    # Next : et = P - 'P
-    #        T' = T + label(et)
+    #  Init : length(P) > 0
+    #         length(T) = 0
+    #  Next : et = P - 'P
+    #         T' = T + label(et)
     def tokenize_program(eson_program, grammar)
       eson_program.freeze
       program_json_hash = Oj.load(eson_program)
@@ -114,7 +114,7 @@ module Dote::TokenPass
           end
         end
       end
-      seq.push(JsonSymbol.new(:"]", :array_end))                     
+      seq.push(JsonSymbol.new(:"]", :array_end))
     end
 
     def json_symbols_to_tokens(json_symbol_seq, char_seq, grammar)

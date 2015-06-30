@@ -3,7 +3,7 @@ task default: %w[test]
 task :test do
   ruby "test/ast_test.rb"
   ruby "test/variable_store_test.rb"
-  ruby "test/dotef_test.rb"
+  ruby "test/dote_fmt_test.rb"
   ruby "test/parse_tree_test.rb"
   ruby "test/attr_grammar_test.rb"
   ruby "test/dote_grammars_test.rb"

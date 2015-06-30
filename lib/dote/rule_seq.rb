@@ -303,15 +303,15 @@ module Dote
       self.push rule
     end
 
-    #Modifies a context free grammar with the properties of
-    #an attribute grammar described by attr_map and actions.
-    #@param cfg [Dote::RuleSeq] a context free grammar containing terms
-    #                    referenced in @attr_maps
-    #@param actions [Array<Module>] list of modules to include in grammar
-    #@param attr_maps [Array<Hash>] array of attr_map describing an
-    #                               attribute grammar
-    #return [Struct] cfg with attribute grammar translation rules
-    #                included
+    # Modifies a context free grammar with the properties of
+    # an attribute grammar described by attr_map and actions.
+    # @param cfg [Dote::RuleSeq] a context free grammar containing terms
+    #   referenced in @attr_maps
+    # @param actions [Array<Module>] list of modules to include in grammar
+    # @param attr_maps [Array<Hash>] array of attr_map describing an
+    #   attribute grammar
+    # @return [Struct] cfg with attribute grammar translation rules
+    #   included
     def self.assign_attribute_grammar(cfg, actions, attr_maps)
       actions.each{|i| cfg.extend(i)}
       attr_maps.each do |i|
@@ -337,14 +337,13 @@ module Dote
       end
     end
 
-    # Output a context free grammar for the rules
-    # in the RuleSeq
-    # @param top_rule_name [Symbol] name of the top rule of the
-    #   cfg.
+    # Outputs a context free grammar for the rules in the RuleSeq.
+    # The first_set and follow_set of the Rules of the grammar are completed.
+    # @param top_rule_name [Symbol] name of the top rule of the cfg.
     # @return [Dote::RuleSeq] a sequence of Rules representing
     # a context free grammar
     def build_cfg(top_rule_name=nil)
-      rules = RuleSeq.new.replace(self)#self.dup
+      rules = RuleSeq.new.replace(self)
       include_nullable_rule(rules)
       complete_partial_first_sets(rules)
       compute_follow_sets(rules, top_rule_name)
@@ -372,20 +371,20 @@ module Dote
       rules
     end
 
-    #Compute and set the first_set for a rule. The first_set is the
-    #set of terminal names that can legally  appear at the start of
-    #the sequences of symbols derivable from a rule. The first_set
-    #of a terminal rule is the rule name.
-    #@param rule [Dote::Rule] Given rule
-    #@eskimobear.specification
+    # Compute and set the first_set for a rule. The first_set is the
+    # set of terminal names that can legally  appear at the start of
+    # the sequences of symbols derivable from a rule. The first_set
+    # of a terminal rule is the rule name.
+    # @param rule [Dote::Rule] Given rule
+    # @eskimobear.specification
     #
-    #Prop : The first set of a concatenation is the first set of the
-    #       first terms of the rule which are nullable. If all the terms
-    #       are nullable then the first set should include :nullable.
-    #     : The first set of an alternation is the first set of all of it's
-    #       terms combined.
-    #     : The first set of an option or repetition is the first set of
-    #       it's single term with :nullable included.
+    # Prop : The first set of a concatenation is the first set of the
+    #        first terms of the rule which are nullable. If all the terms
+    #        are nullable then the first set should include :nullable.
+    #      : The first set of an alternation is the first set of all of it's
+    #        terms combined.
+    #      : The first set of an option or repetition is the first set of
+    #        it's single term with :nullable included.
     def build_first_set(rule)
       terms = rule.term_names
       set = if rule.concatenation_rule?

@@ -8,6 +8,7 @@ task :test do
   ruby "test/attr_grammar_test.rb"
   ruby "test/dote_grammars_test.rb"
   ruby "test/dote_test.rb"
+  ruby "test/program_errors_test.rb"
   ruby "test/tokenizer_test.rb"
   ruby "test/rule_seq_test.rb"
   ruby "test/rule_test.rb"

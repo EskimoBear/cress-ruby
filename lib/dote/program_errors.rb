@@ -14,7 +14,7 @@ module ProgramErrors
   # @return [String] formatted output of program line contained in token_seq
   def print_error_line(invalid_token, token_seq)
     if invalid_token.valid_attribute?(:line_no) &&
-       invalid_token.valid_attribute?(:indent)
+       token_seq.none?{|i| i.get_attribute(:line_no).nil?}
       line_no = invalid_token.get_attribute(:line_no)
       get_program_snippet(line_no, token_seq)
     else
@@ -22,37 +22,41 @@ module ProgramErrors
     end
   end
 
+  private
+
   def get_program_snippet(line_no, token_seq)
-    display_program(token_seq.select{|i| i.get_attribute(:line_no) == line_no})
+    token_snippet = token_seq.select{|i| i.get_attribute(:line_no) == line_no}
+    get_formatted_program_lines(split_token_seq_by_lines(token_snippet))
+      .reduce(:concat).prepend("\n")
   end
 
-  def display_program(token_seq)
-    if token_seq.none?{|i| i.get_attribute(:line_no).nil?}
-      program_lines =
-        token_seq.slice_when do |t0, t1|
-        t0.get_attribute(:line_no) != t1.get_attribute(:line_no)
-      end
-        .map do |ts|
-        [ ts.first.get_attribute(:line_no),
-          ts.first.get_attribute(:indent),
-          ts.each_with_object("") do |j, acc|
-            acc.concat(j.lexeme.to_s)
-            unit = j.get_attribute(:spaces_after)
-            space = unit.nil? ? "" : get_spaces(unit)
-            acc.concat(space)
-          end
-        ]
-      end
-      max_line = program_lines.length
-      program_lines.map do |i|
-        "#{get_line(i[0], max_line)}#{get_indentation(i[1])}#{i[2]}\n"
-      end
-        .reduce(:concat)
-        .prepend("\n")
+  def split_token_seq_by_lines(token_seq)
+    token_seq.slice_when do |t0, t1|
+      t0.get_attribute(:line_no) != t1.get_attribute(:line_no)
     end
   end
 
-  def get_line(line_no, max_line_no)
+  def get_formatted_program_lines(line_token_seqs)
+    line_tuples = line_token_seqs.map do |ts|
+      [ts.first, get_program_line(ts)]
+    end
+    max_line = line_tuples.last.first.get_attribute(:line_no)
+    line_tuples.map do |i|
+      "#{get_line_number_column(i.first.get_attribute(:line_no), max_line)}" \
+      "#{get_indentation(i.first.get_attribute(:indent))}#{i.last}\n"
+    end
+  end
+
+  def get_program_line(token_seq)
+    token_seq.each_with_object("") do |j, acc|
+      acc.concat(j.lexeme.to_s)
+      unit = j.get_attribute(:spaces_after)
+      space = unit.nil? ? "" : get_spaces(unit)
+      acc.concat(space)
+    end
+  end
+
+  def get_line_number_column(line_no, max_line_no)
     padding = max_line_no.to_s.size - line_no.to_s.size
     "#{get_spaces(padding)}#{line_no}:"
   end

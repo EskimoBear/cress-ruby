@@ -11,18 +11,30 @@ module ProgramErrors
   # {Dote::DoteGrammars.display_fmt}
   # @param invalid_token [Token] the error token
   # @param token_seq [TokenSeq] the tokens in the program
+  # @param grammar [ITokenizer]
   # @return [String] formatted output of program line contained in token_seq
-  def print_error_line(invalid_token, token_seq)
-    if invalid_token.valid_attribute?(:line_no) &&
-       token_seq.none?{|i| i.get_attribute(:line_no).nil?}
-      line_no = invalid_token.get_attribute(:line_no)
-      get_program_snippet(line_no, token_seq)
+  def print_error_line(invalid_token, token_seq, grammar)
+    invalid_token
+    if display_attributes?(invalid_token, token_seq, grammar)
+      get_program_snippet(invalid_token.get_attribute(:line_no), token_seq)
     else
       String.new
     end
   end
 
   private
+
+  # @param (see #print_error_line)
+  # @return [Boolean] true if required s-attributes are present
+  def display_attributes?(invalid_token, token_seq, grammar)
+    if invalid_token.valid_attribute?(:line_no)
+      grammar.attributes.all? do |attr|
+        !token_seq.any?{|t| t.get_attribute(:line_no).nil?}
+      end
+    else
+      false
+    end
+  end
 
   def get_program_snippet(line_no, token_seq)
     token_snippet = token_seq.select{|i| i.get_attribute(:line_no) == line_no}

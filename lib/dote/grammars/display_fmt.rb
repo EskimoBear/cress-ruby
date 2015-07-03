@@ -1,5 +1,21 @@
 module Dote::DoteGrammars
 
+  module ITokenizer
+
+    def env_init
+      [{:attr => :line_no, :attr_value => 1},
+       {:attr => :indent, :attr_value => 0},
+       {:attr => :spaces_after, :attr_value => 1}]
+    end
+
+    def eval_s_attributes(envs, token, token_seq)
+    end
+
+    def attributes
+      env_init.map{|attr_hash| attr_hash[:attr]}
+    end
+  end
+
   # @return [Struct] attribute grammar that formats Dote programs
   # for display on stdout
   def display_fmt
@@ -26,15 +42,7 @@ module Dote::DoteGrammars
   #Attribute actions module for {Dote::DoteGrammars#display_fmt} grammar
   module DisplayFormat
 
-    def env_init
-      [{:attr => :line_no, :attr_value => 1},
-       {:attr => :indent, :attr_value => 0},
-       {:attr => :spaces_after, :attr_value => 1}]
-    end
-
-    def eval_tree_attributes(tree)
-      tree
-    end
+    include ITokenizer
 
     def eval_s_attributes(envs, token, token_seq)
       update_line_no_env(envs, token)

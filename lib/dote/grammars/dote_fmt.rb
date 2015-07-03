@@ -1,4 +1,20 @@
+require_relative '../../../utils/respondent'
+
 module Dote::DoteGrammars
+
+  module IParser
+
+    extend Respondent
+
+    uses :top_rule
+
+    def parse_tokens(token_seq)
+      top_rule.parse(token_seq, self)[:tree]
+    end
+
+    def eval_tree_attributes(tree)
+    end
+  end
 
   def dote_fmt
     RuleSeq.assign_attribute_grammar(
@@ -22,6 +38,8 @@ module Dote::DoteGrammars
   end
 
   module DoteFormat
+
+    include IParser
 
     def generate_source(tree, path, file_name="code.dt")
       File.open(File.join(path, file_name), "w") do |f|

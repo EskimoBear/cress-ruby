@@ -18,20 +18,20 @@ module Dote::TokenPass
 
     # @return [TokenSeq] self when Token is not found
     # @raise [ProgramErrors::UnknownSpecialForm] unknown_special_forms Token found
-    def verify_special_forms
+    def verify_special_forms(grammar)
       error_token = self.find do |i|
         i.name == LANG.get_rule(:unreserved_procedure_identifier).name
       end
       unless error_token.nil?
         raise UnknownSpecialForm,
-        unknown_special_form_error_message(error_token, self, LANG)
+        unknown_special_form_error_message(error_token, self, grammar)
       end
       return self
     end
 
     def unknown_special_form_error_message(token, token_seq, grammar)
       "'#{token.lexeme}' is not a known special_form." \
-        .concat(print_error_line(token, token_seq))
+        .concat(print_error_line(token, token_seq, grammar))
     end
 
     #Given an alternation rule add rule.name to each referenced

@@ -14,6 +14,6 @@ module Dote
     RuleSeq =  Dote::RuleSeq
     Rule = Dote::Rule
 
-    alias_method :compile_grammar, :display_fmt
+    alias_method :compile_grammar, :ast
   end
 end

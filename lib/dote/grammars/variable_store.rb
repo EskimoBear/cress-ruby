@@ -3,11 +3,13 @@ module Dote::DoteGrammars
   def var_store
     RuleSeq.assign_attribute_grammar(
       ast,
-      [VariableStore],
+      [AST, VariableStore],
       [])
   end
 
   module VariableStore
+    
+    include ISemantics
 
     def build_store(tree)
       create_variables(tree, {})
@@ -27,7 +29,7 @@ module Dote::DoteGrammars
       end
       store
     end
-    
+
     def var_name(attribute_name)
       attribute_name.to_s.gsub("\"", "").gsub(/\s/, "_")
         .prepend("V_").intern

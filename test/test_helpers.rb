@@ -44,7 +44,7 @@ module TestHelpers
     Dote::TokenPass.tokenize_program(
       get_tokenizer_sample_program,
       grammar)
-      .verify_special_forms
+      .verify_special_forms(grammar)
   end
 
   def get_token_sequence(program=get_tokenizer_sample_program,
@@ -53,7 +53,7 @@ module TestHelpers
       .tokenize_program(
         program,
         grammar)
-      .verify_special_forms
+      .verify_special_forms(grammar)
   end
 
   def get_parse_tree(token_sequence=get_token_sequence,
@@ -63,19 +63,19 @@ module TestHelpers
 
   def get_ast(tree=get_parse_tree,
               grammar=DEFAULT_GRAMMAR)
-    Dote.build_ast(tree, grammar)
+    grammar.convert_to_ast(tree)
   end
 
-  def get_semantic_eval(tree=get_parse_tree,
-                        grammar=DEFAULT_GRAMMAR)
-    Dote.semantic_pass(tree, grammar)
+  def run_operational_semantics(tree=get_parse_tree,
+                                grammar=DEFAULT_GRAMMAR)
+    Dote.operational_semantics(tree, grammar)
   end
 
   def get_code(tree=get_parse_tree,
                grammar=DEFAULT_GRAMMAR,
                path=get_code_gen_dir,
                file_name="code.dt")
-    Dote::CodeGen.make_file(tree, grammar, path, file_name)
+    grammar.generate_source(tree, path, file_name)
   end
 
   def get_code_gen_dir

@@ -19,7 +19,7 @@ class TestTokenSeq < MiniTest::Test
     assert_nil @token_seq.take_with_seq("target_1", "target_2")
   end
 
-  def test_seq_match_should_succeed 
+  def test_seq_match_should_succeed
     @token_seq[1].name = "target_2"
     @token_seq[3].name = "target_1"
     @token_seq.last.name = "target_2"
@@ -27,12 +27,12 @@ class TestTokenSeq < MiniTest::Test
     assert @token_seq.seq_match?("target_1", "target_2")
   end
 
-  def test_seq_match_should_fail 
+  def test_seq_match_should_fail
     @token_seq[2].name = "target_1"
     @token_seq.last.name = "target_2"
     refute @token_seq.seq_match?("target_1", "target_2")
   end
- 
+
 end
 
 describe Dote::TokenPass::TokenSeq do
@@ -42,7 +42,7 @@ describe Dote::TokenPass::TokenSeq do
     @concatenation_rule = @lang.get_rule(:variable_identifier)
     @token_seq = Dote::TokenPass::TokenSeq.new(4) {Dote::LexemeCapture::Token.new}
   end
-  
+
   describe "#tokenize_rule" do
     it "with concatenation rule" do
       @token_seq[0].name = :variable_prefix

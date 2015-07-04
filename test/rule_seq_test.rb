@@ -75,12 +75,25 @@ describe Dote::RuleSeq do
       @s_attrs = [:value, :line]
       @i_attrs = [:closure]
     end
-    it "#make_ag_production_rule" do
-      @rules = rule_seq.make_ag_production_rule(:ag_rule, @s_attrs, @i_attrs)
-      @new_rule = @rules.get_rule(:ag_rule)
-      @new_rule.must_be :ag_production?
-      @new_rule.s_attr.must_equal @s_attrs
-      @new_rule.i_attr.must_equal @i_attrs
+    describe "#make_ag_production_rule" do
+      before do
+        @term_names = [:key, :val]
+        @rules = rule_seq.make_ag_production_rule(:ag_rule, @term_names, @s_attrs, @i_attrs)
+        @rule = @rules.get_rule(:ag_rule)
+        @ebnf = @rule.ebnf
+      end
+      it "is an ag_production" do
+        @rule.must_be :ag_production?
+      end
+      it "has attributes" do
+        @rule.s_attr.must_equal @s_attrs
+        @rule.i_attr.must_equal @i_attrs
+      end
+      it "has ebnf" do
+        @ebnf.wont_be_nil
+        @ebnf.term_list.wont_be_nil true
+        @rule.term_names.must_equal @term_names
+      end
     end
     it "#make_ag_terminal_rule" do
       @rules = rule_seq.make_ag_terminal_rule(:ag_rule, @s_attrs)

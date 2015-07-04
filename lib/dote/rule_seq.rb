@@ -283,14 +283,22 @@ module Dote
 
     #Add an attribute grammar production rule to the RuleSeq
     #@param name [Symbol] name of the attribute grammar production
+    #@param rule_names [Array<Symbol] the terms in the syntax of the rule
     #@param s_attrs [Array<Symbol>] array of s-attributes
     #@param i_attrs [Array<Symbol>] array of i-attributes
     #@return [self]
-    def make_ag_production_rule(name, s_attrs=[], i_attrs=[])
-      rule = Rule.new(name, nil, nil, EBNF::AG_ProductionRule[name])
+    def make_ag_production_rule(name, rule_names, s_attrs=[], i_attrs=[])
+      rule = Rule.new(name, nil, nil, ebnf_ag(rule_names))
       rule.s_attr = s_attrs
       rule.i_attr = i_attrs
       self.push rule
+    end
+
+    def ebnf_ag(rule_names)
+      term_list = rule_names.map do |i|
+        rule_to_term(i)
+      end
+      EBNF::AG_ProductionRule.new(term_list)
     end
 
     #Add an attribute grammar terminal rule to the RuleSeq

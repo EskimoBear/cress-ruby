@@ -2,10 +2,10 @@ module Dote::DoteGrammars
 
   def ast_cfg
     RuleSeq.new(display_fmt.copy_rules)
-      .make_ag_production_rule(:bind)
-      .make_ag_production_rule(:apply)
+      .make_ag_production_rule(:bind, [])
+      .make_ag_production_rule(:apply, [])
       .make_ag_terminal_rule(:literal_string, [:value])
-      .make_ag_production_rule(:interpolated_string)
+      .make_ag_production_rule(:interpolated_string, [])
       .build_cfg(:program)
   end
 

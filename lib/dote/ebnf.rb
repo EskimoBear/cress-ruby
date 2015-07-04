@@ -12,7 +12,7 @@ module Dote
     RepetitionRule = Struct.new(:term)
     OptionRule = Struct.new(:term)
     AG_TerminalRule = Struct.new(:name)
-    AG_ProductionRule = Struct.new(:name)
+    AG_ProductionRule = Struct.new(:term_list)
 
     def terminal?
       self.ebnf.nil?
@@ -56,8 +56,9 @@ module Dote
       self.ebnf.instance_of? OptionRule
     end
 
+    #FIXME make polymorphic method instead of switch
     def term_names
-      if self.terminal? || self.ag_production? || self.ag_terminal?
+      if self.terminal? || self.ag_terminal?
         nil
       elsif alternation_rule?
         self.ebnf.term_set.map{|i| i.rule_name}
@@ -65,6 +66,8 @@ module Dote
         self.ebnf.term_list.map{|i| i.rule_name}
       elsif repetition_rule? || option_rule?
         [ebnf.term.rule_name]
+      elsif ag_production?
+        self.ebnf.term_list.map{|i| i.rule_name}
       end
     end
 

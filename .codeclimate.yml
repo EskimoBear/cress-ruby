@@ -1,0 +1,9 @@
+languages:
+  Ruby: true
+  JavaScript: true
+  PHP: true
+  Python: true
+ratings:
+  paths:
+    - "bin/**"
+    - "lib/cli/**"

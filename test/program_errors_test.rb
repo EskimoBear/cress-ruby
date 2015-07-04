@@ -1,7 +1,5 @@
-require 'minitest/autorun'
-require 'minitest/pride'
-require_relative '../lib/dote/program_errors'
 require_relative './test_helpers'
+require_relative '../lib/dote/program_errors'
 
 describe "ProgramErrors" do
 

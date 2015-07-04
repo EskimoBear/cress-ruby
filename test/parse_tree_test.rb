@@ -1,7 +1,3 @@
-require 'minitest'
-require 'minitest/autorun'
-require 'minitest/pride'
-require 'pp'
 require_relative './test_helpers'
 require_relative '../lib/dote/rule.rb'
 

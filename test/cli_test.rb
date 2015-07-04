@@ -1,5 +1,3 @@
-require 'minitest/autorun'
-require 'minitest/pride'
 require 'fileutils'
 require_relative './test_helpers'
 require_relative '../lib/cli/messages.rb'

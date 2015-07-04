@@ -1,7 +1,4 @@
-require 'minitest/autorun'
-require 'minitest/pride'
 require 'vert'
-require_relative '../lib/dote.rb'
 require_relative './test_helpers.rb'
 
 describe Dote do

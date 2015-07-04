@@ -1,7 +1,5 @@
-require 'minitest/autorun'
-require 'minitest/pride'
-require_relative '../lib/dote/token_pass.rb'
 require_relative './test_helpers.rb'
+require_relative '../lib/dote/token_pass.rb'
 
 class TestTokenSeq < MiniTest::Test
 

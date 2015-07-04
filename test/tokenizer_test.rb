@@ -1,6 +1,3 @@
-require 'minitest/autorun'
-require 'minitest/pride'
-require 'pp'
 require_relative './test_helpers.rb'
 require_relative '../lib/dote/tokenizer.rb'
 

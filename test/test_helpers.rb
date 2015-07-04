@@ -1,7 +1,10 @@
-require 'pp'
-require_relative '../lib/dote'
 require 'coveralls'
 Coveralls.wear!
+
+require 'minitest/autorun'
+require 'minitest/pride'
+require 'pp'
+require_relative '../lib/dote'
 
 module TestHelpers
 

@@ -1,9 +1,6 @@
-require 'minitest/autorun'
-require 'minitest/pride'
-require 'pp'
+require_relative './test_helpers'
 require_relative '../lib/dote/rule.rb'
 require_relative '../lib/dote/token_pass'
-require_relative './test_helpers'
 
 describe Dote::Rule do
 

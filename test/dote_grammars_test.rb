@@ -1,6 +1,3 @@
-require 'minitest/autorun'
-require 'minitest/pride'
-require 'pp'
 require_relative '../lib/dote/dote_grammars.rb'
 require_relative './test_helpers'
 

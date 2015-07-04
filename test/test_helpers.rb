@@ -73,9 +73,9 @@ module TestHelpers
 
   def get_code(tree=get_parse_tree,
                grammar=DEFAULT_GRAMMAR,
-               path=get_code_gen_dir,
-               file_name="code.dt")
-    grammar.generate_source(tree, path, file_name)
+               path=File.join(get_code_gen_dir, "code.dt"))
+    code = grammar.generate_code(run_operational_semantics)
+    grammar.make_file(code, path)
   end
 
   def get_code_gen_dir

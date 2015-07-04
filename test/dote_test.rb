@@ -34,12 +34,6 @@ describe Dote do
     end
   end
 
-  describe "#source_to_tree" do
-    it "valid_program" do
-      Dote.source_to_tree(@valid_program).must_be_instance_of Parser::ParseTree
-    end
-  end
-
   describe "#operational_semantics" do
     it "outputs Hash env" do
       options = {:required_keys => [:tree], :hash_keys => [:store]}
@@ -49,18 +43,16 @@ describe Dote do
 
   describe "#build_object_code" do
     before do
-      @tree = Dote.source_to_tree(@valid_program, Dote::DoteGrammars.dote_fmt)
-      @env = {tree: @tree}
-      @file_name = "object_code.dt"
+      @env = Dote.compile(@valid_program, Dote::DoteGrammars.dote_fmt)
       @dir_path = get_code_gen_dir
-      @object_code_path = File.join(@dir_path, @file_name)
+      @object_code_path = File.join(@dir_path, "object_code.dt")
     end
     it "outputs file" do
-      Dote.build_object_code(@env, Dote::DoteGrammars.dote_fmt, @dir_path, @file_name)
+      Dote.build_object_code(@env, Dote::DoteGrammars.dote_fmt, @object_code_path)
       FileTest.exist?(@object_code_path).must_equal true
     end
     after do
-      FileUtils.rm_rf(get_code_gen_dir)
+      FileUtils.rm_rf(@dir_path)
     end
   end
 end

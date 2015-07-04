@@ -6,7 +6,7 @@ require_relative './test_helpers.rb'
 describe "Dote::DoteGrammars::dote_fmt" do
 
   include TestHelpers
-  
+
   subject {Dote::DoteGrammars.dote_fmt}
 
   before do
@@ -58,7 +58,7 @@ describe "Dote::DoteGrammars::dote_fmt" do
       @code_path = File.join(get_code_gen_dir, @file_name)
     end
     it "outputs a file" do
-      @code = get_code(@tree, subject, get_code_gen_dir, @file_name)
+      @code = get_code(@tree, subject, @code_path)
       FileTest.exist?(@code_path).must_equal true
     end
     after do

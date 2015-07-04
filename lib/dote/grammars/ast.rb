@@ -1,14 +1,5 @@
 module Dote::DoteGrammars
 
-  module ISemantics
-
-    def convert_to_ast(tree)
-    end
-
-    def build_store(ast)
-    end
-  end
-
   def ast_cfg
     RuleSeq.new(display_fmt.copy_rules)
       .make_ag_production_rule(:bind)
@@ -27,7 +18,6 @@ module Dote::DoteGrammars
 
   module AST
 
-    include IParser
     include ISemantics
 
     def eval_tree_attributes(tree)

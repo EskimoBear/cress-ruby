@@ -38,19 +38,16 @@ command 'fmt' do |c|
       if files[:input_file]
         program = File.open(files[:input_file]).read
         grammar = Dote::DoteGrammars.dote_fmt
-        tree = Dote.source_to_tree(program, grammar)
+        env = Dote.compile(program, grammar)
         if files[:output_file].nil?
-          grammar.generate_source(tree,
-                                  File.dirname(files[:input_file]),
-                                  File.basename(files[:input_file]))
+          output_path = files[:input_file]
         else
           if File.extname(files[:output_file]).empty?
             files[:output_file] = files[:output_file].dup.concat(".dt")
           end
-          grammar.generate_source(tree,
-                                  File.dirname(files[:output_file]),
-                                  File.basename(files[:output_file]))
+          output_path = files[:output_file]
         end
+        Dote.build_object_code(env, grammar, output_path)
       end
     end
   end

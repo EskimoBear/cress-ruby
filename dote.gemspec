@@ -17,4 +17,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'minitest'
   s.add_development_dependency 'pry', '~> 0'
   s.add_development_dependency 'rake', '~> 0'
+  s.add_development_dependency 'codeclimate-test-reporter', '~> 0'
 end

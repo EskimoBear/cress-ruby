@@ -1,5 +1,7 @@
 require 'pp'
 require_relative '../lib/dote'
+require "codeclimate-test-reporter"
+CodeClimate::TestReporter.start
 
 module TestHelpers
 

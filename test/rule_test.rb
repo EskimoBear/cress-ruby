@@ -3,6 +3,7 @@ require 'minitest/pride'
 require 'pp'
 require_relative '../lib/dote/rule.rb'
 require_relative '../lib/dote/token_pass'
+require_relative './test_helpers'
 
 describe Dote::Rule do
 
@@ -31,7 +32,7 @@ describe Dote::Rule do
     rest_check = parse_result[:rest].eql? tokens.drop(split_pnt)
     parsed_seq_check && rest_check
   end
-  
+
   describe "#parse" do
     before do
       @rules = rule_seq.make_alternation_rule(

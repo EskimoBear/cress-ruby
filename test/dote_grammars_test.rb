@@ -2,9 +2,10 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
 require_relative '../lib/dote/dote_grammars.rb'
+require_relative './test_helpers'
 
 describe Dote::DoteGrammars do
-  
+
   subject {Dote::DoteGrammars}
 
   describe "validate_keys" do
@@ -19,7 +20,7 @@ describe Dote::DoteGrammars do
       @lang.terminals.must_include :nullable
     end
   end
-  
+
   describe "validate_tokenizer_cfg" do
     before do
       @lang = subject.tokenizer_cfg
@@ -99,7 +100,7 @@ describe Dote::Rule do
       @lang.get_rule(:element_set).to_s.must_match /( := )/
     end
   end
-  
+
   it "is terminal rule" do
     @lang.get_rule(:number).partial_status.must_equal false
     first_set = @lang.get_rule(:number).first_set

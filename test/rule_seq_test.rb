@@ -2,6 +2,7 @@ require 'minitest/autorun'
 require 'minitest/pride'
 require 'pp'
 require_relative '../lib/dote/rule_seq'
+require_relative './test_helpers'
 
 describe Dote::RuleSeq do
 

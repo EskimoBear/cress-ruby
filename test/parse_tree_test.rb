@@ -22,7 +22,7 @@ describe Parser::ParseTree do
 
   subject {Parser::ParseTree}
   let(:tree) {Parser::ParseTree::Tree}
-  
+
   describe "create_ast" do
     it "incorrect parameter type" do
       proc {subject.new("error_type")}.
@@ -165,7 +165,7 @@ describe Parser::ParseTree do
       @tree.children.first.level.must_equal 3
     end
   end
-  
+
   describe "#close_active" do
     before do
       @tree = subject.new @production
@@ -302,7 +302,7 @@ describe Parser::ParseTree do
     it "with tree name" do
       original_height = @redundant_root_tree.height
       result = @redundant_root_tree.remove_root(@production.name)
-      result.must_be :===, @child_prod.name 
+      result.must_be :===, @child_prod.name
       result.height.must_equal (original_height - 1)
     end
     it "with :production_type" do
@@ -373,4 +373,3 @@ describe Parser::ParseTree do
     end
   end
 end
-

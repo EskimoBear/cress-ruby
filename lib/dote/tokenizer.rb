@@ -3,32 +3,36 @@ require 'pry'
 require_relative 'token_pass'
 
 module Dote::TokenPass
-  
+
   module Tokenizer
 
     InvalidLexeme = Class.new(StandardError)
     TokenizationIncomplete = Class.new(StandardError)
-    
+
+    # @!attribute lexeme
+    #   @return [Symbol] characters representing the symbol
+    # @!attribute name
+    #   @return [Symbol] name of the JSON symbol
     JsonSymbol = Struct.new :lexeme, :name
-    
-    #Convert an eson program into a sequence of eson tokens
-    #@param eson_program [String] string provided to Dote#read
-    #@return [TokenSeq] A token sequence
-    #@raise [TokenizationIncomplete] token sequence does not contain
-    #  all the characters in the program
-    #@eskimobear.specification
-    # Dote token set, ET is a set of the eson terminals
-    # Dote token, et is a sequence of characters existing in ET
-    # label(et) maps the character sequence to the name of the matching
-    #   eson terminal symbol
-    # Input program, p, a valid JSON string 
-    # Input sequence, P, a sequence of characters in p
-    # Token sequence, T
+
+    # Convert an eson program into a sequence of eson tokens
+    # @param eson_program [String] string provided to Dote#read
+    # @return [TokenSeq] A token sequence
+    # @raise [TokenizationIncomplete] token sequence does not contain
+    #   all the characters in the program
+    # @eskimobear.specification
+    #  Dote token set, ET is a set of the eson terminals
+    #  Dote token, et is a sequence of characters existing in ET
+    #  label(et) maps the character sequence to the name of the matching
+    #    eson terminal symbol
+    #  Input program, p, a valid JSON string
+    #  Input sequence, P, a sequence of characters in p
+    #  Token sequence, T
     #
-    # Init : length(P) > 0
-    #        length(T) = 0
-    # Next : et = P - 'P
-    #        T' = T + label(et)
+    #  Init : length(P) > 0
+    #         length(T) = 0
+    #  Next : et = P - 'P
+    #         T' = T + label(et)
     def tokenize_program(eson_program, grammar)
       eson_program.freeze
       program_json_hash = Oj.load(eson_program)
@@ -110,7 +114,7 @@ module Dote::TokenPass
           end
         end
       end
-      seq.push(JsonSymbol.new(:"]", :array_end))                     
+      seq.push(JsonSymbol.new(:"]", :array_end))
     end
 
     def json_symbols_to_tokens(json_symbol_seq, char_seq, grammar)
@@ -120,49 +124,49 @@ module Dote::TokenPass
         case symbol.name
         when :object_start
           update_json_and_char_seqs(
-            grammar.program_start.make_token(symbol.lexeme, envs),
+            grammar.get_rule(:program_start).make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs,
             grammar)
         when :object_end
           update_json_and_char_seqs(
-            grammar.program_end.make_token(symbol.lexeme, envs),
+            grammar.get_rule(:program_end).make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs,
             grammar)
         when :array_start
           update_json_and_char_seqs(
-            grammar.array_start.make_token(symbol.lexeme, envs),
+            grammar.get_rule(:array_start).make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs,
             grammar)
         when :array_end
           update_json_and_char_seqs(
-            grammar.array_end.make_token(symbol.lexeme, envs),
+            grammar.get_rule(:array_end).make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs,
             grammar)
         when :colon
           update_json_and_char_seqs(
-            grammar.colon.make_token(symbol.lexeme, envs),
+            grammar.get_rule(:colon).make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs,
             grammar)
         when :array_comma
           update_json_and_char_seqs(
-            grammar.element_divider.make_token(symbol.lexeme, envs),
+            grammar.get_rule(:element_divider).make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs,
             grammar)
         when :member_comma
           update_json_and_char_seqs(
-            grammar.declaration_divider.make_token(symbol.lexeme, envs),
+            grammar.get_rule(:declaration_divider).make_token(symbol.lexeme, envs),
             seq,
             char_seq,
             envs,
@@ -202,12 +206,12 @@ module Dote::TokenPass
     end
 
     def lexer(terminals, string, seq, char_seq, envs, grammar)
-      matched_terminal = terminals.detect{|i| grammar.send(i).match(string)}
+      matched_terminal = terminals.detect{|i| grammar.get_rule(i).match(string)}
       if matched_terminal.nil?
         raise InvalidLexeme, lexer_error_message(string)
       else
         update_json_and_char_seqs(
-          grammar.send(matched_terminal).match_token(string, envs),
+          grammar.get_rule(matched_terminal).match_token(string, envs),
           seq,
           char_seq,
           envs,
@@ -223,28 +227,28 @@ module Dote::TokenPass
     def tokenize_json_value(json_value, seq, char_seq, envs, grammar)
       if json_value.is_a? TrueClass
         update_json_and_char_seqs(
-          grammar.true.make_token(json_value.to_s, envs),
+          grammar.get_rule(:true).make_token(json_value.to_s, envs),
           seq,
           char_seq,
           envs,
           grammar)
       elsif json_value.is_a? FalseClass
         update_json_and_char_seqs(
-          grammar.false.make_token(json_value.to_s, envs),
+          grammar.get_rule(:false).make_token(json_value.to_s, envs),
           seq,
           char_seq,
           envs,
           grammar)
       elsif json_value.is_a? Numeric
         update_json_and_char_seqs(
-          grammar.number.make_token(json_value.to_s, envs),
+          grammar.get_rule(:number).make_token(json_value.to_s, envs),
           seq,
           char_seq,
           envs,
           grammar)
       elsif json_value.nil?
         update_json_and_char_seqs(
-          grammar.null.make_token(:null, envs),
+          grammar.get_rule(:null).make_token(:null, envs),
           seq,
           char_seq,
           envs,

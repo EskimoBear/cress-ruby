@@ -39,9 +39,9 @@ end
 
 describe Dote::TokenPass::TokenSeq do
   before do
-    @lang = Dote::DoteGrammars.format
-    @alternation_rule = @lang.sub_string
-    @concatenation_rule = @lang.variable_identifier
+    @lang = Dote::DoteGrammars.display_fmt
+    @alternation_rule = @lang.get_rule(:sub_string)
+    @concatenation_rule = @lang.get_rule(:variable_identifier)
     @token_seq = Dote::TokenPass::TokenSeq.new(4) {Dote::LexemeCapture::Token.new}
   end
   

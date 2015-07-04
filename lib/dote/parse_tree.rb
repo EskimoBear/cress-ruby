@@ -1,5 +1,5 @@
 require 'forwardable'
-require_relative './typed_seq'
+require_relative '../../utils/typed_seq'
 require_relative './attribute_actions'
 
 module Parser
@@ -27,7 +27,7 @@ module Parser
     end
 
     def set_root(obj)
-      unless obj.nil?      
+      unless obj.nil?
         @root_tree = @active = convert_to_tree(obj)
         @height = 1
         if @active.leaf?
@@ -160,7 +160,7 @@ module Parser
       update_height
      self
     end
-    
+
     def update_height(tree=nil)
       if tree.nil?
         @height = self.max_by{|t| t.level}.level
@@ -168,7 +168,7 @@ module Parser
         @height = tree.level
       end
     end
-    
+
     def invalid_input_type_error_message(obj)
       "The class #{obj.class} of '#{obj}' is not a" \
       " valid input for the #{self.class}. Input" \

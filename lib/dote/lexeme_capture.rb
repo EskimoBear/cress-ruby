@@ -1,4 +1,4 @@
-require_relative './respondent'
+require_relative '../../utils/respondent'
 require_relative './attribute_actions'
 require_relative './parser.rb'
 

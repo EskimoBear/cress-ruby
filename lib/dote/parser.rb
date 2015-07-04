@@ -1,4 +1,4 @@
-require_relative './respondent'
+require_relative '../../utils/respondent'
 require_relative './parse_tree'
 require_relative './program_errors'
 
@@ -11,7 +11,7 @@ module Parser
   FirstSetNotDisjoint = Class.new(StandardError)
 
   uses :name, :term_names, :terminal?, :follow_set
-  
+
   #Return a legal instance of a rule
   #@param tokens [Dote::TokenPass::TokenSeq] a token sequence
   #@param grammar [Struct] context free grammar or attribute grammar
@@ -21,7 +21,7 @@ module Parser
   #@raise [InvalidSequenceParsed] if no legal sub-sequence can be found
   def parse(tokens, grammar, tree=nil)
     if self.terminal?
-      acc = parse_terminal(tokens, tree)
+      acc = parse_terminal(tokens, grammar, tree)
     else
       if tree.nil?
         tree = Parser::ParseTree.new
@@ -42,7 +42,7 @@ module Parser
   end
 
   #(see #parse)
-  def parse_terminal(tokens, tree)
+  def parse_terminal(tokens, grammar, tree)
     lookahead = tokens.first
     if self.name == lookahead.name
       leaf = Parser::ParseTree.new(lookahead)
@@ -54,8 +54,21 @@ module Parser
       build_parse_result([lookahead], tokens.drop(1), tree)
     else
       raise InvalidSequenceParsed,
-            parse_terminal_error_message(self.name, lookahead, tokens)
+            parse_terminal_error_message(self.name,
+                                         lookahead,
+                                         tokens,
+                                         grammar)
     end
+  end
+
+  def parse_terminal_error_message(expected_token_name,
+                                   actual_token,
+                                   token_seq,
+                                   grammar)
+    "Error while parsing :#{@name}." \
+    " Expected a symbol of type :#{expected_token_name} but got a" \
+    " :#{actual_token.name} instead."
+      .concat(print_error_line(actual_token, token_seq, grammar))
   end
 
   def build_parse_result(parsed_seq, rest, tree)
@@ -106,7 +119,7 @@ module Parser
     rule.parse(tokens, grammar, tree)
   rescue NoMatchingFirstSet => e
     raise InvalidSequenceParsed,
-          first_set_error_message(lookahead, tokens)
+          first_set_error_message(lookahead, tokens, grammar)
   end
 
   #@param token [Dote::LexemeCapture::Token] token
@@ -133,6 +146,13 @@ module Parser
       rule = grammar.get_rule(i)
       rule.first_set.include? token.name
     end
+  end
+
+  def first_set_error_message(token, token_seq, grammar)
+    "Error while parsing :#{@name}." \
+    " None of the first_sets of :#{@name} contain" \
+    " the term :#{token.name}."
+      .concat(print_error_line(token, token_seq, grammar))
   end
 
   #Return a legal instance of a concatenation rule
@@ -174,13 +194,24 @@ module Parser
       if acc[:rest].empty?
         raise InvalidSequenceParsed,
               exhausted_tokens_error_message(i.rule_name,
-                                             acc[:parsed_seq])
+                                             acc[:parsed_seq],
+                                             grammar)
       end
       rule = grammar.get_rule(i.rule_name)
       parse_result = rule.parse(acc[:rest], grammar, acc[:tree])
       acc[:parsed_seq].concat(parse_result[:parsed_seq])
       acc[:rest] = parse_result[:rest]
     end
+  end
+
+  def exhausted_tokens_error_message(expected_token_name,
+                                     token_seq,
+                                     grammar)
+    "The program is incomplete." \
+    " Expected a symbol of type :#{expected_token_name}" \
+    " while parsing :#{@name} but there are no more tokens" \
+    " to parse."
+      .concat(print_error_line(token_seq.last, token_seq, grammar))
   end
 
   #Return a legal instance of an option rule

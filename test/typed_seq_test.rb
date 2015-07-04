@@ -1,6 +1,6 @@
 require 'minitest/autorun'
 require 'minitest/pride'
-require_relative '../lib/eson/typed_seq'
+require_relative '../utils/typed_seq'
 
 describe TypedSeq, "Demo" do
 

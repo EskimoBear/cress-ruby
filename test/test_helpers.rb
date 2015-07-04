@@ -3,6 +3,7 @@ require_relative '../lib/dote'
 
 module TestHelpers
 
+  DEFAULT_GRAMMAR = Dote::DoteGrammars.compile_grammar
   extend self
 
   def get_sample_rules
@@ -18,7 +19,7 @@ module TestHelpers
   def get_sample_production
     get_sample_rules.get_rule(:nonterminal)
   end
-  
+
   def get_valid_eson
     load_test_inputs('valid')
   end
@@ -35,46 +36,46 @@ module TestHelpers
     "{}"
   end
 
-  def get_invalid_program
-    "{\"invalid\": (}"
+  def get_malformed_program
+    "{\"malformed\": (}"
   end
 
-  def get_tokens(grammar=Dote::DoteGrammars.tokenizer_lang)
+  def get_tokens(grammar=DEFAULT_GRAMMAR)
     Dote::TokenPass.tokenize_program(
       get_tokenizer_sample_program,
       grammar)
-      .verify_special_forms
+      .verify_special_forms(grammar)
   end
 
   def get_token_sequence(program=get_tokenizer_sample_program,
-                         grammar=Dote::DoteGrammars.tokenizer_lang)
+                         grammar=DEFAULT_GRAMMAR)
     Dote::TokenPass
       .tokenize_program(
         program,
         grammar)
-      .verify_special_forms
+      .verify_special_forms(grammar)
   end
 
   def get_parse_tree(token_sequence=get_token_sequence,
-              grammar=Dote::DoteGrammars.tokenizer_lang)
-    Dote::SyntaxPass.build_tree(token_sequence, grammar)
+              grammar=DEFAULT_GRAMMAR)
+    Dote.build_tree(token_sequence, grammar)
   end
 
   def get_ast(tree=get_parse_tree,
-              grammar=Dote::DoteGrammars.tokenizer_lang)
-    Dote::SyntaxPass.build_ast(tree, grammar)
+              grammar=DEFAULT_GRAMMAR)
+    grammar.convert_to_ast(tree)
   end
 
-  def get_semantic_eval(tree=get_parse_tree,
-                        grammar=Dote::DoteGrammars.tokenizer_lang)
-    Dote.semantic_pass(tree, grammar)
+  def run_operational_semantics(tree=get_parse_tree,
+                                grammar=DEFAULT_GRAMMAR)
+    Dote.operational_semantics(tree, grammar)
   end
 
   def get_code(tree=get_parse_tree,
-               grammar=Dote::DoteGrammars.tokenizer_lang,
-               path=get_code_gen_dir,
-               file_name="code.dt")
-    Dote::CodeGen.make_file(tree, grammar, path, file_name)
+               grammar=DEFAULT_GRAMMAR,
+               path=File.join(get_code_gen_dir, "code.dt"))
+    code = grammar.generate_code(run_operational_semantics)
+    grammar.make_file(code, path)
   end
 
   def get_code_gen_dir
@@ -85,7 +86,7 @@ module TestHelpers
     end
     path
   end
-  
+
   private
 
   def get_test_input_path(name)

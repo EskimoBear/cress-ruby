@@ -1,7 +1,7 @@
 require_relative 'dote_grammars'
 require_relative 'tokenizer'
-require_relative 'error_pass'
-require_relative 'typed_seq'
+require_relative 'program_errors'
+require_relative '../../utils/typed_seq'
 
 module Dote::TokenPass
 
@@ -9,61 +9,29 @@ module Dote::TokenPass
 
   Token = Dote::LexemeCapture::Token
   TokenSeq = TypedSeq.new_seq(Token)
-  
-  LANG = Dote::DoteGrammars.format
+
+  LANG = Dote::DoteGrammars.compile_grammar
 
   class TokenSeq
 
-    include Dote::ErrorPass
+    include ProgramErrors
 
-    def get_program_snippet(line_no)
-      TokenSeq.new(self.select{|i| i.get_attribute(:line_no) == line_no})
-        .display_program
-    end
-
-    def display_program
-      if self.none?{|i| i.get_attribute(:line_no).nil?}
-        program_lines =
-          self.slice_when do |t0, t1|
-          t0.get_attribute(:line_no) != t1.get_attribute(:line_no)
-        end
-          .map do |ts|
-          [ ts.first.get_attribute(:line_no),
-            ts.first.get_attribute(:indent),
-            ts.each_with_object("") do |j, acc|
-              acc.concat(j.lexeme.to_s)
-              unit = j.get_attribute(:spaces_after)
-              space = unit.nil? ? "" : get_spaces(unit)
-              acc.concat(space)
-            end
-          ]
-        end
-        max_line = program_lines.length
-        program_lines.map do |i|
-          "#{get_line(i[0], max_line)}#{get_indentation(i[1])}#{i[2]}\n"
-        end
-          .reduce(:concat)
-          .prepend("\n")
+    # @return [TokenSeq] self when Token is not found
+    # @raise [ProgramErrors::UnknownSpecialForm] unknown_special_forms Token found
+    def verify_special_forms(grammar)
+      error_token = self.find do |i|
+        i.name == LANG.get_rule(:unreserved_procedure_identifier).name
       end
+      unless error_token.nil?
+        raise UnknownSpecialForm,
+        unknown_special_form_error_message(error_token, self, grammar)
+      end
+      return self
     end
 
-    def get_line(line_no, max_line_no)
-      padding = max_line_no.to_s.size - line_no.to_s.size
-      "#{get_spaces(padding)}#{line_no}:"
-    end
-
-    def get_spaces(units)
-      repeat_string(units, " ")
-    end
-
-    def get_indentation(units)
-      repeat_string(units, "  ")
-    end
-
-    def repeat_string(reps, string)
-      acc = String.new
-      reps.times{acc.concat(string)}
-      acc
+    def unknown_special_form_error_message(token, token_seq, grammar)
+      "'#{token.lexeme}' is not a known special_form." \
+        .concat(print_error_line(token, token_seq, grammar))
     end
 
     #Given an alternation rule add rule.name to each referenced
@@ -89,9 +57,9 @@ module Dote::TokenPass
     end
 
     #Replace tokens of :choice names with token of rule name and
-    #  equivalent lexeme. Reduce all repetitions to a single token. 
-    #  
-    #@param rule [Dote::RuleSeq::Rule] An alternation rule 
+    #  equivalent lexeme. Reduce all repetitions to a single token.
+    #
+    #@param rule [Dote::RuleSeq::Rule] An alternation rule
     #@eskimobear.specification
     # Original token sequence, T
     # Output token sequence, O
@@ -217,7 +185,7 @@ module Dote::TokenPass
       token_names = rule.term_names
       match_seq_size = token_names.length
       new_token_name = rule.name
-      if input_sequence.seq_match?(*token_names)         
+      if input_sequence.seq_match?(*token_names)
         input_sequence.take_with_seq(*token_names) do |m|
           new_input =  input_sequence.drop(m.length)
           matching_tokens = m.last(match_seq_size)
@@ -276,7 +244,7 @@ module Dote::TokenPass
       end
       indent
     end
-    
+
     def swap_tail(tail_length, new_tail)
       self.pop(tail_length)
       self.push(new_tail).flatten
@@ -323,7 +291,7 @@ module Dote::TokenPass
     #        length(P) = 0
     # Next : when T contains p_start
     #        T' = T - ets
-    #        S' = S + ets 
+    #        S' = S + ets
     #        when head(T') == p
     #        P = S' + p
     #        T' = T
@@ -370,12 +338,12 @@ module Dote::TokenPass
                                 unscanned,
                                 new_output)
           end
-        end 
+        end
       else
         nil
       end
     end
-    
+
     def include_token?(token_name)
       get_token(token_name) ? true : false
     end
@@ -395,7 +363,7 @@ module Dote::TokenPass
     def first_token?(token_name)
       self.first.name == token_name
     end
-    
+
     def swap_tail(tail_length, new_tail)
       self.pop(tail_length)
       self.push(new_tail).flatten

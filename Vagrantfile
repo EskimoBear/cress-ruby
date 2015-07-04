@@ -8,8 +8,8 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant virtual environment requires a box to build off of.
   config.vm.box = "hashicorp/precise64"
-  config.vm.hostname = "EsonRubyDevelopment"
+  config.vm.hostname = "DoteDevelopment"
 
   config.vm.provision :shell, :path => "provision.sh"
-  config.vm.synced_folder ".", "/home/eson-ruby"
+  config.vm.synced_folder ".", "/home/dote"
 end

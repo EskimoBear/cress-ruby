@@ -3,11 +3,11 @@ require 'minitest/pride'
 require 'pp'
 require_relative './test_helpers.rb'
 
-describe "Dote::DoteGrammars::esonf" do
+describe "Dote::DoteGrammars::dote_fmt" do
 
   include TestHelpers
-  
-  subject {Dote::DoteGrammars.esonf}
+
+  subject {Dote::DoteGrammars.dote_fmt}
 
   before do
     @program = get_tokenizer_sample_program
@@ -15,17 +15,17 @@ describe "Dote::DoteGrammars::esonf" do
     @tree = get_parse_tree(@ts, subject)
   end
 
-  describe "validate_esonf" do
+  describe "validate_dote_fmt" do
     it "rules have s_attr line_feed" do
-      subject.values.all?{|i| i.s_attr.include? :line_feed}
+      subject.all?{|i| i.s_attr.include? :line_feed}
         .must_equal true
     end
     it "rules have :line_start" do
-      subject.values.all?{|i| i.s_attr.include? :line_start}
+      subject.all?{|i| i.s_attr.include? :line_start}
         .must_equal true
     end
     it "rules have s_attr to_s" do
-      subject.values.all?{|i| i.s_attr.include? :to_s}
+      subject.all?{|i| i.s_attr.include? :to_s}
         .must_equal true
     end
   end
@@ -58,7 +58,7 @@ describe "Dote::DoteGrammars::esonf" do
       @code_path = File.join(get_code_gen_dir, @file_name)
     end
     it "outputs a file" do
-      @code = get_code(@tree, subject, get_code_gen_dir, @file_name)
+      @code = get_code(@tree, subject, @code_path)
       FileTest.exist?(@code_path).must_equal true
     end
     after do

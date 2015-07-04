@@ -1,4 +1,4 @@
-require_relative './respondent'
+require_relative '../../utils/respondent'
 
 module Dote
   module AttributeActions

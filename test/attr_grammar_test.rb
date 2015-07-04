@@ -13,7 +13,7 @@ describe "Dote::RuleSeq" do
       def custom_action
       end
     end
-    @cfg = Dote::DoteGrammars.e1
+    @cfg = Dote::DoteGrammars.tokenizer_cfg
     @actions = [Custom]
     @attr_maps = [{
                     :attr => :value,
@@ -27,7 +27,6 @@ describe "Dote::RuleSeq" do
                   }]
     @env = [{:attr_value => "$var", :attr => :value}]
     @attr_grammar = subject.assign_attribute_grammar(
-      "Formatter",
       @cfg,
       @actions,
       @attr_maps)
@@ -41,8 +40,8 @@ describe "Dote::RuleSeq" do
       @attr_grammar.must_respond_to :custom_action
     end
     it "has s_attr list" do
-      @attr_grammar.string.s_attr.must_include :value
-      @attr_grammar.variable_identifier.s_attr.must_include :value
+      @attr_grammar.get_rule(:string).s_attr.must_include :value
+      @attr_grammar.get_rule(:variable_identifier).s_attr.must_include :value
     end
     it "nonterminals have i_attr" do
       @attr_grammar.productions.all?{|i| i.i_attr.include? :line_no}
@@ -50,14 +49,14 @@ describe "Dote::RuleSeq" do
     end
     it "terminals have no i_attr" do
       terms = @attr_grammar.terminals
-      terms.all?{|i| @attr_grammar.send(i).i_attr.nil?}
+      terms.all?{|i| @attr_grammar.get_rule(i).i_attr.nil?}
         .must_equal true
     end
   end
 
   describe "evaluated attributes" do
     it "token s-attributes" do
-      token = @attr_grammar.variable_identifier
+      token = @attr_grammar.get_rule(:variable_identifier)
               .match_token("$var", @env)
       token.attributes[:value].must_equal "$var"
     end

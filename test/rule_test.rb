@@ -30,6 +30,22 @@ describe Dote::Rule do
     parsed_seq_check && rest_check
   end
 
+  describe "#rule_diff" do
+    describe "concat_rules" do
+      before do
+        @rules = rule_seq
+                  .make_concatenation_rule(:r1, [:rule_1, :rule_2, :rule_3])
+                  .make_concatenation_rule(:r2, [:rule_1, :rule_3])
+        @r1 = @rules.get_rule(:r1)
+        @r2 = @rules.get_rule(:r2)
+      end
+      it "extra term" do
+        result_hash = {:rename => :r2, :remove => [:rule_2]}
+        @r1.rule_diff(@r2).must_equal result_hash
+      end
+    end
+  end
+
   describe "#parse" do
     before do
       @rules = rule_seq.make_alternation_rule(

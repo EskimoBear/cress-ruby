@@ -15,9 +15,9 @@ module Parser
 
     attr_reader :height
 
-    #Initialize tree with obj as root node. An empty
-    #tree is created if no parameter is given.
-    #@param obj [Dote::Rule] Rule
+    # Initialize tree with obj as root node. An empty
+    # tree is created if no parameter is given.
+    # @param obj [Dote::Rule] Rule
     def initialize(obj=nil)
       init_empty
       set_root(obj)
@@ -28,14 +28,27 @@ module Parser
       @root_tree = @active = Tree.new
     end
 
-    def set_root(obj)
+    # Make the obj the root node of the ParseTree. If children is
+    # given, initialize as the child list of the root node.
+    # @param obj [#to_tree] root node
+    # @param children [TreeSeq] child list of root node
+    def set_root(obj, children=nil)
       unless obj.nil?
         @root_tree = @active = convert_to_tree(obj)
         @height = 1
+        if children
+          @root_tree.adopt_child_list(children)
+          update_height
+        end
         if @active.leaf?
           close_active
         end
       end
+    end
+
+    # @return [Array<Tree>] all nodes excluding the root
+    def descendants
+      @root_tree.entries.drop(1)
     end
 
     #@param obj [#to_tree] the object to be converted to a tree node
@@ -43,7 +56,11 @@ module Parser
     #@raise [CannotConvertTypeToTree] if the object cannot return
     #  a tree with #to_tree
     def convert_to_tree(obj)
-      tree = obj.to_tree
+      tree = if obj.instance_of? Parser::ParseTree::Tree
+               obj
+             else
+               tree = obj.to_tree
+             end
       if tree.instance_of? Tree
         tree.parent = active_node
         tree.set_level
@@ -146,7 +163,15 @@ module Parser
       include Enumerable
       include Dote::AttributeActions
 
-      #@param (see #remove_root)
+      # Add a list of child nodes to this node's children
+      # @param children [TreeSeq] list of child nodes
+      # @return [nil]
+      def adopt_child_list(children)
+        self.children.concat children
+        children.each{|cn| cn.parent = self}
+      end
+
+      # (see TreeTransformations#delete_root)
       def delete_node(tree_match)
         if leaf?
           leaf_index = parent.children
@@ -408,6 +433,7 @@ module Parser
           children.each{|t| t.set_level}
         end
       end
+
       Dote::AttributeActions.validate self
     end
 

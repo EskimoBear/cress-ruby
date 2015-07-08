@@ -6,7 +6,7 @@ describe TreeTransformations do
   include TestHelpers
 
   subject {Parser::ParseTree}
-  
+
   before do
     @terminal_rule = get_sample_terminal
     @terminal_rule.s_attr.push :s_val
@@ -107,7 +107,7 @@ describe TreeTransformations do
     end
     it "remove_roots" do
       result = @triple_root_tree.remove_roots(@production.name)
-      result.must_be_same_as @triple_root_tree#@production.name
+      result.must_be_same_as @triple_root_tree
       @triple_root_tree.degree.must_equal 3
       @triple_root_tree.height.must_equal 2
     end
@@ -156,6 +156,37 @@ describe TreeTransformations do
       @single_root_tree.must_be :has_children?,
                                 [@token.name, @token.name,
                                  @token.name, @token.name]
+    end
+  end
+
+  describe "#replace_root" do
+    before do
+      @new_prod = @production.clone
+      @new_prod.name = :new_prod
+      @tree = subject.new(@production).insert(@token)
+      @tree.replace_root(@new_prod)
+    end
+    it "name has changed" do
+      @tree.name.must_equal @new_prod.name
+    end
+    it "retains children" do
+      @tree.must_be :has_child?, @token.name
+    end
+  end
+
+  describe "#delete_tree" do
+    before do
+      @tree = subject.new(@production).insert(@token)
+    end
+    it "no parameters" do
+      @tree.delete_tree.must_be :empty_tree?
+    end
+    it "matches root" do
+      @tree.delete_tree(@production.name).must_be :empty_tree?
+    end
+    it "matches child node" do
+      @tree.delete_tree(@token.name).wont_be :empty_tree?
+      @tree.wont_be :has_child?, @token.name
     end
   end
 end

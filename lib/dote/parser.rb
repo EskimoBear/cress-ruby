@@ -190,7 +190,7 @@ module Parser
   #            E' = E + et
   def parse_and_then(tokens, grammar, tree)
     result = build_parse_result([], tokens, tree)
-    @ebnf.term_list.each_with_object(result) do |i, acc|
+    @ebnf.terms.each_with_object(result) do |i, acc|
       if acc[:rest].empty?
         raise InvalidSequenceParsed,
               exhausted_tokens_error_message(i.rule_name,

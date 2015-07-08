@@ -1,6 +1,7 @@
 require 'forwardable'
 require_relative '../../utils/typed_seq'
 require_relative './attribute_actions'
+require_relative './parse_tree_transformations'
 
 module Parser
 
@@ -9,6 +10,7 @@ module Parser
     UnallowedMethodForClosedTree = Class.new(StandardError)
 
     include Enumerable
+    include TreeTransformations
     extend Forwardable
 
     attr_reader :height
@@ -71,94 +73,6 @@ module Parser
         end
       end
       self
-    end
-
-    #Delete the matching node from the tree
-    #@param (see #remove_root)
-    def delete_node(tree_match)
-      descendants.find{|i| i === tree_match}
-        .delete_node(tree_match)
-      update_height
-      self
-    end
-
-    #return [Array<Tree>] all nodes excluding the root
-    def descendants
-      @root_tree.entries.drop(1)
-    end
-
-    #Delete the matching nodes from the tree
-    #@param (see #remove_root)
-    def delete_nodes(tree_match)
-      descendants.find_all{|i| i === tree_match}
-        .each{|i| i.delete_node(tree_match)}
-      update_height
-      self
-    end
-
-    #Replace a root node with it's children
-    #@param tree_match [Symbol, nil] case match for Tree
-    #@return [ParseTree, Tree] the modified root tree
-    def remove_root(tree_match=nil)
-      if tree_match.nil?
-        reduce_root
-      elsif @root_tree === tree_match
-        reduce_root_tree_var(tree_match)
-      else
-        tree = find{|i| i === tree_match}.remove_root(tree_match)
-        update_height
-        tree
-      end
-    end
-
-    #@param (see #remove_root)
-    def remove_roots(tree_match)
-      if @root_tree === tree_match
-        reduce_root_tree_var(tree_match)
-      end
-      self.select{|i| i === tree_match}
-        .each{|i| i.remove_root(tree_match)}
-      update_height
-      self
-    end
-
-    #If the root of tree_match has one child make it the new root
-    #of the ParseTree or Tree. When tree_match is nil
-    #the root of the ParseTree matches.
-    #@param (see #remove_root)
-    #@return (see #remove_root)
-    def reduce_root(tree_match=nil)
-      if tree_match.nil?
-        reduce_root_tree_var(@root_tree.name)
-      else
-        tree = find{|i| i === tree_match}.reduce_root
-        update_height
-        tree
-      end
-    end
-
-    #@param (see #remove_root)
-    def reduce_root_tree_var(tree_match)
-      if @root_tree === tree_match
-        if degree == 1
-          new_root = children.first
-          new_root.parent = Tree.new
-          @root_tree = new_root
-          @height = @height - 1
-          self
-        end
-      end
-    end
-
-    #@param (see #remove_root)
-    def reduce_roots(tree_match)
-      reduce_root_tree_var(tree_match)
-      post_order_entries = []
-      self.post_order_traversal{|i| post_order_entries.push i}
-      post_order_entries.select{|i| i === tree_match}
-        .each{|tm| tm.reduce_root}
-      update_height
-     self
     end
 
     def update_height(tree=nil)
@@ -498,5 +412,6 @@ module Parser
     end
 
     TreeSeq = TypedSeq.new_seq(Tree)
+    TreeTransformations.validate self
   end
 end

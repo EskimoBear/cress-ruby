@@ -1,18 +1,49 @@
+require_relative  '../type_system'
+
 module Dote::DoteGrammars
+
+  def var_store_cfg
+    RuleSeq.new(ast.copy_rules)
+      .concat(Dote::DoteGrammars.make_reserved_keys_rules([:let, :ref, :doc]))
+      .build_cfg(:program)
+  end
 
   def var_store
     RuleSeq.assign_attribute_grammar(
-      ast,
+      var_store_cfg,
       [AST, VariableStore],
-      [])
+      [{
+         :attr => :val,
+         :type => :s_attr,
+         :terms => [:All]
+       }])
   end
 
   module VariableStore
-    
+
     include ISemantics
+    include Dote::TypeSystem
 
     def build_store(tree)
+      eval_ast_attributes(tree)
       create_variables(tree, {})
+    end
+
+    def eval_ast_attributes(tree)
+      build_val_attr(tree)
+      tree
+    end
+
+    def build_val_attr(tree)
+      tree.post_order_traversal do |n|
+        if n === :true
+          n.store_attribute(:val, true)
+        elsif n === :number
+          n.store_attribute(:val, n.get_attribute(:lexeme).to_s.to_f)
+        elsif n === :program
+          n.store_attribute(:val, Dote::TypeSystem::ProcedureType.new)
+        end
+      end
     end
 
     def create_variables(tree, store={})
@@ -22,10 +53,12 @@ module Dote::DoteGrammars
 
     def add_attributes_to_store(tree, store)
       bind_nodes = tree.find_all{|i| i === :bind}
-      attribute_names = bind_nodes
-                        .map{|i| i.children.first.get_attribute(:lexeme)}
-      attribute_names.each do |i|
-        store.store(var_name(i), nil)
+      bind_nodes.each do |bn|
+        attribute_name_node = bn.children.first
+        variable_name = var_name(attribute_name_node.get_attribute(:lexeme))
+        value_node = bn.children.last
+        value = value_node.get_attribute(:val)
+        store.store(variable_name, value)
       end
       store
     end
@@ -36,17 +69,30 @@ module Dote::DoteGrammars
     end
 
     def add_let_params_to_store(tree, store)
-      apply_nodes = tree.select{|i| i === :apply}
-      let_variables = apply_nodes
-                      .select{|i| i.children.first
-                               .get_attribute(:lexeme).to_s == "\"&let\""}
-                      .flat_map{|i| i.children.last.children}
-      let_variables.each do |i|
-        if i.name == :literal_string
-          store.store(var_name(i.get_attribute(:value)), nil)
+      select_built_in_procs(tree, :let).each do |ln|
+        ln.children.last.children.each do |param|
+          if param.name == :literal_string
+            store.store(
+              var_name(param.get_attribute(:val)),
+              Dote::TypeSystem::UnboundType.new)
+          end
         end
       end
       store
+    end
+
+    # Find all built in procedures in the AST matching the
+    # reserved_key_name.
+    # @param tree [Parser::ParseTree]
+    # @param reserved_key_name [Symbol]
+    # @return [Array<Parser::ParseTree::Tree>]
+    def select_built_in_procs(tree, reserved_key_name)
+      reserved_key_rule = self.get_rule(reserved_key_name)
+      apply_nodes = tree.select{|i| i === :apply}
+      reserved_key_nodes = apply_nodes.select do |an|
+        proc_identifiers = an.children.first
+        reserved_key_rule.match(proc_identifiers.get_attribute(:lexeme).to_s)
+      end
     end
   end
 end

@@ -46,11 +46,6 @@ module Parser
       end
     end
 
-    # @return [Array<Tree>] all nodes excluding the root
-    def descendants
-      @root_tree.entries.drop(1)
-    end
-
     #@param obj [#to_tree] the object to be converted to a tree node
     #@return [Parser::ParseTree::Tree] the resulting tree
     #@raise [CannotConvertTypeToTree] if the object cannot return
@@ -154,7 +149,7 @@ module Parser
                    :empty_tree?, :contains?, :attribute_list,
                    :get_attribute, :store_attribute, :bottom_left_node,
                    :post_order_trace, :post_order_traversal,
-                   :attributes, :name, :===
+                   :attributes, :name, :===, :delete_tree, :descendants
 
     #Struct class for a tree node
     Tree = Struct.new :name, :open_state, :attributes,
@@ -162,6 +157,37 @@ module Parser
 
       include Enumerable
       include Dote::AttributeActions
+
+      # Replace the root with obj
+      # @param obj [#to_tree]
+      # @return [ParseTree::Tree] the modified tree
+      def replace_root(obj)
+        new_root = obj.to_tree
+        new_root.adopt_child_list(self.children)
+        self.replace new_root
+      end
+
+      # Delete the matching tree i.e. the node and all it's child nodes.
+      # Replaces the tree with the empty tree if no tree_match is not given
+      # or if the root is matched.
+      # @param (see #remove_root)
+      # @return [ParseTree]
+      # @see delete_node
+      def delete_tree(tree_match=nil)
+        if tree_match.nil? || self === tree_match
+          Parser::ParseTree::Tree.new
+        else
+          ex_tree = descendants.detect{|i| i === tree_match}
+          ex_tree_index = ex_tree.parent.children.find_index{|i| i === tree_match}
+          ex_tree.parent.children.delete_at(ex_tree_index)
+          self
+        end
+      end
+
+      # @return [Array<Tree>] all nodes excluding the root
+      def descendants
+        entries.drop(1)
+      end
 
       # Add a list of child nodes to this node's children
       # @param children [TreeSeq] list of child nodes

@@ -1,8 +1,14 @@
+require_relative '../../utils/respondent'
+
 module Dote
 
   #Operations and data structures for the ebnf field
   #  of the Dote::RuleSeq::Rule
   module EBNF
+
+    extend Respondent
+
+    uses :ebnf, :name
 
     module Terms
     end
@@ -85,6 +91,20 @@ module Dote
 
     def option_rule?
       self.ebnf.instance_of? OptionRule
+    end
+
+    # Express the syntactic difference between the rule and a given rule
+    # as a Hash.
+    # @param rule [Dote::Rule] rule compared to self
+    # @return [Hash] the syntactic difference between two rules
+    def syntax_diff(rule)
+      new_name = if self.name == rule.name
+                    nil
+                  else
+                    rule.name
+                  end
+      remove_array = self.term_names - rule.term_names
+      {:rename => new_name, :remove => remove_array}
     end
 
     #FIXME make polymorphic method instead of switch

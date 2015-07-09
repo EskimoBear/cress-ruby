@@ -25,23 +25,6 @@ module TreeTransformations
     self
   end
 
-  # Delete the matching tree i.e. the node and all it's child nodes.
-  # Replaces the tree with the empty tree if no tree_match is not given
-  # or if the root is matched.
-  # @param (see #remove_root)
-  # @return [ParseTree]
-  # @see delete_node
-  def delete_tree(tree_match=nil)
-    if tree_match.nil? || self === tree_match
-      Parser::ParseTree::Tree.new
-    else
-      ex_tree = descendants.detect{|i| i === tree_match}
-      ex_tree_index = ex_tree.parent.children.find_index{|i| i === tree_match}
-      ex_tree.parent.children.delete_at(ex_tree_index)
-      self
-    end
-  end
-
   # Replace a root node with it's children
   # @param tree_match [Symbol, nil] case match for Tree
   # @return [ParseTree, Tree] the modified root tree
@@ -110,7 +93,7 @@ module TreeTransformations
    self
   end
 
-  # Replace the root with the rule in new_root
+  # Replace the root with obj
   # @param obj [#to_tree]
   # @return [ParseTree] the modified tree
   def replace_root(obj)

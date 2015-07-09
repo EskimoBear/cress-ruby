@@ -42,20 +42,6 @@ module Dote
       @i_attr = terminal? ? nil : []
     end
 
-    # Express the syntactic difference between the rule and a given rule
-    # as a Hash.
-    # @param rule [Dote::Rule] rule compared to self
-    # @return [Hash] the syntactic difference between two rules
-    def rule_diff(rule)
-      new_name = if self.name == rule.name
-                    nil
-                  else
-                    rule.name
-                  end
-      remove_array = self.term_names - rule.term_names
-      {:rename => new_name, :remove => remove_array}
-    end
-
     def to_tree
       if terminal?
         nil
@@ -154,5 +140,6 @@ module Dote
     end
 
     Parser.validate self
+    EBNF.validate self
   end
 end

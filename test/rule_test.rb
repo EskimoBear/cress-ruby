@@ -30,7 +30,7 @@ describe Dote::Rule do
     parsed_seq_check && rest_check
   end
 
-  describe "#rule_diff" do
+  describe "#syntax_diff" do
     describe "concat_rules" do
       before do
         @rules = rule_seq
@@ -41,7 +41,7 @@ describe Dote::Rule do
       end
       it "extra term" do
         result_hash = {:rename => :r2, :remove => [:rule_2]}
-        @r1.rule_diff(@r2).must_equal result_hash
+        @r1.syntax_diff(@r2).must_equal result_hash
       end
     end
   end

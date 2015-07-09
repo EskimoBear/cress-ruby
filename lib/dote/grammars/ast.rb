@@ -4,7 +4,7 @@ module Dote::DoteGrammars
     RuleSeq.new(display_fmt.copy_rules)
       .make_ag_production_rule(:bind, [:attribute_name, :value])
       .make_ag_production_rule(:apply, [:proc_identifier, :value])
-      .make_ag_terminal_rule(:literal_string, [:value])
+      .make_ag_terminal_rule(:literal_string)
       .make_ag_production_rule(:interpolated_string, [])
       .build_cfg(:program)
   end
@@ -103,7 +103,7 @@ module Dote::DoteGrammars
       if (node.degree == 1) && (node.children.first === :nullable)
         nullable = node.children.first
         nullable.replace get_rule(:literal_string).to_tree
-        nullable.store_attribute(:value, "")
+        nullable.store_attribute(:val, "")
         node.reduce_root
       end
     end
@@ -115,7 +115,7 @@ module Dote::DoteGrammars
             acc.concat(i.get_attribute(:lexeme).to_s)
           end
           node.replace get_rule(:literal_string).to_tree
-          node.store_attribute(:value, string)
+          node.store_attribute(:val, string)
         end
       end
     end
@@ -123,7 +123,7 @@ module Dote::DoteGrammars
     def make_interpolated_string(node)
       if node.degree >= 1
         if node.children.any?{|i| i === :variable_identifier}
-          node.replace get_rule(:interpolated_string).to_tree
+          node.replace_root get_rule(:interpolated_string)
         end
       end
     end

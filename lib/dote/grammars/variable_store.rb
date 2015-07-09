@@ -1,3 +1,5 @@
+require_relative  '../type_system'
+
 module Dote::DoteGrammars
 
   def var_store_cfg
@@ -10,15 +12,38 @@ module Dote::DoteGrammars
     RuleSeq.assign_attribute_grammar(
       var_store_cfg,
       [AST, VariableStore],
-      [])
+      [{
+         :attr => :val,
+         :type => :s_attr,
+         :terms => [:All]
+       }])
   end
 
   module VariableStore
 
     include ISemantics
+    include Dote::TypeSystem
 
     def build_store(tree)
+      eval_ast_attributes(tree)
       create_variables(tree, {})
+    end
+
+    def eval_ast_attributes(tree)
+      build_val_attr(tree)
+      tree
+    end
+
+    def build_val_attr(tree)
+      tree.post_order_traversal do |n|
+        if n === :true
+          n.store_attribute(:val, true)
+        elsif n === :number
+          n.store_attribute(:val, n.get_attribute(:lexeme).to_s.to_f)
+        elsif n === :program
+          n.store_attribute(:val, Dote::TypeSystem::ProcedureType.new)
+        end
+      end
     end
 
     def create_variables(tree, store={})
@@ -32,8 +57,8 @@ module Dote::DoteGrammars
         attribute_name_node = bn.children.first
         variable_name = var_name(attribute_name_node.get_attribute(:lexeme))
         value_node = bn.children.last
-        value = value_node.get_attribute(:lexeme)
-        store.store(variable_name, nil)
+        value = value_node.get_attribute(:val)
+        store.store(variable_name, value)
       end
       store
     end
@@ -47,14 +72,16 @@ module Dote::DoteGrammars
       select_built_in_procs(tree, :let).each do |ln|
         ln.children.last.children.each do |param|
           if param.name == :literal_string
-            store.store(var_name(param.get_attribute(:value)), nil)
+            store.store(
+              var_name(param.get_attribute(:val)),
+              Dote::TypeSystem::UnboundType.new)
           end
         end
       end
       store
     end
 
-    # Find all built in procedures in the AST matching
+    # Find all built in procedures in the AST matching the
     # reserved_key_name.
     # @param tree [Parser::ParseTree]
     # @param reserved_key_name [Symbol]

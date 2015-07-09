@@ -14,6 +14,7 @@ task :test do
   ruby "test/rule_test.rb"
   ruby "test/token_seq_test.rb"
   ruby "test/cli_test.rb"
+  ruby "test/tree_transformations_test.rb"
 end
 
 task :test_utils do

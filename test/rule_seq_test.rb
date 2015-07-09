@@ -27,8 +27,7 @@ describe Dote::RuleSeq do
     end
     it "has correct properties" do
       @rules.must_be_instance_of subject
-      @new_rule.terminal?.must_equal true
-      @new_rule.ebnf.must_be_nil
+      @new_rule.must_be :terminal?
       @first_set.must_include @new_rule.name
       @new_rule.nullable?.must_equal false
     end
@@ -75,12 +74,24 @@ describe Dote::RuleSeq do
       @s_attrs = [:value, :line]
       @i_attrs = [:closure]
     end
-    it "#make_ag_production_rule" do
-      @rules = rule_seq.make_ag_production_rule(:ag_rule, @s_attrs, @i_attrs)
-      @new_rule = @rules.get_rule(:ag_rule)
-      @new_rule.must_be :ag_production?
-      @new_rule.s_attr.must_equal @s_attrs
-      @new_rule.i_attr.must_equal @i_attrs
+    describe "#make_ag_production_rule" do
+      before do
+        @term_names = [:key, :val]
+        @rules = rule_seq.make_ag_production_rule(:ag_rule, @term_names, @s_attrs, @i_attrs)
+        @rule = @rules.get_rule(:ag_rule)
+        @ebnf = @rule.ebnf
+      end
+      it "is an ag_production" do
+        @rule.must_be :ag_production?
+      end
+      it "has attributes" do
+        @rule.s_attr.must_equal @s_attrs
+        @rule.i_attr.must_equal @i_attrs
+      end
+      it "has ebnf" do
+        @ebnf.wont_be_nil
+        @rule.term_names.must_equal @term_names
+      end
     end
     it "#make_ag_terminal_rule" do
       @rules = rule_seq.make_ag_terminal_rule(:ag_rule, @s_attrs)
@@ -107,7 +118,7 @@ describe Dote::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
-      @new_rule.ebnf.must_be_instance_of Dote::EBNF::AlternationRule
+      @new_rule.must_be :alternation_rule?
       @new_rule.nullable?.must_equal false
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :rule_2
@@ -117,7 +128,7 @@ describe Dote::RuleSeq do
       before do
         @rules = rule_seq.make_alternation_rule(:new_rule, [:rule_2, :undefined])
         @new_rule = @rules.get_rule(:new_rule)
-        @term_names = @new_rule.ebnf.term_set.map{|i| i.rule_name}
+        @term_names = @new_rule.term_names
       end
       it "is partial" do
         @new_rule.partial_status.must_equal true
@@ -145,7 +156,7 @@ describe Dote::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
-      @new_rule.ebnf.must_be_instance_of Dote::EBNF::ConcatenationRule
+      @new_rule.must_be :concatenation_rule?
       @new_rule.nullable?.must_equal false
       @new_rule.first_set.must_include :rule_1
       @new_rule.partial_status.must_equal false
@@ -233,7 +244,7 @@ describe Dote::RuleSeq do
       @rules = rule_seq.make_repetition_rule(:new_rule, :rule_1)
       @new_rule = @rules.get_rule(:new_rule)
       @rules.must_be_instance_of subject
-      @new_rule.ebnf.must_be_instance_of Dote::EBNF::RepetitionRule
+      @new_rule.must_be :repetition_rule?
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
       @new_rule.nullable?.must_equal true
@@ -264,7 +275,7 @@ describe Dote::RuleSeq do
       @rules.must_be_instance_of subject
       @new_rule.must_be_instance_of rule
       @new_rule.nonterminal?.must_equal true
-      @new_rule.ebnf.must_be_instance_of Dote::EBNF::OptionRule
+      @new_rule.must_be :option_rule?
       @new_rule.nullable?.must_equal true
       @new_rule.first_set.must_include :rule_1
       @new_rule.first_set.must_include :nullable

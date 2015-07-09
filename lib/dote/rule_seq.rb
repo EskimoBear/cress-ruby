@@ -134,10 +134,14 @@ module Dote
     end
 
     def ebnf_concat(rule_names)
+      ebnf_list(rule_names, EBNF::ConcatenationRule)
+    end
+
+    def ebnf_list(rule_names, term_type)
       term_list = rule_names.map do |i|
         rule_to_term(i)
       end
-      EBNF::ConcatenationRule.new(term_list)
+      term_type.new(term_list)
     end
 
     def rule_to_term(rule_name)
@@ -187,10 +191,7 @@ module Dote
     end
 
     def ebnf_alt(rule_names)
-      term_list = rule_names.map do |i|
-        rule_to_term(i)
-      end
-      EBNF::AlternationRule.new(term_list)
+      ebnf_list(rule_names, EBNF::AlternationRule)
     end
 
     #Create a non-terminal production rule of either a non-terminal
@@ -206,7 +207,7 @@ module Dote
       rule = Rule.new(new_rule_name,
                       /undefined/,
                       partial_status,
-                      ebnf_rep(rule_name))
+                      ebnf_rep([rule_name]))
       prepare_first_set(rule)
       if partial_status
         self.push rule
@@ -215,8 +216,8 @@ module Dote
       end
     end
 
-    def ebnf_rep(rule_name)
-      EBNF::RepetitionRule.new(rule_to_term(rule_name))
+    def ebnf_rep(rule_names)
+      ebnf_list(rule_names, EBNF::RepetitionRule)
     end
 
     #Create a non-terminal production rule of either a non-terminal
@@ -232,7 +233,7 @@ module Dote
       rule = Rule.new(new_rule_name,
                       /undefined/,
                       partial_status,
-                      ebnf_opt(rule_name))
+                      ebnf_opt([rule_name]))
       prepare_first_set(rule)
       if partial_status
         self.push rule
@@ -241,8 +242,8 @@ module Dote
       end
     end
 
-    def ebnf_opt(rule_name)
-      EBNF::OptionRule.new(rule_to_term(rule_name))
+    def ebnf_opt(rule_names)
+      ebnf_list(rule_names, EBNF::OptionRule)
     end
 
     def missing_items_error_message(rule_names)
@@ -283,14 +284,19 @@ module Dote
 
     #Add an attribute grammar production rule to the RuleSeq
     #@param name [Symbol] name of the attribute grammar production
+    #@param rule_names [Array<Symbol] the terms in the syntax of the rule
     #@param s_attrs [Array<Symbol>] array of s-attributes
     #@param i_attrs [Array<Symbol>] array of i-attributes
     #@return [self]
-    def make_ag_production_rule(name, s_attrs=[], i_attrs=[])
-      rule = Rule.new(name, nil, nil, EBNF::AG_ProductionRule[name])
+    def make_ag_production_rule(name, rule_names, s_attrs=[], i_attrs=[])
+      rule = Rule.new(name, nil, nil, ebnf_ag(rule_names))
       rule.s_attr = s_attrs
       rule.i_attr = i_attrs
       self.push rule
+    end
+
+    def ebnf_ag(rule_names)
+      ebnf_list(rule_names, EBNF::AG_ProductionRule)
     end
 
     #Add an attribute grammar terminal rule to the RuleSeq

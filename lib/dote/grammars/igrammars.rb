@@ -43,6 +43,20 @@ module Dote::DoteGrammars
     def build_store(ast)
       {}
     end
+
+    def transform_to(new_rule_name, tree)
+      old_rule = self.get_rule(tree.name)
+      new_rule = self.get_rule(new_rule_name)
+      diff = old_rule.syntax_diff(new_rule)
+      unless diff[:rename].nil?
+        tree.replace_root(new_rule)
+      end
+      unless diff[:remove].empty?
+        diff[:remove].each do |i|
+          tree.delete_tree(i)
+        end
+      end
+    end
   end
 
   # Create source files for new code

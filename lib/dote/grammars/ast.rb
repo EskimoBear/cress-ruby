@@ -2,10 +2,10 @@ module Dote::DoteGrammars
 
   def ast_cfg
     RuleSeq.new(display_fmt.copy_rules)
-      .make_ag_production_rule(:bind)
-      .make_ag_production_rule(:apply)
+      .make_ag_production_rule(:bind, [:attribute_name, :value])
+      .make_ag_production_rule(:apply, [:proc_identifier, :value])
       .make_ag_terminal_rule(:literal_string, [:value])
-      .make_ag_production_rule(:interpolated_string)
+      .make_ag_production_rule(:interpolated_string, [])
       .build_cfg(:program)
   end
 
@@ -83,8 +83,10 @@ module Dote::DoteGrammars
     end
 
     def make_operators_root(tree)
-      make_bind_trees(tree)
-      make_apply_trees(tree)
+      attributes = tree.select{|i| i === :attribute}
+      attributes.each{|i| transform_to(:bind, i)}
+      calls = tree.select{|i| i === :call}
+      calls.each{|i| transform_to(:apply, i)}
       tree
     end
 
@@ -123,38 +125,6 @@ module Dote::DoteGrammars
         if node.children.any?{|i| i === :variable_identifier}
           node.replace get_rule(:interpolated_string).to_tree
         end
-      end
-    end
-
-    def make_bind_trees(tree)
-      attributes = tree.select{|i| i === :attribute}
-      attribute_names = attributes.map{|a| a.children.first}
-      colons = attributes.map{|a| a.children[1]}
-      values = attributes.map{|a| a.children.last}
-      attributes.zip(attribute_names, colons, values).each do |t|
-        t_attribute = t.first
-        t_colon = t[2]
-        t_colon.replace get_rule(:bind).to_tree
-        t_colon.children.push(t[1]).push(t.last)
-        t_colon.children.each{|i| i.parent = t_colon}
-        t_attribute.children.delete_if{|i| !(i === t_colon.name)}
-        t_attribute.reduce_root
-      end
-    end
-
-    def make_apply_trees(tree)
-      calls = tree.select{|i| i === :call}
-      procs = calls.map{|a| a.children.first}
-      colons = calls.map{|a| a.children[1]}
-      args = calls.map{|a| a.children.last}
-      calls.zip(procs, colons, args).each do |t|
-        t_call = t.first
-        t_colon = t[2]
-        t_colon.replace get_rule(:apply).to_tree
-        t_colon.children.push(t[1]).push(t.last)
-        t_colon.children.each{|i| i.parent = t_colon}
-        t_call.children.delete_if{|i| !(i === t_colon.name)}
-        t_call.reduce_root
       end
     end
   end

@@ -1,6 +1,7 @@
 require 'forwardable'
 require_relative '../../utils/typed_seq'
 require_relative './attribute_actions'
+require_relative './parse_tree_transformations'
 
 module Parser
 
@@ -9,13 +10,14 @@ module Parser
     UnallowedMethodForClosedTree = Class.new(StandardError)
 
     include Enumerable
+    include TreeTransformations
     extend Forwardable
 
     attr_reader :height
 
-    #Initialize tree with obj as root node. An empty
-    #tree is created if no parameter is given.
-    #@param obj [Dote::Rule] Rule
+    # Initialize tree with obj as root node. An empty
+    # tree is created if no parameter is given.
+    # @param obj [Dote::Rule] Rule
     def initialize(obj=nil)
       init_empty
       set_root(obj)
@@ -26,10 +28,18 @@ module Parser
       @root_tree = @active = Tree.new
     end
 
-    def set_root(obj)
+    # Make the obj the root node of the ParseTree. If children is
+    # given, initialize as the child list of the root node.
+    # @param obj [#to_tree] root node
+    # @param children [TreeSeq] child list of root node
+    def set_root(obj, children=nil)
       unless obj.nil?
         @root_tree = @active = convert_to_tree(obj)
         @height = 1
+        if children
+          @root_tree.adopt_child_list(children)
+          update_height
+        end
         if @active.leaf?
           close_active
         end
@@ -41,7 +51,11 @@ module Parser
     #@raise [CannotConvertTypeToTree] if the object cannot return
     #  a tree with #to_tree
     def convert_to_tree(obj)
-      tree = obj.to_tree
+      tree = if obj.instance_of? Parser::ParseTree::Tree
+               obj
+             else
+               tree = obj.to_tree
+             end
       if tree.instance_of? Tree
         tree.parent = active_node
         tree.set_level
@@ -71,94 +85,6 @@ module Parser
         end
       end
       self
-    end
-
-    #Delete the matching node from the tree
-    #@param (see #remove_root)
-    def delete_node(tree_match)
-      descendants.find{|i| i === tree_match}
-        .delete_node(tree_match)
-      update_height
-      self
-    end
-
-    #return [Array<Tree>] all nodes excluding the root
-    def descendants
-      @root_tree.entries.drop(1)
-    end
-
-    #Delete the matching nodes from the tree
-    #@param (see #remove_root)
-    def delete_nodes(tree_match)
-      descendants.find_all{|i| i === tree_match}
-        .each{|i| i.delete_node(tree_match)}
-      update_height
-      self
-    end
-
-    #Replace a root node with it's children
-    #@param tree_match [Symbol, nil] case match for Tree
-    #@return [ParseTree, Tree] the modified root tree
-    def remove_root(tree_match=nil)
-      if tree_match.nil?
-        reduce_root
-      elsif @root_tree === tree_match
-        reduce_root_tree_var(tree_match)
-      else
-        tree = find{|i| i === tree_match}.remove_root(tree_match)
-        update_height
-        tree
-      end
-    end
-
-    #@param (see #remove_root)
-    def remove_roots(tree_match)
-      if @root_tree === tree_match
-        reduce_root_tree_var(tree_match)
-      end
-      self.select{|i| i === tree_match}
-        .each{|i| i.remove_root(tree_match)}
-      update_height
-      self
-    end
-
-    #If the root of tree_match has one child make it the new root
-    #of the ParseTree or Tree. When tree_match is nil
-    #the root of the ParseTree matches.
-    #@param (see #remove_root)
-    #@return (see #remove_root)
-    def reduce_root(tree_match=nil)
-      if tree_match.nil?
-        reduce_root_tree_var(@root_tree.name)
-      else
-        tree = find{|i| i === tree_match}.reduce_root
-        update_height
-        tree
-      end
-    end
-
-    #@param (see #remove_root)
-    def reduce_root_tree_var(tree_match)
-      if @root_tree === tree_match
-        if degree == 1
-          new_root = children.first
-          new_root.parent = Tree.new
-          @root_tree = new_root
-          @height = @height - 1
-          self
-        end
-      end
-    end
-
-    #@param (see #remove_root)
-    def reduce_roots(tree_match)
-      reduce_root_tree_var(tree_match)
-      post_order_entries = []
-      self.post_order_traversal{|i| post_order_entries.push i}
-      post_order_entries.select{|i| i === tree_match}
-        .each{|tm| tm.reduce_root}
-      update_height
-     self
     end
 
     def update_height(tree=nil)
@@ -223,7 +149,7 @@ module Parser
                    :empty_tree?, :contains?, :attribute_list,
                    :get_attribute, :store_attribute, :bottom_left_node,
                    :post_order_trace, :post_order_traversal,
-                   :attributes, :name, :===
+                   :attributes, :name, :===, :delete_tree, :descendants
 
     #Struct class for a tree node
     Tree = Struct.new :name, :open_state, :attributes,
@@ -232,7 +158,46 @@ module Parser
       include Enumerable
       include Dote::AttributeActions
 
-      #@param (see #remove_root)
+      # Replace the root with obj
+      # @param obj [#to_tree]
+      # @return [ParseTree::Tree] the modified tree
+      def replace_root(obj)
+        new_root = obj.to_tree
+        new_root.adopt_child_list(self.children)
+        self.replace new_root
+      end
+
+      # Delete the matching tree i.e. the node and all it's child nodes.
+      # Replaces the tree with the empty tree if no tree_match is not given
+      # or if the root is matched.
+      # @param (see #remove_root)
+      # @return [ParseTree]
+      # @see delete_node
+      def delete_tree(tree_match=nil)
+        if tree_match.nil? || self === tree_match
+          Parser::ParseTree::Tree.new
+        else
+          ex_tree = descendants.detect{|i| i === tree_match}
+          ex_tree_index = ex_tree.parent.children.find_index{|i| i === tree_match}
+          ex_tree.parent.children.delete_at(ex_tree_index)
+          self
+        end
+      end
+
+      # @return [Array<Tree>] all nodes excluding the root
+      def descendants
+        entries.drop(1)
+      end
+
+      # Add a list of child nodes to this node's children
+      # @param children [TreeSeq] list of child nodes
+      # @return [nil]
+      def adopt_child_list(children)
+        self.children.concat children
+        children.each{|cn| cn.parent = self}
+      end
+
+      # (see TreeTransformations#delete_root)
       def delete_node(tree_match)
         if leaf?
           leaf_index = parent.children
@@ -494,9 +459,11 @@ module Parser
           children.each{|t| t.set_level}
         end
       end
+
       Dote::AttributeActions.validate self
     end
 
     TreeSeq = TypedSeq.new_seq(Tree)
+    TreeTransformations.validate self
   end
 end

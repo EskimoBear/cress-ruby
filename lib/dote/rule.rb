@@ -140,5 +140,6 @@ module Dote
     end
 
     Parser.validate self
+    EBNF.validate self
   end
 end

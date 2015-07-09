@@ -1,18 +1,55 @@
+require_relative '../../utils/respondent'
+
 module Dote
 
   #Operations and data structures for the ebnf field
   #  of the Dote::RuleSeq::Rule
   module EBNF
 
-    Terminal = Struct.new(:rule_name)
-    NonTerminal = Struct.new(:rule_name)
+    extend Respondent
 
-    ConcatenationRule = Struct.new(:term_list)
-    AlternationRule = Struct.new(:term_set)
-    RepetitionRule = Struct.new(:term)
-    OptionRule = Struct.new(:term)
-    AG_TerminalRule = Struct.new(:name)
-    AG_ProductionRule = Struct.new(:name)
+    uses :ebnf, :name
+
+    module Terms
+    end
+
+    Terminal = Struct.new(:rule_name) do
+      include Terms
+    end
+
+    NonTerminal = Struct.new(:rule_name) do
+      include Terms
+    end
+
+    module Productions
+      def production_type
+        self.class.to_s.downcase.match(/([^::]+)\z/).to_s.intern
+      end
+    end
+
+    AG_TerminalRule = Struct.new(:rule_name) do
+      include Productions
+    end
+
+    ConcatenationRule = Struct.new(:terms) do
+      include Productions
+    end
+
+    AlternationRule = Struct.new(:terms) do
+      include Productions
+    end
+
+    RepetitionRule = Struct.new(:terms) do
+      include Productions
+    end
+
+    OptionRule = Struct.new(:terms) do
+      include Productions
+    end
+
+    AG_ProductionRule = Struct.new(:terms) do
+      include Productions
+    end
 
     def terminal?
       self.ebnf.nil?
@@ -56,20 +93,29 @@ module Dote
       self.ebnf.instance_of? OptionRule
     end
 
+    # Express the syntactic difference between the rule and a given rule
+    # as a Hash.
+    # @param rule [Dote::Rule] rule compared to self
+    # @return [Hash] the syntactic difference between two rules
+    def syntax_diff(rule)
+      new_name = if self.name == rule.name
+                    nil
+                  else
+                    rule.name
+                  end
+      remove_array = self.term_names - rule.term_names
+      {:rename => new_name, :remove => remove_array}
+    end
+
+    #FIXME make polymorphic method instead of switch
     def term_names
-      if self.terminal? || self.ag_production? || self.ag_terminal?
+      if self.terminal? || self.ag_terminal?
         nil
-      elsif alternation_rule?
-        self.ebnf.term_set.map{|i| i.rule_name}
-      elsif concatenation_rule?
-        self.ebnf.term_list.map{|i| i.rule_name}
-      elsif repetition_rule? || option_rule?
-        [ebnf.term.rule_name]
+      else
+        self.ebnf.terms.map{|i| i.rule_name}
       end
     end
 
-    #FIXME this no longer works as terminals which have been
-    #converted from nonterminals have an undefined @start_rxp
     def to_s
       if terminal?
         "#{self.name}"
@@ -80,15 +126,15 @@ module Dote
 
     def ebnf_to_s
       if alternation_rule?
-        terms = ebnf.term_set
+        terms = ebnf.terms
         join_rule_names(terms, " | ")
       elsif concatenation_rule?
-        terms = ebnf.term_list
+        terms = ebnf.terms
         join_rule_names(terms, ", ")
       elsif repetition_rule?
-        "{#{ebnf.term.rule_name}}"
+        "{#{ebnf.terms.first.rule_name}}"
       elsif option_rule?
-        "[#{ebnf.term.rule_name}]"
+        "[#{ebnf.terms.first.rule_name}]"
       end
     end
 

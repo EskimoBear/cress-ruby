@@ -12,11 +12,23 @@ module Dote
   EMPTY_PROGRAM = "empty_program"
   MALFORMED_PROGRAM = "Program is malformed"
 
+  # Generate an object code file for the program provided
+  # @param program [String] string representation of the program
+  # @param grammar [IObjectCode]
+  # @param output_path [String]
+  # @return [nil]
+  def compile(program, grammar, output_path)
+    env = source_to_env(program, grammar)
+    unless env.nil?
+      build_object_code(env, grammar, output_path)
+    end
+  end
+
   # @param program [String] string representation of the program
   # @param grammar [ISemantics]
   # @return [nil, Hash] the environment for the executed program
   # @raise SyntaxError, when program is malformed JSON
-  def compile(program, grammar=LANG)
+  def source_to_env(program, grammar=LANG)
     if validate_json?(program)
       token_sequence = TokenPass.tokenize_program(program, grammar)
                        .verify_special_forms(grammar)
@@ -61,9 +73,10 @@ module Dote
   # @param env [Hash]
   # @param grammar [IObjectCode]
   # @param output_path [String]
-  # @return [Void]
+  # @return [nil]
   def build_object_code(env, grammar, output_path)
     code = grammar.generate_code(env)
     grammar.make_file(code, output_path)
+    nil
   end
 end

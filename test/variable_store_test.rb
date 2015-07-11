@@ -7,7 +7,7 @@ describe Dote::DoteGrammars::VariableStore do
   subject {Dote::DoteGrammars.var_store}
 
   before do
-    @tree_eval = Dote.compile(load_test_inputs('variable_sample'), subject)
+    @tree_eval = Dote.source_to_env(load_test_inputs('variable_sample'), subject)
     @store = @tree_eval[:store]
   end
 

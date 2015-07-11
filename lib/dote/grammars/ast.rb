@@ -79,7 +79,7 @@ module Dote::DoteGrammars
     def reduce_string(tree)
       tree.delete_nodes(:string_delimiter)
       remove_nullable_child(tree, :string)
-      make_literal_strings(tree)
+      make_string_nodes(tree)
     end
 
     def make_operators_root(tree)
@@ -90,27 +90,21 @@ module Dote::DoteGrammars
       tree
     end
 
-    def make_literal_strings(tree)
+    def make_string_nodes(tree)
       strings = tree.select{|i| i === :string}
       strings.each do |i|
-        make_empty_literal_string(i)
-        make_filled_literal_string(i)
+        make_literal_string(i)
         make_interpolated_string(i)
       end
     end
 
-    def make_empty_literal_string(node)
-      if (node.degree == 1) && (node.children.first === :nullable)
-        nullable = node.children.first
-        nullable.replace get_rule(:literal_string).to_tree
-        nullable.store_attribute(:val, "")
-        node.reduce_root
-      end
-    end
-
-    def make_filled_literal_string(node)
+    def make_literal_string(node)
       if node.degree >= 1
-        if node.children.all?{|i| i === :word_form}
+        first_child = node.children.first
+        if first_child === :nullable
+          first_child.store_attribute(:val, "")
+        end
+        if node.children.none?{|i| i === :variable_identifier}
           string = node.children.reduce("") do |acc, i|
             acc.concat(i.get_attribute(:lexeme).to_s)
           end

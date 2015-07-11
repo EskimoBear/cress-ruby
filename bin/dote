@@ -38,7 +38,6 @@ command 'fmt' do |c|
       if files[:input_file]
         program = File.open(files[:input_file]).read
         grammar = Dote::DoteGrammars.dote_fmt
-        env = Dote.compile(program, grammar)
         if files[:output_file].nil?
           output_path = files[:input_file]
         else
@@ -47,7 +46,7 @@ command 'fmt' do |c|
           end
           output_path = files[:output_file]
         end
-        Dote.build_object_code(env, grammar, output_path)
+        Dote.compile(program, grammar, output_path)
       end
     end
   end

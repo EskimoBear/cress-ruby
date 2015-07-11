@@ -36,10 +36,16 @@ module Dote::DoteGrammars
 
     def build_val_attr(tree)
       tree.post_order_traversal do |n|
+        lexeme = n.get_attribute(:lexeme)
         if n === :true
-          n.store_attribute(:val, true)
+          n.store_attribute(:val, Dote::TypeSystem::BooleanType.new(lexeme))
         elsif n === :number
-          n.store_attribute(:val, n.get_attribute(:lexeme).to_s.to_f)
+          n.store_attribute(:val, Dote::TypeSystem::NumberType.new(lexeme))
+        elsif n === :literal_string
+          val = n.get_attribute(:val)
+          n.store_attribute(:val, Dote::TypeSystem::StringType.new(val))
+        elsif n === :interpolated_string
+          n.store_attribute(:val, Dote::TypeSystem::VarType.new(lexeme))
         elsif n === :program
           n.store_attribute(:val, Dote::TypeSystem::ProcedureType.new)
         end
@@ -72,9 +78,8 @@ module Dote::DoteGrammars
       select_built_in_procs(tree, :let).each do |ln|
         ln.children.last.children.each do |param|
           if param.name == :literal_string
-            store.store(
-              var_name(param.get_attribute(:val)),
-              Dote::TypeSystem::UnboundType.new)
+            param_string = param.get_attribute(:val).to_val
+            store.store(var_name(param_string), Dote::TypeSystem::UnboundType.new)
           end
         end
       end

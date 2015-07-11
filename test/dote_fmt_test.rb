@@ -12,7 +12,7 @@ describe "Dote::DoteGrammars::dote_fmt" do
     @tree = get_parse_tree(@ts, subject)
   end
 
-  describe "validate_dote_fmt" do
+  describe "validate_dote_fmt_grammar" do
     it "rules have s_attr line_feed" do
       subject.all?{|i| i.s_attr.include? :line_feed}
         .must_equal true

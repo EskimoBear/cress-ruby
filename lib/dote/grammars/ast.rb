@@ -93,33 +93,44 @@ module Dote::DoteGrammars
     def make_string_nodes(tree)
       strings = tree.select{|i| i === :string}
       strings.each do |i|
-        make_literal_string(i)
+        make_literal_string_node(i)
         make_interpolated_string(i)
       end
     end
 
-    def make_literal_string(node)
-      if node.degree >= 1
-        first_child = node.children.first
-        if first_child === :nullable
-          first_child.store_attribute(:val, "")
-        end
-        if node.children.none?{|i| i === :variable_identifier}
-          string = node.children.reduce("") do |acc, i|
-            acc.concat(i.get_attribute(:lexeme).to_s)
-          end
-          node.replace get_rule(:literal_string).to_tree
-          node.store_attribute(:val, string)
+    def make_literal_string_node(string_node)
+      if string_node.children.none?{|i| i === :variable_identifier}
+        assign_nullable_empty_string(string_node)
+        convert_to_literal_string_node(string_node)
+      end
+    end
+
+    def assign_nullable_empty_string(string_node)
+      first_child = string_node.children.first
+      if first_child === :nullable
+        first_child.store_attribute(:val, "")
+      end
+    end
+
+    def convert_to_literal_string_node(string_node)
+      root_string = build_root_string(string_node)
+      string_node.replace get_rule(:literal_string).to_tree
+      string_node.store_attribute(:val, root_string)
+    end
+
+    def build_root_string(string_node)
+      root_string = string_node.children.reduce("") do |acc, i|
+        acc.concat(i.get_attribute(:lexeme).to_s)
+      end
+    end
+
+    def make_interpolated_string(string_node)
+      unless string_node === :literal_string
+        if string_node.children.any?{|i| i === :variable_identifier}
+          string_node.replace_root get_rule(:interpolated_string)
         end
       end
     end
 
-    def make_interpolated_string(node)
-      if node.degree >= 1
-        if node.children.any?{|i| i === :variable_identifier}
-          node.replace_root get_rule(:interpolated_string)
-        end
-      end
-    end
   end
 end

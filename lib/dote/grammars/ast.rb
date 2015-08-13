@@ -93,16 +93,17 @@ module Dote::DoteGrammars
     def make_string_nodes(tree)
       strings = tree.select{|i| i === :string}
       strings.each do |i|
-        make_literal_string_node(i)
-        make_interpolated_string(i)
+        if i.children.any?{|i| i === :variable_identifier}
+          i.degree == 1? make_variable_identifier(i) : make_interpolated_string(i)
+        else
+          make_literal_string_node(i)
+        end
       end
     end
 
     def make_literal_string_node(string_node)
-      if string_node.children.none?{|i| i === :variable_identifier}
-        assign_nullable_empty_string(string_node)
-        convert_to_literal_string_node(string_node)
-      end
+      assign_nullable_empty_string(string_node)
+      convert_to_literal_string_node(string_node)
     end
 
     def assign_nullable_empty_string(string_node)
@@ -125,11 +126,11 @@ module Dote::DoteGrammars
     end
 
     def make_interpolated_string(string_node)
-      unless string_node === :literal_string
-        if string_node.children.any?{|i| i === :variable_identifier}
-          string_node.replace_root get_rule(:interpolated_string)
-        end
-      end
+      string_node.replace_root get_rule(:interpolated_string)
+    end
+
+    def make_variable_identifier(string_node)
+      string_node.reduce_root
     end
 
   end

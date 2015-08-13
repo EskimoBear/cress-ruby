@@ -28,8 +28,11 @@ module Dote
       end
 
       def ag_productions
-        self.select{|i| i.ag_production?}
-          .map{|i| i.name}
+        self.select{|i| i.ag_production?}.map{|i| i.name}
+      end
+
+      def ag_terminals
+        self.select{|i|i.ag_terminal?}.map{|i| i.name}
       end
 
       def terminals

@@ -8,7 +8,8 @@ describe Dote::DoteGrammars::AST do
   include TestHelpers
 
   before do
-    @ts = get_tokens(subject)
+    @program = load_test_inputs('pjson_input')
+    @ts = get_token_sequence(@program, subject)
     @parse_tree = get_parse_tree(@ts, subject)
     @ast = get_ast(@parse_tree, subject)
   end
@@ -64,8 +65,8 @@ describe Dote::DoteGrammars::AST do
     @ast.any?{|i| i === :literal_string}.must_equal true
   end
 
-  it "created :interpolated_string tree" do
-    @ast.any?{|i| i === :interpolated_string}.must_equal true
+  it "created :variable_identifier leaf" do
+    @ast.any?{|i| i === :variable_identifier}.must_equal true
   end
 
   it "created :bind trees" do

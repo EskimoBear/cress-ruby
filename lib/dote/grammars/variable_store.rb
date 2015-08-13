@@ -44,7 +44,7 @@ module Dote::DoteGrammars
         elsif n === :literal_string
           val = n.get_attribute(:val)
           n.store_attribute(:val, Dote::TypeSystem::StringType.new(val))
-        elsif n === :interpolated_string
+        elsif n === :variable_identifier
           n.store_attribute(:val, Dote::TypeSystem::VarType.new(lexeme))
         elsif n === :program
           n.store_attribute(:val, Dote::TypeSystem::ProcedureType.new)

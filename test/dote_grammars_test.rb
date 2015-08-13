@@ -72,6 +72,8 @@ describe Dote::DoteGrammars do
     it "should contain new rules" do
       @lang.ag_productions.must_include :bind
       @lang.ag_productions.must_include :apply
+      @lang.ag_productions.must_include :interpolated_string
+      @lang.ag_terminals.must_include :literal_string
     end
   end
 end

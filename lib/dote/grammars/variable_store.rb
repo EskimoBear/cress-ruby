@@ -11,7 +11,7 @@ module Dote::DoteGrammars
   def var_store
     RuleSeq.assign_attribute_grammar(
       var_store_cfg,
-      [AST, VariableStore],
+      [DisplayFormat, AST, VariableStore],
       [{
          :attr => :val,
          :type => :s_attr,

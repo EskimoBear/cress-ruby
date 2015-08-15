@@ -42,7 +42,7 @@ describe Dote::DoteGrammars::VariableStore do
   end
 
   describe "variable_to_variable_binding" do
-    it "standalone identifiers" do
+    it "variable_identifiers" do
       @store[:V_sub].must_be_instance_of Dote::TypeSystem::VarType
     end
   end

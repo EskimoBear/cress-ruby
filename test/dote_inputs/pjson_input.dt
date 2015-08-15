@@ -1,0 +1,6 @@
+{ "&let": [ "var", "var1"],
+  "&ref": "#/attribute",
+  "bool": true,
+  "sub": "$bool",
+  "attribute": 87,
+  "variable": "The value of values"}

@@ -6,24 +6,10 @@ module Dote
     extend Respondent
 
     MissingAttribute = Class.new(StandardError)
-    
+
     uses :name, :attributes, :attribute_list,
          :get_attribute, :store_attribute
-    
-    def eval_s_attributes(envs=nil)
-      if envs.nil?
-        envs = []
-      end
-      self.comp_rules.each do |cr|
-        if self.respond_to? cr[:method]
-          env = envs.find{|i| i[:attr] == cr[:attr]}
-          env_arg = env.nil? ? cr : cr.merge(env)
-          self.send(cr[:method], env_arg)
-        end
-      end
-      self
-    end
-    
+
     def valid_attribute?(attribute)
       attribute_list.include?(attribute) ? true : false
     end

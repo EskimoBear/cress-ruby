@@ -42,20 +42,16 @@ describe "Dote::DoteGrammars::dote_fmt" do
     end
   end
 
-  describe "validate_tree" do
-    it "to_s evaluated" do
-      @tree.get_attribute(:to_s)
-        .must_equal get_tokenizer_sample_program
-    end
-  end
-
   describe "validate_generated_code" do
     before do
-      @file_name = "code.dt"
-      @code_path = File.join(get_code_gen_dir, @file_name)
+      @code_path = File.join(get_code_gen_dir, "code.dt")
+    end
+    it "generates correct code" do
+      get_code_new(@tree, subject)
+        .must_equal get_tokenizer_sample_program
     end
     it "outputs a file" do
-      @code = get_code(@tree, subject, @code_path)
+      @code = Dote.compile(@program, subject, @code_path)
       FileTest.exist?(@code_path).must_equal true
     end
     after do

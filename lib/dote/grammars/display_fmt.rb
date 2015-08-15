@@ -28,10 +28,18 @@ module Dote::DoteGrammars
 
     include ITokenizer
 
+    def env_init
+      [{:attr => :line_no, :attr_value => 1},
+       {:attr => :indent, :attr_value => 0},
+       {:attr => :spaces_after, :attr_value => 1}]
+    end
+
+    # Evaluates the s-attributes for this grammar during tokenization.
+    # @param (see Dote::DoteGrammars::ITokenizer#eval_s_attributes)
+    # @return (see Dote::DoteGrammars::ITokenizer#eval_s_attributes)
     def eval_s_attributes(envs, token, token_seq)
       update_line_no_env(envs, token)
       update_indent_env(envs, token)
-      set_line_start_true(token, token_seq)
     end
 
     def update_line_no_env(envs, token)
@@ -64,18 +72,6 @@ module Dote::DoteGrammars
       elsif start_line_tokens.include?(token.name)
         increment_env_attr(envs, :indent, -1)
         token.assign_envs(envs)
-      end
-    end
-
-    def set_line_start_true(token, token_seq)
-      if token_seq.last.nil?
-        token.store_attribute(:line_start, true)
-      else
-        current_line = token.get_attribute(:line_no)
-        last_line = token_seq.last.get_attribute(:line_no)
-        if current_line != last_line
-          token.store_attribute(:line_start, true)
-        end
       end
     end
   end

@@ -3,15 +3,28 @@ require_relative '../../../utils/respondent'
 module Dote::DoteGrammars
   module ITokenizer
 
+    # Hook method which creates array containing the initial values of
+    # the s_attributes for the grammar.
+    # @return [Array<Hash>]
+    # @example Concrete implementation
+    # def env_init
+    #   [{:attr => :line_no, :attr_value => 1}]
+    # end
     def env_init
-      [{:attr => :line_no, :attr_value => 1},
-       {:attr => :indent, :attr_value => 0},
-       {:attr => :spaces_after, :attr_value => 1}]
     end
 
+    # Hook method called during tokenization for setting the s_attributes
+    # value on each token. It will be called with each token and makes
+    # the env_init array and the remaining tokens in the program avaiable as
+    # context.
+    # @param envs [Hash] The env_init Array
+    # @param token [Token]
+    # @param token_seq [TokenSeq]
+    # @return [nil]
     def eval_s_attributes(envs, token, token_seq)
     end
 
+    # @return [Array] array of s-attributes given in env_init
     def attributes
       env_init.map{|attr_hash| attr_hash[:attr]}
     end
@@ -26,9 +39,6 @@ module Dote::DoteGrammars
 
     def parse_tokens(token_seq)
       top_rule.parse(token_seq, self)[:tree]
-    end
-
-    def eval_tree_attributes(tree)
     end
   end
 

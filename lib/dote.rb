@@ -54,10 +54,9 @@ module Dote
   # @param token_seq [TokenSeq]
   # @param grammar [IParser]
   # @return [AbstractSyntaxTree] ParseTree for token_seq with s-attributes
-  # and i-attributes
+  #   and i-attributes
   def build_tree(token_seq, grammar)
     parse_tree = grammar.parse_tokens(token_seq)
-    grammar.eval_tree_attributes(parse_tree)
   end
 
   # @param tree [Parser::ParseTree]

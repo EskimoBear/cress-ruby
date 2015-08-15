@@ -23,9 +23,11 @@ module Dote::DoteGrammars
 
   module DoteFormat
 
+    include DisplayFormat
     include IObjectCode
 
     def generate_code(env)
+      eval_tree_attributes(env[:tree])
       env[:tree].get_attribute(:to_s)
     end
 
@@ -34,10 +36,28 @@ module Dote::DoteGrammars
       tree
     end
 
+    # Evaluates the s-attributes for this grammar during tokenization.
+    # This grammar depends on the attributes of DisplayFormat so super
+    # is called to evaluate those first.
+    # @param (see Dote::DoteGrammars::ITokenizer#eval_s_attributes)
+    # @return (see Dote::DoteGrammars::ITokenizer#eval_s_attributes)
     def eval_s_attributes(envs, token, token_seq)
       super
+      set_line_start_true(token, token_seq)
       set_line_feed_true(token, token_seq)
       set_to_s(token)
+    end
+
+    def set_line_start_true(token, token_seq)
+      if token_seq.last.nil?
+        token.store_attribute(:line_start, true)
+      else
+        current_line = token.get_attribute(:line_no)
+        last_line = token_seq.last.get_attribute(:line_no)
+        if current_line != last_line
+          token.store_attribute(:line_start, true)
+        end
+      end
     end
 
     def set_line_feed_true(token, token_seq)

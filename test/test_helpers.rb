@@ -74,8 +74,8 @@ module TestHelpers
     Dote.operational_semantics(tree, grammar)
   end
 
-  def get_code(tree=get_parse_tree, grammar=DEFAULT_GRAMMAR)
-    code = grammar.generate_code(run_operational_semantics(tree, grammar))
+  def get_code(program=get_tokenizer_sample_program, grammar=DEFAULT_GRAMMAR)
+    code = grammar.generate_code(Dote.source_to_env(program, grammar))
   end
 
   def get_code_gen_dir

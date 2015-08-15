@@ -9,7 +9,6 @@ describe "Dote::DoteGrammars::dote_fmt" do
   before do
     @program = get_tokenizer_sample_program
     @ts = get_token_sequence(@program, subject)
-    @tree = get_parse_tree(@ts, subject)
   end
 
   describe "validate_dote_fmt_grammar" do
@@ -43,18 +42,8 @@ describe "Dote::DoteGrammars::dote_fmt" do
   end
 
   describe "validate_generated_code" do
-    before do
-      @code_path = File.join(get_code_gen_dir, "code.dt")
-    end
     it "generates correct code" do
-      get_code(@tree, subject).must_equal get_tokenizer_sample_program
-    end
-    it "outputs a file" do
-      @code = Dote.compile(@program, subject, @code_path)
-      FileTest.exist?(@code_path).must_equal true
-    end
-    after do
-      FileUtils.rm_rf(get_code_gen_dir)
+      get_code(@program, subject).must_equal get_tokenizer_sample_program
     end
   end
 end

@@ -163,6 +163,7 @@ module Parser
       # @return [ParseTree::Tree] the modified tree
       def replace_root(obj)
         new_root = obj.to_tree
+        new_root.parent = self.parent
         new_root.adopt_child_list(self.children)
         self.replace new_root
       end

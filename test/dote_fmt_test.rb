@@ -47,8 +47,7 @@ describe "Dote::DoteGrammars::dote_fmt" do
       @code_path = File.join(get_code_gen_dir, "code.dt")
     end
     it "generates correct code" do
-      get_code_new(@tree, subject)
-        .must_equal get_tokenizer_sample_program
+      get_code(@tree, subject).must_equal get_tokenizer_sample_program
     end
     it "outputs a file" do
       @code = Dote.compile(@program, subject, @code_path)

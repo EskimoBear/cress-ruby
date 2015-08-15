@@ -27,10 +27,6 @@ module TestHelpers
     get_sample_rules.get_rule(:nonterminal)
   end
 
-  def get_valid_eson
-    load_test_inputs('valid')
-  end
-
   def get_unknown_special_form_program
     load_test_inputs('unknown_special_form')
   end
@@ -78,11 +74,8 @@ module TestHelpers
     Dote.operational_semantics(tree, grammar)
   end
 
-  def get_code(tree=get_parse_tree,
-               grammar=DEFAULT_GRAMMAR,
-               path=File.join(get_code_gen_dir, "code.dt"))
-    code = grammar.generate_code(run_operational_semantics)
-    grammar.make_file(code, path)
+  def get_code(tree=get_parse_tree, grammar=DEFAULT_GRAMMAR)
+    code = grammar.generate_code(run_operational_semantics(tree, grammar))
   end
 
   def get_code_gen_dir
@@ -98,6 +91,11 @@ module TestHelpers
 
   def get_test_input_path(name)
     file = File.join('../../test/dote_inputs', "#{name}.dt")
+    File.expand_path(file, __FILE__)
+  end
+
+  def get_test_path(file_name)
+    file = File.join('../../test/dote_inputs', "#{file_name}")
     File.expand_path(file, __FILE__)
   end
 

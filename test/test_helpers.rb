@@ -64,9 +64,9 @@ module TestHelpers
     Dote.build_tree(token_sequence, grammar)
   end
 
-  def get_ast(tree=get_parse_tree,
-              grammar=DEFAULT_GRAMMAR)
-    grammar.convert_to_ast(tree)
+  def get_ast(program=get_tokenizer_sample_program,
+               grammar=DEFAULT_GRAMMAR)
+     Dote.source_to_env(program, grammar)[:tree]
   end
 
   def run_operational_semantics(tree=get_parse_tree,

@@ -9,9 +9,7 @@ describe Dote::DoteGrammars::AST do
 
   before do
     @program = load_test_inputs('pjson_input')
-    @ts = get_token_sequence(@program, subject)
-    @parse_tree = get_parse_tree(@ts, subject)
-    @ast = get_ast(@parse_tree, subject)
+    @ast = get_ast(@program, subject)
   end
 
   it "has no alternation rules" do
